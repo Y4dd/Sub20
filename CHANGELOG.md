@@ -8,6 +8,9 @@ What changed in each release. The format follows
 
 ### Added
 
+- Every sound track is mixed into one, so a microphone that OBS or the
+  NVIDIA app recorded on its own track is no longer lost. "Mix all sound
+  tracks" in Options → More turns it off.
 - CI on Windows, macOS and Linux: formatting, Clippy, the unit and end-to-end
   tests, the interface check and build, and dependency advisories.
 - Contributing guide, security policy, issue and pull request templates.

@@ -232,6 +232,13 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
         AudioChoice::Opus => Some(AudioCodec::Opus),
         AudioChoice::Aac | AudioChoice::None => Some(AudioCodec::Aac),
     };
+    if audio.is_some() && info.audio_tracks > 1 {
+        notes.push(if options.mix_audio {
+            format!("The {} sound tracks are mixed into one.", info.audio_tracks)
+        } else {
+            format!("Only the first of {} sound tracks is kept.", info.audio_tracks)
+        });
+    }
 
     if options.audio_only {
         let Some(codec) = audio else {
@@ -546,6 +553,21 @@ mod tests {
         let silent = MediaInfo { has_audio: false, ..source(1280, 720, 30.0) };
         let p = plan(&silent, None, &EncodeOptions::default()).unwrap();
         assert_eq!((p.audio, p.audio_kbps), (None, 0));
+    }
+
+    #[test]
+    fn the_log_says_what_happens_to_several_sound_tracks() {
+        let recording = MediaInfo { audio_tracks: 2, ..source(1920, 1080, 30.0) };
+        let p = plan(&recording, None, &EncodeOptions::default()).unwrap();
+        assert!(p.notes.iter().any(|n| n == "The 2 sound tracks are mixed into one."), "{:?}", p.notes);
+
+        let first = EncodeOptions { mix_audio: false, ..Default::default() };
+        let p = plan(&recording, None, &first).unwrap();
+        assert!(p.notes.iter().any(|n| n == "Only the first of 2 sound tracks is kept."), "{:?}", p.notes);
+
+        let muted = EncodeOptions { audio: AudioChoice::None, ..Default::default() };
+        let p = plan(&recording, None, &muted).unwrap();
+        assert!(!p.notes.iter().any(|n| n.contains("sound tracks")), "{:?}", p.notes);
     }
 
     #[test]

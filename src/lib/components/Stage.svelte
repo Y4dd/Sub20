@@ -102,6 +102,10 @@
     const parts = [`${info.displayWidth}×${info.displayHeight}`];
     if (info.fps) parts.push(`${plain(info.fps, 2)} fps`);
     parts.push(megabytes(info.sizeBytes));
+    // Several sound tracks usually means game and microphone kept apart.
+    if (info.audioTracks > 1 && (app.options.audio !== "none" || app.options.audioOnly)) {
+      parts.push(`${info.audioTracks} sound tracks, ${app.options.mixAudio ? "mixed" : "first only"}`);
+    }
     return parts.join(", ");
   });
 

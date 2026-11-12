@@ -300,6 +300,10 @@
     </div>
 
     <div class="toggles">
+      <Toggle checked={o.mixAudio} disabled={o.audio === "none" && !o.audioOnly} onchange={(on) => (o.mixAudio = on)}>
+        Mix all sound tracks
+        <small>Keeps a microphone that OBS or the NVIDIA app recorded on its own track.</small>
+      </Toggle>
       <Toggle checked={o.audioOnly} onchange={(on) => { o.audioOnly = on; if (on && o.audio === "none") o.audio = "aac"; }}>
         Keep only the sound
         <small>Writes an audio file and drops the picture.</small>

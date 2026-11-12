@@ -104,6 +104,7 @@ export async function probe(file: File): Promise<MediaInfo> {
       audioCodec: audio?.codec ?? null,
       audioKbps: null,
       audioChannels: audio?.numberOfChannels ?? null,
+      audioTracks: (await input.getAudioTracks()).length,
     };
   } finally {
     input.dispose();

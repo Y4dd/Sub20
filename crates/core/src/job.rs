@@ -109,6 +109,10 @@ pub struct EncodeOptions {
     pub fast_finalize: bool,
     /// Ask the GPU to decode the source too.
     pub hardware_decode: bool,
+    /// Mix every audio track into one stereo track. OBS and the NVIDIA app
+    /// can record the microphone on a track of its own, and keeping only the
+    /// first would lose it. Off: the first track only.
+    pub mix_audio: bool,
 }
 
 impl Default for EncodeOptions {
@@ -133,6 +137,7 @@ impl Default for EncodeOptions {
             audio_only: false,
             fast_finalize: false,
             hardware_decode: false,
+            mix_audio: true,
         }
     }
 }

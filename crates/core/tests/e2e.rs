@@ -394,6 +394,52 @@ async fn audio_only_and_muted() {
     assert_eq!(result.audio_kbps, 0);
 }
 
+/// The loudest sample in a file's sound, in dB (0 is full scale).
+async fn max_volume(tools: &Tools, path: &Path) -> f64 {
+    let mut cmd = tools.ffmpeg();
+    cmd.args(["-hide_banner", "-i"]).arg(path).args(["-map", "0:a:0", "-af", "volumedetect", "-f", "null", "-"]);
+    let out = ffmpeg::run(&mut cmd, Duration::from_secs(60)).await.unwrap();
+    let line = out.stderr.lines().find(|l| l.contains("max_volume:")).expect("volumedetect printed nothing");
+    line.split("max_volume:").nth(1).unwrap().trim().trim_end_matches(" dB").parse().unwrap()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_microphone_on_its_own_track_is_mixed_in() {
+    let Some(b) = bench().await else { return };
+    // How OBS records with the mic kept apart: track 1 is the game (silent
+    // here, stereo), track 2 the microphone (a tone, mono).
+    let input = b.root.join("recording.mkv");
+    let mut cmd = b.tools.ffmpeg();
+    cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=s=640x360:r=30:d=4"])
+        .args(["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"])
+        .args(["-f", "lavfi", "-i", "sine=frequency=660:sample_rate=48000:duration=4"])
+        .args(["-map", "0:v", "-map", "1:a", "-map", "2:a", "-t", "4"])
+        .args(["-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-b:a", "96k"])
+        .arg(&input);
+    let out = ffmpeg::run(&mut cmd, Duration::from_secs(60)).await.unwrap();
+    assert!(out.ok, "could not make the test recording: {}", out.stderr);
+    let info = probe::probe(&b.tools, &input).await.unwrap();
+    assert_eq!(info.audio_tracks, 2);
+
+    let options = EncodeOptions { target_mb: 2.0, encoder: Some("libx264".into()), ..Default::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options.clone()));
+    let mixed = done.await.unwrap().expect("the mixed encode should succeed");
+    let out = probe::probe(&b.tools, &mixed.output).await.unwrap();
+    assert_eq!((out.audio_tracks, out.audio_channels), (1, Some(2)), "one stereo track comes out");
+    let loudest = max_volume(&b.tools, &mixed.output).await;
+    // The tone is made at about -18 dB. amix's default would halve it to about
+    // -24 dB; summed at full volume it stays near -18.
+    assert!(loudest > -21.0, "the microphone should be heard at full volume, loudest sample {loudest} dB");
+    assert!(mixed.size_bytes <= 2 * MB);
+
+    // With mixing off only the silent game track is kept, as before.
+    let first_only = EncodeOptions { mix_audio: false, ..options };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, first_only));
+    let first = done.await.unwrap().expect("the first-track encode should succeed");
+    let loudest = max_volume(&b.tools, &first.output).await;
+    assert!(loudest < -60.0, "only the silent first track should be kept, loudest sample {loudest} dB");
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn bad_input_fails_with_a_readable_message() {
     let Some(b) = bench().await else { return };

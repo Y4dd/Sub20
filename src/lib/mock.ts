@@ -10,7 +10,7 @@ import type {
 export const DEFAULT_OPTIONS: EncodeOptions = {
   targetMb: 20, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
-  maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
+  maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false, mixAudio: true,
 };
 
 let settings: Settings = {
@@ -45,13 +45,14 @@ function info(width: number, height: number, duration: number, fps: number, mb: 
   return {
     duration, sizeBytes: mb * 1024 * 1024, hasVideo: true, hasAudio: true, width, height, displayWidth: width,
     displayHeight: height, rotation: 0, fps, videoCodec: codec, pixelFormat: "yuv420p",
-    videoKbps: (mb * 8192) / duration - 160, audioCodec: "aac", audioKbps: 160, audioChannels: 2,
+    videoKbps: (mb * 8192) / duration - 160, audioCodec: "aac", audioKbps: 160, audioChannels: 2, audioTracks: 1,
   };
 }
 
 const DEMOS: Demo[] = [
   { name: "harbour-drone-take3.mov", info: info(3840, 2160, 72.4, 60, 612, "hevc"), hue: 205 },
-  { name: "clutch-1v4-ranked.mp4", info: info(2560, 1440, 41.0, 60, 248, "h264"), hue: 280 },
+  // Game and microphone on separate tracks, as OBS records them.
+  { name: "clutch-1v4-ranked.mp4", info: { ...info(2560, 1440, 41.0, 60, 248, "h264"), audioTracks: 2 }, hue: 280 },
   { name: "birthday-candles.mp4", info: info(1080, 1920, 18.6, 30, 46.2, "h264"), hue: 28 },
   { name: "standup-recording-nov.mkv", info: info(1920, 1080, 1840, 30, 1320, "h264"), hue: 150 },
 ];

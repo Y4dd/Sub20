@@ -79,10 +79,16 @@ its licence text and point to its exact source.
 - [ ] At least one Intel and one AMD GPU, through beta testers.
 
 **Clip sources gamers actually use**
-- [ ] **Multiple audio tracks.** OBS and the NVIDIA app often record game
-      and microphone as separate tracks. Sub20 maps only `0:a:0`, so the
-      microphone is lost. Add "Mix all tracks" as the default, and a way to
-      pick tracks.
+- [x] **Multiple audio tracks.** OBS and the NVIDIA app often record game
+      and microphone as separate tracks, and Sub20 kept only the first, so
+      the microphone was lost. Every track is now mixed by default ("Mix all
+      sound tracks" in Options → More turns it off), and the stage says
+      "2 sound tracks, mixed".
+  - [ ] Picking tracks per clip, if anyone asks for it. Options are global
+        and tracks differ per file, so this would sit beside the trim.
+  - [ ] Sub20 Lite keeps only the first track for now; mixing there needs
+        its own audio step.
+  - [ ] Try it on a real OBS and NVIDIA app recording.
 - [ ] Test files from the NVIDIA app (Instant Replay), Steam Game
       Recording, Xbox Game Bar, OBS (MKV, several tracks), Medal, an iPhone
       (HEVC, HDR, rotated) and an Android phone (variable frame rate).

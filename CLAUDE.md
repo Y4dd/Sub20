@@ -50,7 +50,9 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Hardware decode** is `-hwaccel auto` with frames returned to system memory, so the software filter chain is unchanged; on failure the job retries with CPU decoding.
 
-**Stream mapping** is `0:V:0` (skips cover art), `0:a:0?`, `-sn -dn`. Opus in MP4 becomes AAC. HEVC in MP4 gets `-tag:v hvc1`.
+**Stream mapping** is `0:V:0` (skips cover art), the sound, `-sn -dn`. Opus in MP4 becomes AAC. HEVC in MP4 gets `-tag:v hvc1`.
+
+**Several audio tracks are mixed** (`EncodeOptions::mix_audio`, on by default), because OBS and the NVIDIA app can record the microphone on a track of its own and keeping only the first lost it. `command::audio_input` makes each track stereo (`aformat`; a mono mic lands in the middle), sums them with `amix normalize=0` (the default divides each input by the track count, so the game came out quieter), and puts `alimiter` after it for the peaks the sum pushes over. One track, or mixing off, maps `0:a:0?` as before. `MediaInfo::audio_tracks` counts them; the other audio facts describe track 1. The e2e test makes a silent "game" track and a tone "mic" track and checks the mic is heard at full volume.
 
 **Output.** FFmpeg writes `.{stem}.{id}.part.{ext}` in the destination folder; a `Cleanup` guard removes the partial file and scratch folder on every exit path. `output::place` moves it to its final name: a name the user typed (`JobSpec::output_name`, cleaned by `output::clean_name` for every system), else `stem-20mb.ext`, `stem-2500k.ext` or `stem-audio.ext`. `looks_generated` recognises the default names so the folder watch skips its own output: change the naming and that function together. A typed name is not recognised, so a manual result saved into a watched folder would be picked up.
 
@@ -111,7 +113,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 68 tests pass (53 unit, 13 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 72 tests pass (56 unit, 14 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 

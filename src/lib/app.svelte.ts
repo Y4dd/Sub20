@@ -83,7 +83,7 @@ export type Sheet = "options" | "settings" | "history" | "keys" | null;
 const FALLBACK_OPTIONS: EncodeOptions = {
   targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "opus", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
-  maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
+  maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false, mixAudio: true,
 };
 
 class App {

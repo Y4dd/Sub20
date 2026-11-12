@@ -34,6 +34,10 @@ pub struct MediaInfo {
     pub audio_codec: Option<String>,
     pub audio_kbps: Option<f64>,
     pub audio_channels: Option<u32>,
+    /// How many audio tracks the file has. OBS and the NVIDIA app can record
+    /// the microphone on a track of its own; the facts above describe track 1.
+    #[serde(default)]
+    pub audio_tracks: u32,
 }
 
 impl MediaInfo {
@@ -117,6 +121,7 @@ pub fn parse(json: &str) -> std::result::Result<MediaInfo, String> {
     let mut info = MediaInfo {
         has_video: video.is_some(),
         has_audio: audio.is_some(),
+        audio_tracks: streams.iter().filter(|s| is_kind(s, "audio")).count() as u32,
         size_bytes: format.get("size").and_then(num).map(|v| v as u64).unwrap_or(0),
         ..MediaInfo::default()
     };
@@ -191,8 +196,27 @@ mod tests {
         assert_eq!(info.fps, Some(60.0));
         assert_eq!(info.video_kbps, Some(12000.0));
         assert_eq!(info.audio_kbps, Some(192.0));
+        assert_eq!(info.audio_tracks, 1);
         assert!(info.is_high_bit_depth());
         assert_eq!(info.duration, 12.5);
+    }
+
+    #[test]
+    fn game_and_microphone_on_separate_tracks() {
+        // How OBS and the NVIDIA app record when the mic is kept apart.
+        let json = r#"{
+          "streams": [
+            {"codec_type":"video","codec_name":"h264","width":1920,"height":1080,"avg_frame_rate":"60/1"},
+            {"codec_type":"audio","codec_name":"aac","bit_rate":"192000","channels":2},
+            {"codec_type":"audio","codec_name":"aac","bit_rate":"96000","channels":1}
+          ],
+          "format": {"duration":"30.0","size":"150000000"}
+        }"#;
+        let info = parse(json).unwrap();
+        assert_eq!(info.audio_tracks, 2);
+        // The other facts describe the first track.
+        assert_eq!(info.audio_channels, Some(2));
+        assert_eq!(info.audio_kbps, Some(192.0));
     }
 
     #[test]

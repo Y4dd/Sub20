@@ -46,6 +46,8 @@ app (Python, Celery, Redis and SvelteKit in Docker) that inspired it.
   ones.
 - **A queue** with live progress, time left, per-video cancel, and the FFmpeg
   log one click away.
+- **Keeps your microphone.** OBS and the NVIDIA app can record the game and
+  the mic on separate tracks; every track is mixed into the result.
 - **Options**: resolution, frame-rate cap, Opus/AAC/no sound, speed against
   quality, MP4 or MKV, fixed bitrate, sound only, saved profiles.
 - **Watch a folder** and compress whatever appears in it.

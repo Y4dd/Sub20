@@ -196,6 +196,29 @@ fn rate_flags(encoder: Encoder, kbps: u32) -> Vec<String> {
     flags
 }
 
+/// Where the sound comes from: every audio track mixed into one, or the first.
+///
+/// Each track is made stereo first (a mono microphone lands in the middle),
+/// then they are summed at full volume: `amix` would otherwise divide each by
+/// the number of tracks, and the game would come out quieter than it was.
+/// The limiter catches the peaks the sum pushes over full scale.
+fn audio_input(args: &EncodeArgs, required: bool) -> Vec<String> {
+    let tracks = args.info.audio_tracks;
+    if !args.options.mix_audio || tracks < 2 {
+        let first = if required { "0:a:0" } else { "0:a:0?" };
+        return vec!["-map".into(), first.into()];
+    }
+    let mut graph = String::new();
+    for i in 0..tracks {
+        graph.push_str(&format!("[0:a:{i}]aformat=channel_layouts=stereo[a{i}];"));
+    }
+    for i in 0..tracks {
+        graph.push_str(&format!("[a{i}]"));
+    }
+    graph.push_str(&format!("amix=inputs={tracks}:duration=longest:normalize=0,alimiter=limit=0.95:level=false[mix]"));
+    vec!["-filter_complex".into(), graph, "-map".into(), "[mix]".into()]
+}
+
 /// The extension the output file gets.
 pub fn extension(plan: &Plan, options: &EncodeOptions) -> &'static str {
     if options.audio_only {
@@ -241,7 +264,8 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
     }
 
     if args.options.audio_only {
-        a.extend(["-map", "0:a:0", "-vn", "-sn", "-dn"]);
+        a.extend(audio_input(args, true));
+        a.extend(["-vn", "-sn", "-dn"]);
         let codec = plan.audio.map(|c| c.encoder()).unwrap_or("aac");
         a.extend(["-c:a", codec]).push("-b:a").push(format!("{}k", plan.audio_kbps));
         if codec == "aac" {
@@ -252,8 +276,8 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
         return a.0;
     }
 
-    // One video track (cover art does not count), the first audio track if
-    // there is one, nothing else.
+    // One video track (cover art does not count), the sound (every track
+    // mixed, or the first; see `audio_input`), nothing else.
     a.extend(["-map", "0:V:0"]);
     let filters = video_filters(args);
     if !filters.is_empty() {
@@ -287,7 +311,8 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
 
     match plan.audio {
         Some(codec) => {
-            a.extend(["-map", "0:a:0?", "-c:a", codec.encoder()]);
+            a.extend(audio_input(args, false));
+            a.extend(["-c:a", codec.encoder()]);
             a.push("-b:a").push(format!("{}k", plan.audio_kbps));
             // Opus tops out at 255 kbps per channel pair; surround needs a layout hint.
             if codec == crate::plan::AudioCodec::Opus && args.info.audio_channels.unwrap_or(2) > 2 {
@@ -353,6 +378,7 @@ mod tests {
             fps: Some(60.0),
             pixel_format: Some("yuv420p".into()),
             audio_channels: Some(2),
+            audio_tracks: 1,
             ..MediaInfo::default()
         }
     }
@@ -457,5 +483,38 @@ mod tests {
         let cmd = render(&source(), None, &options, "libx264", Pass::Single);
         assert!(cmd.contains("-map 0:a:0 -vn -sn -dn -c:a aac -b:a 128k"), "{cmd}");
         assert!(!cmd.contains("-c:v"), "{cmd}");
+    }
+
+    #[test]
+    fn separate_game_and_mic_tracks_are_mixed() {
+        let recording = MediaInfo { audio_tracks: 2, ..source() };
+        let cmd = render(&recording, None, &EncodeOptions::default(), "libx264", Pass::Single);
+        let graph = "-filter_complex [0:a:0]aformat=channel_layouts=stereo[a0];\
+                     [0:a:1]aformat=channel_layouts=stereo[a1];\
+                     [a0][a1]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.95:level=false[mix] \
+                     -map [mix] -c:a aac -b:a 128k";
+        assert!(cmd.contains(graph), "{cmd}");
+        assert!(cmd.contains("-map 0:V:0"), "{cmd}");
+        assert!(!cmd.contains("0:a:0?"), "{cmd}");
+
+        // Sound-only output mixes the same way.
+        let options = EncodeOptions { audio_only: true, ..Default::default() };
+        let cmd = render(&recording, None, &options, "libx264", Pass::Single);
+        assert!(cmd.contains("amix=inputs=2"), "{cmd}");
+        assert!(cmd.contains("-map [mix] -vn -sn -dn -c:a aac"), "{cmd}");
+
+        // Switched off: the first track only, as before.
+        let options = EncodeOptions { mix_audio: false, ..Default::default() };
+        let cmd = render(&recording, None, &options, "libx264", Pass::Single);
+        assert!(!cmd.contains("-filter_complex"), "{cmd}");
+        assert!(cmd.contains("-map 0:a:0? -c:a aac"), "{cmd}");
+
+        // The first pass of a two-pass encode has no sound at all.
+        let cmd = render(&recording, None, &EncodeOptions::default(), "libx264", Pass::First);
+        assert!(!cmd.contains("-filter_complex"), "{cmd}");
+
+        // One track: nothing to mix.
+        let cmd = render(&source(), None, &EncodeOptions::default(), "libx264", Pass::Single);
+        assert!(!cmd.contains("-filter_complex"), "{cmd}");
     }
 }

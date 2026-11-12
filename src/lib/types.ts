@@ -24,6 +24,8 @@ export interface MediaInfo {
   audioCodec: string | null;
   audioKbps: number | null;
   audioChannels: number | null;
+  /** How many audio tracks; the facts above describe the first. */
+  audioTracks: number;
 }
 
 export interface Trim {
@@ -50,6 +52,8 @@ export interface EncodeOptions {
   audioOnly: boolean;
   fastFinalize: boolean;
   hardwareDecode: boolean;
+  /** Mix every audio track into one, so a mic on its own track is kept. */
+  mixAudio: boolean;
 }
 
 export type Quality = "sharp" | "good" | "soft" | "rough";
