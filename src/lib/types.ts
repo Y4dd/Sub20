@@ -86,6 +86,8 @@ export interface JobResult {
   attempts: number;
   elapsedSeconds: number;
   targetMb: number | null;
+  /** The source went to the Recycle Bin and this file took its place. */
+  replacedOriginal: boolean;
 }
 
 export type Phase = "analyzing" | "analysis" | "encoding" | "finalizing";
@@ -107,7 +109,7 @@ export interface Profile {
   options: EncodeOptions;
 }
 
-export type OutputMode = "sameFolder" | "folder";
+export type OutputMode = "sameFolder" | "folder" | "replace";
 export type Originals = "keep" | "delete" | "move";
 export type Existing = "newOnly" | "processExisting";
 
@@ -204,6 +206,8 @@ export interface CompressRequest {
   path: string;
   trim: Trim | null;
   options: EncodeOptions;
+  /** What to call the result, as typed; null uses name-20mb. */
+  outputName: string | null;
 }
 
 export type DropEvent = { type: "over" } | { type: "leave" } | { type: "drop"; paths: string[] };
@@ -250,6 +254,8 @@ export interface Backend {
   resultUrl(path: string): Promise<string | null>;
   /** Puts a finished video on the clipboard as a file, ready to paste into Discord. */
   copyFile(path: string): Promise<void>;
+  /** Renames a finished video, keeping its extension; returns the new path. */
+  renameResult(path: string, name: string): Promise<string>;
   /** Drags a finished video out of the window, a filmstrip thumbnail under the pointer. */
   dragOut(path: string, thumb: string | null): Promise<void>;
   pickVideos(): Promise<string[]>;

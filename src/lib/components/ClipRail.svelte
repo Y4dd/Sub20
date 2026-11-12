@@ -1,5 +1,6 @@
 <script lang="ts">
   // The list of videos on the bench.
+  import { untrack } from "svelte";
   import { app, type Clip } from "../app.svelte";
   import { megabytes, span } from "../format";
   import Icon from "./Icon.svelte";
@@ -19,6 +20,19 @@
         return clip.trimmed ? `${span(clip.kept)} of ${span(clip.duration)}` : span(clip.duration);
     }
   }
+
+  // A clip shows its own name until its result is given one.
+  function named(clip: Clip): string {
+    const renamed = clip.outputName ?? (clip.result ? app.outputStem(clip) : null);
+    return renamed && renamed !== app.defaultStem(clip) ? `${renamed}${app.extensionOf(clip)}` : clip.name;
+  }
+
+  // What the name field holds while renaming; filled when it opens.
+  let draft = $state("");
+  $effect(() => {
+    const clip = app.renaming;
+    if (clip) draft = untrack(() => app.outputStem(clip));
+  });
 </script>
 
 <aside>
@@ -26,7 +40,13 @@
     {#each app.clips as clip (clip.key)}
       {@const selected = app.selected === clip}
       <li class:selected class={clip.status}>
-        <button type="button" class="pick" onclick={() => app.select(clip)} aria-current={selected ? "true" : undefined}>
+        <button
+          type="button"
+          class="pick"
+          onclick={() => app.select(clip)}
+          ondblclick={() => !clip.busy && (app.renaming = clip)}
+          aria-current={selected ? "true" : undefined}
+        >
           <span class="thumb">
             {#if clip.thumbs.length}
               <img src={clip.thumbs[Math.floor(clip.thumbs.length / 2)]} alt="" draggable="false" />
@@ -36,16 +56,46 @@
             {/if}
           </span>
           <span class="words">
-            <span class="name" title={clip.name}>{clip.name}</span>
+            {#if app.renaming !== clip}
+              <span class="name" title="{clip.name}, double-click to rename the result">{named(clip)}</span>
+            {/if}
             <span class="line" class:warn={clip.status === "failed" || (clip.planError && !clip.busy && clip.status !== "done")}>
               {#if clip.status === "done"}<Icon name="check" size={14} />{/if}
               {line(clip)}
             </span>
           </span>
         </button>
-        <button type="button" class="remove" onclick={() => app.remove(clip)} aria-label="Remove {clip.name}" title="Remove (Delete)">
-          <Icon name="close" size={14} />
-        </button>
+        {#if app.renaming === clip}
+          <!-- Sits over the name; the extension stays as it is. -->
+          <form class="rename" onsubmit={(event) => { event.preventDefault(); void app.rename(clip, draft); }}>
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              aria-label="Name of the result"
+              bind:value={draft}
+              autofocus
+              onfocus={(event) => event.currentTarget.select()}
+              onblur={() => app.renaming === clip && void app.rename(clip, draft)}
+              onkeydown={(event) => {
+                if (event.key === "Escape") {
+                  event.stopPropagation();
+                  app.renaming = null;
+                }
+              }}
+            />
+            <span class="extension">{app.extensionOf(clip)}</span>
+          </form>
+        {:else}
+          <div class="actions">
+            {#if !clip.busy}
+              <button type="button" onclick={() => (app.renaming = clip)} aria-label="Rename the result of {clip.name}" title="Rename (F2)">
+                <Icon name="pencil" size={14} />
+              </button>
+            {/if}
+            <button type="button" onclick={() => app.remove(clip)} aria-label="Remove {clip.name}" title="Remove (Delete)">
+              <Icon name="close" size={14} />
+            </button>
+          </div>
+        {/if}
       </li>
     {/each}
   </ul>
@@ -136,7 +186,7 @@
   .words {
     display: grid;
     min-width: 0;
-    padding-right: 30px;
+    padding-right: 8px;
   }
 
   .name {
@@ -162,29 +212,74 @@
     color: var(--bad);
   }
 
-  .remove {
+  .actions {
     position: absolute;
     top: 6px;
     right: 6px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+  }
+
+  /* The selected clip keeps room for its buttons; other rows show them on
+     hover over their own background, so names are not cut short for them. */
+  li.selected .words {
+    padding-right: 62px;
+  }
+
+  li:not(.selected) .actions {
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--surface) 60%, var(--bench));
+  }
+
+  /* Shown on hover, on focus, and always on the clip you are working on. */
+  li:hover .actions,
+  li.selected .actions,
+  .actions:focus-within {
+    opacity: 1;
+  }
+
+  .actions button {
     display: grid;
     place-items: center;
     width: 28px;
     height: 28px;
     border-radius: 6px;
     color: var(--muted);
-    opacity: 0;
   }
 
-  /* Shown on hover, on focus, and always on the clip you are working on. */
-  li:hover .remove,
-  li.selected .remove,
-  .remove:focus-visible {
-    opacity: 1;
-  }
-
-  .remove:hover {
+  .actions button:hover {
     background: var(--raised);
     color: var(--text);
+  }
+
+  /* The name field, laid over the name line. */
+  .rename {
+    position: absolute;
+    top: 6px;
+    left: 78px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 8px 0 6px;
+    border: 1px solid var(--trim-mark);
+    border-radius: 6px;
+    background: var(--bench);
+  }
+
+  .rename input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: none;
+    font-weight: 550;
+  }
+
+  .extension {
+    color: var(--muted);
   }
 
   .add {

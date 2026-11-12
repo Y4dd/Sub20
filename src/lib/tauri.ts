@@ -67,6 +67,7 @@ export const tauriBackend: Backend = {
   openFile: (path) => invoke("open_file", { path }),
   resultUrl: async (path) => (await invoke<string | null>("result_url", { path })) ?? convertFileSrc(path),
   copyFile: (path) => invoke("copy_file", { path }),
+  renameResult: (path, name) => invoke("rename_result", { path, name }),
   dragOut: async (path, thumb) => {
     const icon = (thumb && thumbFiles.get(thumb)) ?? thumbFiles.values().next().value;
     if (!icon) return;

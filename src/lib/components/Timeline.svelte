@@ -104,7 +104,7 @@
         aria-valuenow={clip.start}
         aria-valuetext={clock(clip.start)}
         aria-orientation="horizontal"
-        disabled={clip.busy}
+        disabled={clip.busy || !!clip.result?.replacedOriginal}
         onpointerdown={(event) => grab("start", event)}
         onpointermove={drag}
         onpointerup={release}
@@ -121,7 +121,7 @@
         aria-valuenow={clip.end}
         aria-valuetext={clock(clip.end)}
         aria-orientation="horizontal"
-        disabled={clip.busy}
+        disabled={clip.busy || !!clip.result?.replacedOriginal}
         onpointerdown={(event) => grab("end", event)}
         onpointermove={drag}
         onpointerup={release}

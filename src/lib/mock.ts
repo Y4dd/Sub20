@@ -198,12 +198,14 @@ function simulate(id: string, job: CompressRequest) {
       window.clearInterval(timer);
       timers.delete(id);
       const stem = demo.name.replace(/\.[^.]+$/, "");
+      const replace = settings.outputMode === "replace";
+      const name = job.outputName?.trim() || (replace ? stem : `${stem}-${job.options.targetMb}mb`);
       const result: JobResult = {
-        output: `/Users/demo/Videos/${stem}-${job.options.targetMb}mb.${job.options.container}`,
+        output: `/Users/demo/Videos/${name}.${job.options.container}`,
         sizeBytes: Math.round(plan.expectedBytes * 0.972), originalBytes: demo.info.sizeBytes, duration: plan.duration,
         width: plan.width, height: plan.height, videoKbps: plan.videoKbps, audioKbps: plan.audioKbps, encoder,
         hardware: encoder.endsWith("nvenc"), fellBackFrom: null, attempts: 1, elapsedSeconds: seconds,
-        targetMb: job.options.targetMb,
+        targetMb: job.options.targetMb, replacedOriginal: replace,
       };
       history = [{ id, finishedAt: Date.now() / 1000, input: job.path, trimmed: plan.trimmed, origin: "manual", result }, ...history];
       emit({ type: "done", id, result });
@@ -308,6 +310,13 @@ export const mockBackend: Backend = {
   openFile: async () => {},
   resultUrl: async () => null,
   copyFile: () => new Promise((resolve) => setTimeout(resolve, 120)),
+  renameResult: async (path, name) => {
+    const extension = path.slice(path.lastIndexOf("."));
+    let clean = name.trim().replace(/[<>:"/\\|?*]/g, "");
+    if (clean.toLowerCase().endsWith(extension.toLowerCase())) clean = clean.slice(0, -extension.length);
+    if (!clean) throw "That name has no letters a file name can use.";
+    return path.slice(0, path.lastIndexOf("/") + 1) + clean + extension;
+  },
   dragOut: async () => {},
   pickVideos: async () => {
     const fresh = DEMOS.filter((demo) => ![...added.values()].includes(demo));

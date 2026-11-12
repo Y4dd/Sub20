@@ -170,6 +170,9 @@ struct Request {
     path: PathBuf,
     trim: Option<Trim>,
     options: EncodeOptions,
+    /// What to call the result, as typed.
+    #[serde(default)]
+    output_name: Option<String>,
 }
 
 /// Queues one job per video and returns their ids in the same order.
@@ -179,8 +182,9 @@ async fn compress(state: State<'_, AppState>, jobs: Vec<Request>) -> CommandResu
     let settings = state.engine.settings().get();
     let output_dir = match settings.output_mode {
         OutputMode::Folder => settings.output_folder.clone(),
-        OutputMode::SameFolder => None,
+        OutputMode::SameFolder | OutputMode::Replace => None,
     };
+    let replace_original = settings.output_mode == OutputMode::Replace;
     Ok(jobs
         .into_iter()
         .map(|job| {
@@ -190,6 +194,8 @@ async fn compress(state: State<'_, AppState>, jobs: Vec<Request>) -> CommandResu
                 options: job.options,
                 output_dir: output_dir.clone(),
                 origin: Origin::Manual,
+                output_name: job.output_name,
+                replace_original,
             })
         })
         .collect())
@@ -289,6 +295,19 @@ fn result_url(app: AppHandle, state: State<'_, AppState>, path: PathBuf) -> Comm
     Ok(state.media.as_ref().map(|server| server.url_for(&path)))
 }
 
+/// Renames a finished video to what was typed, keeping its extension.
+/// Returns the new path.
+#[tauri::command]
+fn rename_result(app: AppHandle, state: State<'_, AppState>, path: PathBuf, name: String) -> CommandResult<PathBuf> {
+    produced(&state, &path)?;
+    let renamed = state.engine.rename_result(&path, &name).map_err(text)?;
+    let mut results = state.results.lock().expect("results lock");
+    results.remove(&path);
+    results.insert(renamed.clone());
+    let _ = app.asset_protocol_scope().allow_file(&renamed);
+    Ok(renamed)
+}
+
 /// Puts a finished video on the clipboard as a file, so pasting into Discord
 /// (or a folder) attaches it.
 #[tauri::command]
@@ -384,6 +403,7 @@ pub fn run() {
             open_file,
             result_url,
             copy_file,
+            rename_result,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start Sub20");

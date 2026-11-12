@@ -3,7 +3,7 @@
   // what will happen (or is happening, or happened).
   import { untrack } from "svelte";
   import { app, backend, type Clip } from "../app.svelte";
-  import { baseName, bitrate, clock, engineOf, megabytes, parseClock, plain, remaining, resolution, span, CODEC_LABEL } from "../format";
+  import { baseName, bitrate, clock, engineOf, megabytes, parseClock, plain, remaining, resolution, span, BIN, CODEC_LABEL } from "../format";
   import Icon from "./Icon.svelte";
   import Timeline from "./Timeline.svelte";
 
@@ -193,7 +193,7 @@
         <span>{clock(playhead)}</span>
       </button>
     {/if}
-    {#if clip.result && !showLog}
+    {#if clip.result && !clip.result.replacedOriginal && !showLog}
       <div class="views" role="group" aria-label="Preview">
         <button type="button" aria-pressed={view === "original"} onclick={() => (view = "original")}>Original</button>
         <button type="button" aria-pressed={view === "result"} onclick={() => (view = "result")}>Result</button>
@@ -269,7 +269,11 @@
         </div>
         <p class="after">
           <button type="button" class="link" onclick={() => backend.reveal(result.output).catch((e) => app.notify(String(e)))}>Show in folder</button>
-          <button type="button" class="link quiet" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Compress again</button>
+          {#if result.replacedOriginal}
+            <span class="muted">The original is in the {BIN}.</span>
+          {:else}
+            <button type="button" class="link quiet" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Compress again</button>
+          {/if}
           {#if clip.log.length > 0}
             <button type="button" class="link quiet" onclick={() => (showLog = !showLog)}>{showLog ? "Hide log" : "Show log"}</button>
           {/if}

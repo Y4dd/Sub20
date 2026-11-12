@@ -133,3 +133,10 @@ export function engineOf(encoder: string): string {
 }
 
 export const CODEC_LABEL: Record<string, string> = { h264: "H.264", hevc: "HEVC", av1: "AV1" };
+
+/** What the system calls the place deleted files go. */
+export const BIN = navigator.platform.toLowerCase().includes("mac")
+  ? "Bin"
+  : navigator.userAgent.includes("Windows")
+    ? "Recycle Bin"
+    : "trash";

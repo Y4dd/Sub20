@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app, backend } from "../app.svelte";
-  import { plain, when, CODEC_LABEL } from "../format";
+  import { plain, when, BIN, CODEC_LABEL } from "../format";
   import type { EncoderStatus, Family, Profile, WatchStatus } from "../types";
   import Icon from "./Icon.svelte";
   import Segmented from "./Segmented.svelte";
@@ -110,6 +110,7 @@
       options={[
         { value: "sameFolder", label: "Next to the original" },
         { value: "folder", label: "One folder" },
+        { value: "replace", label: "Replace the original" },
       ]}
       onchange={(mode) => {
         if (mode === "folder" && !s.outputFolder) void pick((folder) => app.saveSettings((n) => { n.outputMode = "folder"; n.outputFolder = folder; }));
@@ -121,6 +122,8 @@
         <span title={s.outputFolder}>{s.outputFolder}</span>
         <button type="button" class="link" onclick={() => pick((folder) => app.saveSettings((n) => (n.outputFolder = folder)))}>Change</button>
       </p>
+    {:else if s.outputMode === "replace"}
+      <p class="muted note">The result takes the original's place, as clip.{app.options.container} or the name you gave it. The original goes to the {BIN}, so it can be put back. Watched folders still save beside the original.</p>
     {:else}
       <p class="muted note">A video called clip.mov is saved beside it as clip-{plain(app.options.targetMb)}mb.{app.options.container}. Originals are never changed.</p>
     {/if}
@@ -305,6 +308,7 @@
   </section>
 
   <p class="about muted">
+    <button type="button" class="link quiet" onclick={() => (app.sheet = "keys")}>Keyboard shortcuts (?)</button><br />
     Sub20 {app.version}. Inspired by 8mb.local by JMS1717, whose bitrate and resolution rules it follows.
   </p>
 </Sheet>

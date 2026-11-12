@@ -3,6 +3,7 @@
 
 import { mockBackend } from "./mock";
 import { tauriBackend } from "./tauri";
+import { baseName, plain } from "./format";
 import type {
   Backend, EncodeOptions, FfmpegStatus, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
 } from "./types";
@@ -25,6 +26,8 @@ export class Clip {
   start = $state(0);
   end = $state(0);
   thumbs = $state.raw<string[]>([]);
+  /** What to call the result, as typed in the clip list; null uses the default. */
+  outputName = $state<string | null>(null);
   status = $state<ClipStatus>("ready");
   jobId = $state<string | null>(null);
   phase = $state<Phase | null>(null);
@@ -75,7 +78,7 @@ export class Clip {
   }
 }
 
-export type Sheet = "options" | "settings" | "history" | null;
+export type Sheet = "options" | "settings" | "history" | "keys" | null;
 
 const FALLBACK_OPTIONS: EncodeOptions = {
   targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "opus", audioKbps: 128, effort: "p4",
@@ -97,6 +100,8 @@ class App {
   sheet = $state<Sheet>(null);
   /** Files are being dragged over the window. */
   dragging = $state(false);
+  /** The clip whose output name is being edited in the list. */
+  renaming = $state<Clip | null>(null);
   /** Dropped files are being read. */
   adding = $state(false);
   notices = $state<{ id: number; text: string }[]>([]);
@@ -241,7 +246,8 @@ class App {
 
   /** Sets a clip's trim, keeping it inside the video and at least MIN_KEEP long. */
   setTrim(clip: Clip, start: number, end: number) {
-    if (clip.busy) return;
+    // A replaced original is in the bin: there is nothing left to trim.
+    if (clip.busy || clip.result?.replacedOriginal) return;
     const least = Math.min(MIN_KEEP, clip.duration);
     start = Math.min(Math.max(0, start), clip.duration - least);
     end = Math.max(Math.min(clip.duration, end), start + least);
@@ -298,7 +304,9 @@ class App {
       clip.log = [];
     }
     try {
-      const ids = await backend.compress(clips.map((clip) => ({ path: clip.path, trim: clip.trim, options })));
+      const ids = await backend.compress(
+        clips.map((clip) => ({ path: clip.path, trim: clip.trim, options, outputName: clip.outputName })),
+      );
       ids.forEach((id, index) => {
         clips[index].jobId = id;
         this.#byJob.set(id, clips[index]);
@@ -344,6 +352,54 @@ class App {
     } catch (error) {
       this.notify(String(error));
     }
+  }
+
+  /** The extension the result has or will have, with its dot. */
+  extensionOf(clip: Clip): string {
+    if (clip.result) return clip.result.output.slice(clip.result.output.lastIndexOf("."));
+    if (this.options.audioOnly) return this.options.audio === "opus" && this.options.container === "mkv" ? ".opus" : ".m4a";
+    return `.${this.options.container}`;
+  }
+
+  /** The name the result has or will get, without its extension. */
+  outputStem(clip: Clip): string {
+    if (clip.result) {
+      const file = baseName(clip.result.output);
+      return file.slice(0, file.lastIndexOf("."));
+    }
+    return clip.outputName ?? this.defaultStem(clip);
+  }
+
+  /** The name a result gets when none was typed. */
+  defaultStem(clip: Clip): string {
+    const stem = clip.name.replace(/\.[^.]+$/, "");
+    if (this.settings?.outputMode === "replace") return stem;
+    if (this.options.audioOnly) return `${stem}-audio`;
+    if (this.options.videoKbps) return `${stem}-${this.options.videoKbps}k`;
+    return `${stem}-${plain(this.options.targetMb)}mb`;
+  }
+
+  /**
+   * Sets what a clip's result is called. A finished clip's file is renamed
+   * on disk; otherwise the name is used when it is compressed. An empty name
+   * goes back to the default.
+   */
+  async rename(clip: Clip, typed: string) {
+    this.renaming = null;
+    const name = typed.trim();
+    if (clip.result) {
+      if (!name || name === this.outputStem(clip)) return;
+      try {
+        const output = await backend.renameResult(clip.result.output, name);
+        clip.result = { ...clip.result, output };
+        clip.outputName = this.outputStem(clip);
+      } catch (error) {
+        this.notify(String(error));
+      }
+      return;
+    }
+    if (clip.busy) return;
+    clip.outputName = name && name !== this.defaultStem(clip) ? name : null;
   }
 
   async saveSettings(change: (settings: Settings) => void) {
