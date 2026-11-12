@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="228" fill="#15171c"/>
+  <!-- The trim bracket: two handles joined by top and bottom bars. -->
+  <rect x="196" y="252" width="632" height="520" rx="64" fill="#ffd02b"/>
+  <rect x="300" y="300" width="424" height="424" fill="#15171c"/>
+  <rect x="238" y="442" width="20" height="140" rx="10" fill="#1c1600" opacity=".7"/>
+  <rect x="766" y="442" width="20" height="140" rx="10" fill="#1c1600" opacity=".7"/>
+  <!-- A 20: the limit the app keeps clips under. -->
+  <g fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M350 452 C350 414 378 394 414 394 C452 394 478 418 478 452 C478 494 440 524 350 620 L484 620"/>
+    <ellipse cx="612" cy="507" rx="64" ry="113"/>
+  </g>
+</svg>
