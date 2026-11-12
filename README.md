@@ -102,18 +102,35 @@ FFmpeg build you ship: builds with x264 and x265 are GPL.
 5. When it is done, press Ctrl+C and paste into Discord, or drag the file
    from under the timeline into a channel.
 
-Results are saved next to the originals as `name-20mb.mp4` (or in one folder,
-if you set that in Settings). Originals are never changed.
+Results are saved next to the originals as `name-20mb.mp4`, or in one folder.
+To name a result yourself, double-click it in the list (or press F2 or `r`);
+a finished file is renamed on disk.
 
-| Key | Does |
+**Replace the original** (Settings, Where results go) puts the result where
+the original was, under the original's name or the one you gave it, and
+moves the original to the Recycle Bin (Trash on macOS) so it can be put back.
+The result is saved before the original is moved, so a failure never loses
+either. Watched folders always save beside the original.
+
+### Keys
+
+Vim motions work everywhere outside text fields, and a number in front
+repeats one (`5l`, `3j`, `2G`). Press `?` in the app for this list.
+
+| Keys | Does |
 | --- | --- |
+| `j` `k`, ↓ ↑ | Next or previous video |
+| `gg` `G` | First or last video (`5G`: the fifth) |
+| `h` `l`, ← → | Playhead back or forward 0.1 s |
+| `b` `w`, `H` `L` | Playhead back or forward 1 s |
+| `0` `$` | Playhead to the start or end of the kept part |
+| `i` `o` (or `[` `]`) | Set the start or end at the playhead |
 | Space | Play or pause the kept part |
-| ← → | Move the playhead 0.1 s (with Shift, 1 s) |
-| I, O (or [ and ]) | Set the start or end at the playhead |
-| ↑ ↓ | Previous or next video |
-| Delete | Remove the video from the list |
+| `r`, `cw`, F2 | Rename the result |
+| `x`, `dd`, Delete | Remove the video from the list |
+| `y`, Ctrl/⌘ + C | Copy the finished video, ready to paste into Discord |
 | Ctrl/⌘ + Enter | Compress |
-| Ctrl/⌘ + C | Copy the finished video, ready to paste into Discord |
+| `?` | Show the keys |
 
 With a trim handle focused, the arrow keys move that handle.
 
