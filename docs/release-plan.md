@@ -155,8 +155,13 @@ its licence text and point to its exact source.
 - [x] Panics and crashes are written to a log file the diagnostics include.
   - [ ] Try the quit dialog, Copy diagnostics and a crash in the real
         window on each system.
-- [ ] Accessibility: keyboard reaches everything, controls have labels,
-      reduced motion is respected, contrast holds in both themes.
+- [x] Accessibility: keyboard reaches everything, controls have labels,
+      reduced motion is respected, contrast holds in both themes. Audited
+      on the mock backend in both schemes (every text at 4.5:1 or more,
+      every control named). Sheets keep Tab inside and return focus to
+      what opened them; the size picker works by keyboard and says which
+      size is chosen; segmented choices move with the arrow keys.
+  - [ ] Try it with a screen reader (NVDA on Windows, VoiceOver on macOS).
 - [x] About box: version, licence, the FFmpeg licence, "not affiliated
       with Discord" (the end of Settings).
 

@@ -1,12 +1,35 @@
 <script lang="ts">
   // The bottom bar: one size, one sentence of options, one action.
   import { app } from "../app.svelte";
-  import { discordTier, plain, sizeParts, plural, CODEC_LABEL } from "../format";
+  import { discordTier, plain, sizeName, sizeParts, plural, CODEC_LABEL } from "../format";
   import Icon from "./Icon.svelte";
 
   let picking = $state(false);
   let custom = $state("");
   let picker = $state<HTMLElement | null>(null);
+  let figure = $state<HTMLButtonElement | null>(null);
+  let sizeField = $state<HTMLInputElement | null>(null);
+
+  // Opening the picker puts the cursor in "Another size", by mouse or key.
+  $effect(() => {
+    if (picking) sizeField?.focus();
+  });
+
+  // Escape from anywhere in the picker closes it and puts focus back on the
+  // size, and tabbing out of it closes it too.
+  function pickerKeys(event: KeyboardEvent) {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    picking = false;
+    figure?.focus();
+  }
+
+  // "20 MB, Free": what a screen reader says for a size.
+  const spoken = (mb: number) => [sizeName(mb), discordTier(mb)].filter(Boolean).join(", ");
+
+  function leftPicker(event: FocusEvent) {
+    if (picker && !picker.contains(event.relatedTarget as Node | null) && event.relatedTarget) picking = false;
+  }
 
   const shortcut = navigator.platform.toLowerCase().includes("mac") ? "⌘ Return" : "Ctrl+Enter";
   const sizes = $derived(app.settings?.sizes ?? []);
@@ -57,11 +80,13 @@
 </script>
 
 <footer>
-  <div class="size" bind:this={picker}>
+  <div class="size" bind:this={picker} onfocusout={leftPicker}>
     <span class="lead">{app.options.videoKbps ? "Encode at" : app.clips.length === 1 ? "Fit it in" : "Fit each video in"}</span>
     <button
       type="button"
       class="figure"
+      bind:this={figure}
+      aria-label="Size limit: {app.options.videoKbps ? `${plain(app.options.videoKbps, 0)} kbps` : spoken(app.options.targetMb)}"
       aria-haspopup="dialog"
       aria-expanded={picking}
       onclick={() => (picking = !picking)}
@@ -77,10 +102,11 @@
     </button>
 
     {#if picking}
-      <div class="picker" role="dialog" aria-label="Size limit">
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div class="picker" role="dialog" aria-label="Size limit" tabindex="-1" onkeydown={pickerKeys}>
         <div class="choices">
           {#each sizes as size (size)}
-            <button type="button" class:current={!app.options.videoKbps && size === app.options.targetMb} onclick={() => setSize(size)}>
+            <button type="button" class:current={!app.options.videoKbps && size === app.options.targetMb} aria-pressed={!app.options.videoKbps && size === app.options.targetMb} aria-label={spoken(size)} onclick={() => setSize(size)}>
               <b>{sizeParts(size).value}<span>{sizeParts(size).unit}</span></b>
               {#if discordTier(size)}<small>{discordTier(size)}</small>{/if}
             </button>
@@ -92,15 +118,13 @@
             setSize(Number(custom));
           }}
         >
-          <!-- svelte-ignore a11y_autofocus -->
           <input
+            bind:this={sizeField}
             class="field"
             inputmode="decimal"
             placeholder="Another size"
             aria-label="Another size in MB"
             bind:value={custom}
-            autofocus
-            onkeydown={(event) => event.key === "Escape" && (picking = false)}
           />
           <span class="unit">MB</span>
         </form>

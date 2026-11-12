@@ -11,14 +11,34 @@
     label: string;
     onchange: (value: T) => void;
   } = $props();
+
+  // A radio group: one tab stop, and the arrow keys move the choice.
+  const chosen = $derived(Math.max(0, options.findIndex((option) => option.value === value && !option.disabled)));
+
+  function arrows(event: KeyboardEvent) {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const group = event.currentTarget as HTMLElement;
+    for (let i = 1; i <= options.length; i++) {
+      const next = (chosen + step * i + options.length * i) % options.length;
+      if (options[next].disabled) continue;
+      onchange(options[next].value);
+      group.querySelectorAll<HTMLElement>("[role=radio]")[next]?.focus();
+      return;
+    }
+  }
 </script>
 
-<div class="segmented" role="radiogroup" aria-label={label}>
-  {#each options as option (option.value)}
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<div class="segmented" role="radiogroup" aria-label={label} onkeydown={arrows}>
+  {#each options as option, i (option.value)}
     <button
       type="button"
       role="radio"
       aria-checked={option.value === value}
+      tabindex={i === chosen ? 0 : -1}
       disabled={option.disabled}
       title={option.hint}
       onclick={() => onchange(option.value)}

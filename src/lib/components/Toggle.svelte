@@ -24,9 +24,11 @@
     cursor: pointer;
   }
 
+  /* Muted, not faint: a switched-off row often says why (an encoder that
+     doesn't work here), and that has to stay readable. */
   label.disabled {
     cursor: default;
-    color: var(--faint);
+    color: var(--muted);
   }
 
   .text {
@@ -69,6 +71,11 @@
   input:checked + .track::after {
     transform: translateX(14px);
     background: var(--trim-ink);
+  }
+
+  /* The switch carries "can't be changed", so the words don't have to. */
+  label.disabled .track {
+    opacity: 0.45;
   }
 
   input:focus-visible + .track {

@@ -6,9 +6,33 @@
   let { title, onclose, children }: { title: string; onclose: () => void; children: Snippet } = $props();
   let panel: HTMLElement;
 
+  // Focus moves into the sheet, and back to whatever opened it on close.
   $effect(() => {
+    const opener = document.activeElement as HTMLElement | null;
     panel.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
   });
+
+  // Tab stays inside the sheet while it is open, as in any modal dialog.
+  function trap(event: KeyboardEvent) {
+    if (event.key !== "Tab") return;
+    const stops = [...panel.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])")].filter(
+      (el) => !el.matches(":disabled") && el.getClientRects().length > 0,
+    );
+    if (!stops.length) return;
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    const at = document.activeElement;
+    if (event.shiftKey && (at === first || at === panel)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && at === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 </script>
 
 <div class="scrim" onclick={onclose} aria-hidden="true"></div>
@@ -23,7 +47,7 @@
     if (event.key === "Escape") {
       event.stopPropagation();
       onclose();
-    }
+    } else trap(event);
   }}
 >
   <header>
