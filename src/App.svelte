@@ -5,6 +5,7 @@
   import Dock from "./lib/components/Dock.svelte";
   import DropStage from "./lib/components/DropStage.svelte";
   import HistorySheet from "./lib/components/HistorySheet.svelte";
+  import KeysSheet from "./lib/components/KeysSheet.svelte";
   import Icon from "./lib/components/Icon.svelte";
   import OptionsSheet from "./lib/components/OptionsSheet.svelte";
   import SettingsSheet from "./lib/components/SettingsSheet.svelte";
@@ -43,48 +44,121 @@
       return;
     }
     if (typing || app.sheet || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key === "?") {
+      event.preventDefault();
+      app.sheet = "keys";
+      return;
+    }
     const clip = app.selected;
     if (!clip) return;
     const onSlider = target.getAttribute("role") === "slider";
-    switch (event.key) {
-      case " ":
-        if (target.tagName === "BUTTON" && !onSlider) return;
-        stage?.toggle();
-        break;
-      case "ArrowUp":
-        if (onSlider) return;
-        app.step(-1);
-        break;
+    // On a trim handle the arrows move the handle; the handle deals with them.
+    if (onSlider && event.key.startsWith("Arrow")) return;
+    if (event.key === " " && target.tagName === "BUTTON" && !onSlider) return;
+    if (vim(event.key, clip)) event.preventDefault();
+  }
+
+  // Vim motions, with counts ("5l") and two-key commands ("gg", "dd").
+  let count = "";
+  let pending = "";
+  let pendingTimer = 0;
+
+  function vim(key: string, clip: NonNullable<typeof app.selected>): boolean {
+    window.clearTimeout(pendingTimer);
+    // A count: 1-9 start it, 0 extends it (alone, 0 is a motion).
+    if (/^[1-9]$/.test(key) || (key === "0" && count)) {
+      count += key;
+      pendingTimer = window.setTimeout(reset, 1000);
+      return true;
+    }
+    const n = Math.max(1, Math.min(999, Number(count) || 1));
+    const counted = count !== "";
+    const sequence = pending + key;
+    reset();
+    switch (sequence) {
+      case "g":
+      case "d":
+      case "c":
+        // The first key of a pair: wait a second for the second.
+        count = counted ? String(n) : "";
+        pending = sequence;
+        pendingTimer = window.setTimeout(reset, 1000);
+        return true;
+      case "gg":
+        app.select(app.clips[counted ? Math.min(n, app.clips.length) - 1 : 0]);
+        return true;
+      case "G":
+        app.select(app.clips[counted ? Math.min(n, app.clips.length) - 1 : app.clips.length - 1]);
+        return true;
+      case "j":
       case "ArrowDown":
-        if (onSlider) return;
-        app.step(1);
-        break;
+        app.step(n);
+        return true;
+      case "k":
+      case "ArrowUp":
+        app.step(-n);
+        return true;
+      case "h":
       case "ArrowLeft":
-        if (onSlider) return;
-        stage?.nudge(event.shiftKey ? -1 : -0.1);
-        break;
+        stage?.nudge(-0.1 * n);
+        return true;
+      case "l":
       case "ArrowRight":
-        if (onSlider) return;
-        stage?.nudge(event.shiftKey ? 1 : 0.1);
-        break;
+        stage?.nudge(0.1 * n);
+        return true;
+      case "H":
+      case "b":
+        stage?.nudge(-1 * n);
+        return true;
+      case "L":
+      case "w":
+        stage?.nudge(1 * n);
+        return true;
+      case "0":
+      case "^":
+        stage?.seek(clip.start, true);
+        return true;
+      case "$":
+        stage?.seek(clip.end, true);
+        return true;
+      case " ":
+        stage?.toggle();
+        return true;
       case "i":
       case "[":
         stage?.mark("start");
-        break;
+        return true;
       case "o":
       case "]":
         stage?.mark("end");
-        break;
+        return true;
+      case "x":
+      case "dd":
       case "Delete":
       case "Backspace":
         // Removing a clip that is being compressed is a deliberate click.
-        if (clip.busy) return;
-        app.remove(clip);
-        break;
+        if (!clip.busy) app.remove(clip);
+        return true;
+      case "y":
+      case "yy":
+        if (clip.result) void app.copy(clip);
+        return true;
+      case "r":
+      case "cw":
+      case "cc":
+      case "F2":
+        if (!clip.busy) app.renaming = clip;
+        return true;
+      case "Escape":
+        return true;
       default:
-        return;
+        return false;
     }
-    event.preventDefault();
+  }
+
+  function reset() {
+    count = "";
+    pending = "";
   }
 </script>
 
@@ -111,6 +185,8 @@
     <SettingsSheet />
   {:else if app.sheet === "history"}
     <HistorySheet />
+  {:else if app.sheet === "keys"}
+    <KeysSheet />
   {/if}
 
   {#if app.notices.length}
