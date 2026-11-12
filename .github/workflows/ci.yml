@@ -18,8 +18,8 @@ jobs:
     name: Interface
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -37,7 +37,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Linux packages
         if: runner.os == 'Linux'
@@ -60,7 +60,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       # The shell embeds the built interface, so it has to exist before cargo runs.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -79,7 +79,7 @@ jobs:
     name: Rust advisories
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check advisories
