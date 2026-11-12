@@ -1,0 +1,408 @@
+//! End-to-end tests that run real FFmpeg encodes.
+//!
+//! They need `ffmpeg` and `ffprobe` on PATH and are skipped (with a note)
+//! when those are missing.
+
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use sub20_core::encoders::Codec;
+use sub20_core::ffmpeg::{self, Tools};
+use sub20_core::job::{AudioChoice, Container, Effort, EncodeOptions, JobEvent, JobSpec, Origin, Trim};
+use sub20_core::settings::{Existing, Originals};
+use sub20_core::watch::Watcher;
+use sub20_core::{probe, thumbs, Engine};
+
+const MB: u64 = 1024 * 1024;
+
+#[derive(Default)]
+struct Events(Mutex<Vec<JobEvent>>);
+
+impl Events {
+    fn all(&self) -> Vec<JobEvent> {
+        self.0.lock().unwrap().clone()
+    }
+}
+
+struct Bench {
+    _dir: tempfile::TempDir,
+    root: PathBuf,
+    engine: Engine,
+    events: Arc<Events>,
+    tools: Tools,
+}
+
+fn tools() -> Option<Tools> {
+    match Tools::locate(None, &[]) {
+        Ok(tools) => Some(tools),
+        Err(_) => {
+            eprintln!("skipped: FFmpeg is not installed");
+            None
+        }
+    }
+}
+
+/// A busy 720p test pattern with a tone, `seconds` long.
+async fn make_source(tools: &Tools, path: &Path, seconds: u32, size: &str) {
+    let mut cmd = tools.ffmpeg();
+    cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i"])
+        .arg(format!("testsrc2=s={size}:r=30:d={seconds}"))
+        .args(["-f", "lavfi", "-i"])
+        .arg(format!("sine=frequency=440:duration={seconds}"))
+        .args(["-c:v", "libx264", "-preset", "ultrafast", "-crf", "18", "-pix_fmt", "yuv420p"])
+        .args(["-c:a", "aac", "-b:a", "128k", "-shortest"])
+        .arg(path);
+    let out = ffmpeg::run(&mut cmd, Duration::from_secs(120)).await.unwrap();
+    assert!(out.ok, "could not make the test video: {}", out.stderr);
+}
+
+async fn bench() -> Option<Bench> {
+    let tools = tools()?;
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().to_path_buf();
+    let events = Arc::new(Events::default());
+    let sink = events.clone();
+    let engine = Engine::new(
+        &root.join("data"),
+        &root.join("work"),
+        Vec::new(),
+        Arc::new(move |event: JobEvent| sink.0.lock().unwrap().push(event)),
+    );
+    Some(Bench { _dir: dir, root, engine, events, tools })
+}
+
+fn spec(input: &Path, options: EncodeOptions) -> JobSpec {
+    JobSpec { input: input.to_path_buf(), trim: None, options, output_dir: None, origin: Origin::Manual }
+}
+
+fn no_leftovers(dir: &Path) {
+    for entry in std::fs::read_dir(dir).unwrap().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        assert!(!name.contains(".part."), "partial file left behind: {name}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn fits_the_target_and_reports_progress() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("pattern.mp4");
+    make_source(&b.tools, &input, 20, "1280x720").await;
+
+    let options = EncodeOptions { target_mb: 1.0, ..EncodeOptions::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the job should succeed");
+
+    assert!(result.size_bytes <= MB, "{} bytes is over 1 MB", result.size_bytes);
+    assert!(result.size_bytes > MB * 6 / 10, "{} bytes wastes the budget", result.size_bytes);
+    assert_eq!(result.output.file_name().unwrap(), "pattern-1mb.mp4");
+    assert_eq!(result.encoder, "libx264");
+
+    let info = probe::probe(&b.tools, &result.output).await.unwrap();
+    assert!((info.duration - 20.0).abs() < 0.3, "duration {}", info.duration);
+    assert_eq!(info.video_codec.as_deref(), Some("h264"));
+    assert_eq!(info.audio_codec.as_deref(), Some("aac"));
+    assert_eq!((info.width, info.height), (result.width, result.height));
+
+    let events = b.events.all();
+    assert!(matches!(events.first(), Some(JobEvent::Queued { .. })));
+    assert!(matches!(events.last(), Some(JobEvent::Done { .. })));
+    let percents: Vec<f64> = events
+        .iter()
+        .filter_map(|e| match e {
+            JobEvent::Progress { percent, .. } => Some(*percent),
+            _ => None,
+        })
+        .collect();
+    assert!(percents.len() >= 3, "expected several progress updates, got {percents:?}");
+    assert!(events.iter().any(|e| matches!(e, JobEvent::Started { encoder, .. } if encoder == "libx264")));
+    assert_eq!(b.engine.history().list().len(), 1);
+    no_leftovers(&b.root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn trim_keeps_only_the_chosen_part() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("long.mp4");
+    make_source(&b.tools, &input, 20, "1280x720").await;
+
+    let mut job = spec(&input, EncodeOptions { target_mb: 0.5, ..EncodeOptions::default() });
+    job.trim = Some(Trim { start: 5.0, end: 11.0 });
+    job.output_dir = Some(b.root.join("out"));
+    let (_, done) = b.engine.submit_and_wait(job);
+    let result = done.await.unwrap().expect("the job should succeed");
+
+    assert!(result.output.starts_with(b.root.join("out")));
+    assert!(result.size_bytes <= MB / 2, "{} bytes is over 0.5 MB", result.size_bytes);
+    let info = probe::probe(&b.tools, &result.output).await.unwrap();
+    assert!((info.duration - 6.0).abs() < 0.2, "kept {} s, wanted 6", info.duration);
+    assert_eq!(result.duration, 6.0);
+    assert!(b.engine.history().list()[0].trimmed);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn hevc_av1_and_two_pass_all_land_under_the_limit() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 8, "854x480").await;
+    let report = b.engine.hardware(false).await.unwrap();
+
+    let cases = [
+        ("libx265", EncodeOptions { codec: Codec::Hevc, target_mb: 0.5, ..Default::default() }, "hevc", "aac"),
+        (
+            "libsvtav1",
+            EncodeOptions {
+                codec: Codec::Av1,
+                target_mb: 0.5,
+                container: Container::Mkv,
+                effort: Effort::P2,
+                ..Default::default()
+            },
+            "av1",
+            "opus",
+        ),
+        ("libx264", EncodeOptions { effort: Effort::Max, target_mb: 0.4, ..Default::default() }, "h264", "aac"),
+        (
+            "libx265",
+            EncodeOptions { codec: Codec::Hevc, effort: Effort::Max, target_mb: 0.4, ..Default::default() },
+            "hevc",
+            "aac",
+        ),
+    ];
+    for (encoder, options, video, audio) in cases {
+        if !report.works(encoder) {
+            eprintln!("skipped {encoder}: not in this FFmpeg build");
+            continue;
+        }
+        let target = (options.target_mb * MB as f64) as u64;
+        let two_pass = options.effort == Effort::Max;
+        let (id, done) = b.engine.submit_and_wait(spec(&input, options));
+        let result = done.await.unwrap().unwrap_or_else(|e| panic!("{encoder} failed: {e}"));
+        assert_eq!(result.encoder, encoder);
+        assert!(result.size_bytes <= target, "{encoder}: {} bytes over {target}", result.size_bytes);
+        let info = probe::probe(&b.tools, &result.output).await.unwrap();
+        assert_eq!(info.video_codec.as_deref(), Some(video), "{encoder}");
+        assert_eq!(info.audio_codec.as_deref(), Some(audio), "{encoder}");
+        assert!((info.duration - 8.0).abs() < 0.3, "{encoder}: duration {}", info.duration);
+        if two_pass {
+            let phases: Vec<_> = b
+                .events
+                .all()
+                .into_iter()
+                .filter(|e| e.id() == id)
+                .filter_map(|e| match e {
+                    JobEvent::Progress { phase, .. } => Some(phase),
+                    _ => None,
+                })
+                .collect();
+            assert!(phases.contains(&sub20_core::job::Phase::Analysis), "{encoder}: no first pass seen");
+        }
+    }
+    // Scratch folders for pass logs are cleaned up.
+    let leftovers = std::fs::read_dir(b.root.join("work")).map(|d| d.count()).unwrap_or(0);
+    assert_eq!(leftovers, 0);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_broken_hardware_encoder_falls_back_to_the_cpu() {
+    let Some(b) = bench().await else { return };
+    let report = b.engine.hardware(false).await.unwrap();
+    if report.works("h264_nvenc") {
+        eprintln!("skipped: this machine has a working NVENC");
+        return;
+    }
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 4, "640x360").await;
+    let options = EncodeOptions { encoder: Some("h264_nvenc".into()), target_mb: 0.3, ..Default::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the job should finish on the CPU");
+    assert_eq!(result.encoder, "libx264");
+    assert!(!result.hardware);
+    assert_eq!(result.fell_back_from.as_deref(), Some("h264_nvenc"));
+    assert!(b.events.all().iter().any(|e| matches!(e, JobEvent::Fallback { to, .. } if to == "libx264")));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn cancel_stops_the_encode_and_cleans_up() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("slow.mp4");
+    make_source(&b.tools, &input, 30, "1920x1080").await;
+    // Slow on purpose, so there is time to cancel.
+    let options = EncodeOptions { target_mb: 20.0, effort: Effort::P7, auto_resolution: false, ..Default::default() };
+    let (first, first_done) = b.engine.submit_and_wait(spec(&input, options.clone()));
+    // The second job waits in the queue behind the first.
+    let (second, second_done) = b.engine.submit_and_wait(spec(&input, options));
+
+    // Wait until the first is really encoding.
+    for _ in 0..200 {
+        if b.events.all().iter().any(|e| matches!(e, JobEvent::Progress { percent, .. } if *percent > 0.0)) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert!(b.engine.cancel(&second), "a queued job can be canceled");
+    assert!(b.engine.cancel(&first), "a running job can be canceled");
+    assert_eq!(first_done.await.unwrap().unwrap_err(), "canceled");
+    assert_eq!(second_done.await.unwrap().unwrap_err(), "canceled");
+
+    let events = b.events.all();
+    let canceled = events.iter().filter(|e| matches!(e, JobEvent::Canceled { .. })).count();
+    assert_eq!(canceled, 2);
+    assert!(!events.iter().any(|e| matches!(e, JobEvent::Started { id, .. } if *id == second)));
+    assert!(!b.engine.cancel(&first), "a finished job cannot be canceled again");
+    assert_eq!(b.engine.active(), 0);
+    no_leftovers(&b.root);
+    assert!(!b.root.join("slow-20mb.mp4").exists());
+    assert!(b.engine.history().list().is_empty());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn jobs_run_in_the_order_they_were_submitted() {
+    let Some(b) = bench().await else { return };
+    let mut waiting = Vec::new();
+    let mut ids = Vec::new();
+    for n in 0..6 {
+        let input = b.root.join(format!("clip{n}.mp4"));
+        make_source(&b.tools, &input, 1, "320x240").await;
+        let options = EncodeOptions { target_mb: 0.1, effort: Effort::P1, ..Default::default() };
+        let (id, done) = b.engine.submit_and_wait(spec(&input, options));
+        ids.push(id);
+        waiting.push(done);
+    }
+    for done in waiting {
+        done.await.unwrap().expect("each job should succeed");
+    }
+    let started: Vec<String> = b
+        .events
+        .all()
+        .into_iter()
+        .filter_map(|e| match e {
+            JobEvent::Started { id, .. } => Some(id),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(started, ids, "jobs started out of order");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn tiny_targets_are_retried_until_they_fit() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("short.mp4");
+    make_source(&b.tools, &input, 2, "1280x720").await;
+    // 60 KB for two busy seconds: the first try usually overshoots.
+    let options = EncodeOptions { target_mb: 0.06, effort: Effort::P1, ..Default::default() };
+    let (id, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the job should succeed");
+    let retries = b.events.all().iter().filter(|e| e.id() == id && matches!(e, JobEvent::Retry { .. })).count();
+    eprintln!("size {} bytes after {} attempt(s), {retries} retry event(s)", result.size_bytes, result.attempts);
+    assert_eq!(result.attempts as usize, retries + 1);
+    assert!(result.size_bytes <= (0.06 * MB as f64) as u64, "{} bytes is over the limit", result.size_bytes);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn audio_only_and_muted() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("talk.mp4");
+    make_source(&b.tools, &input, 5, "640x360").await;
+
+    let options = EncodeOptions { audio_only: true, audio: AudioChoice::Aac, audio_kbps: 96, ..Default::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("audio extraction should succeed");
+    assert_eq!(result.output.file_name().unwrap(), "talk-audio.m4a");
+    let info = probe::probe(&b.tools, &result.output).await.unwrap();
+    assert!(!info.has_video && info.has_audio);
+
+    let options = EncodeOptions { audio: AudioChoice::None, target_mb: 0.3, ..Default::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("muted encode should succeed");
+    let info = probe::probe(&b.tools, &result.output).await.unwrap();
+    assert!(info.has_video && !info.has_audio);
+    assert_eq!(result.audio_kbps, 0);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn bad_input_fails_with_a_readable_message() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("notes.mp4");
+    std::fs::write(&input, b"this is not a video").unwrap();
+    let (_, done) = b.engine.submit_and_wait(spec(&input, EncodeOptions::default()));
+    let error = done.await.unwrap().unwrap_err();
+    assert!(error.contains("not a video FFmpeg can read"), "{error}");
+    assert!(matches!(b.events.all().last(), Some(JobEvent::Failed { .. })));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn filmstrip_and_preview_frames() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 6, "640x360").await;
+    let cache = b.root.join("cache");
+    let strip = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache).await.unwrap();
+    assert_eq!(strip.len(), 12);
+    for path in &strip {
+        let bytes = std::fs::read(path).unwrap();
+        assert_eq!(&bytes[..2], &[0xFF, 0xD8], "{} is not a JPEG", path.display());
+    }
+    // A second call is served from the cache.
+    let started = std::time::Instant::now();
+    let again = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache).await.unwrap();
+    assert_eq!(strip, again);
+    assert!(started.elapsed() < Duration::from_millis(200));
+
+    let frame = thumbs::frame(&b.tools, &input, 3.0, 360).await.unwrap();
+    assert_eq!(&frame[..2], &[0xFF, 0xD8]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn folder_watch_compresses_new_files_and_moves_originals() {
+    let Some(b) = bench().await else { return };
+    let inbox = b.root.join("inbox");
+    let outbox = b.root.join("outbox");
+    std::fs::create_dir_all(&inbox).unwrap();
+    // Already there before the watch starts: must be left alone.
+    make_source(&b.tools, &inbox.join("old.mp4"), 2, "320x240").await;
+
+    b.engine
+        .settings()
+        .update(|s| {
+            s.profiles[0].options.target_mb = 0.2;
+            s.watch.enabled = true;
+            s.watch.folder = Some(inbox.clone());
+            s.watch.output_mode = sub20_core::settings::OutputMode::Folder;
+            s.watch.output_folder = Some(outbox.clone());
+            s.watch.originals = Originals::Move;
+            s.watch.existing = Existing::NewOnly;
+            s.watch.stable_seconds = 2;
+            s.watch.poll_seconds = 2;
+        })
+        .unwrap();
+    let watcher = Watcher::new(b.engine.clone(), &b.root.join("data"));
+    watcher.reload();
+    assert!(watcher.status().running, "{:?}", watcher.status().problem);
+    tokio::time::sleep(Duration::from_millis(500)).await;
+
+    // Write elsewhere, then move in, like a finished download.
+    let staging = b.root.join("new.mp4");
+    make_source(&b.tools, &staging, 3, "320x240").await;
+    std::fs::rename(&staging, inbox.join("new.mp4")).unwrap();
+
+    let expected = outbox.join("new-0.2mb.mp4");
+    for _ in 0..120 {
+        if expected.exists() && watcher.status().done == 1 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    assert!(expected.exists(), "the watch did not produce {}", expected.display());
+    assert_eq!(watcher.status().done, 1);
+    assert!(outbox.join("processed").join("new.mp4").exists(), "the original was not moved");
+    assert!(!inbox.join("new.mp4").exists());
+    assert!(inbox.join("old.mp4").exists(), "a file that was already there was touched");
+    assert!(!outbox.join("old-0.2mb.mp4").exists());
+    assert_eq!(b.engine.history().list()[0].origin, Origin::Watch);
+
+    // Switching it off stops the loop.
+    b.engine.settings().update(|s| s.watch.enabled = false).unwrap();
+    watcher.reload();
+    assert!(!watcher.status().running);
+}
