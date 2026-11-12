@@ -22,6 +22,8 @@ app (Python, Celery, Redis and SvelteKit in Docker) that inspired it.
 - **Fits a size.** Bitrates are worked out from the size limit and the length
   of the kept part. Each result is measured, and one that lands over the limit
   is encoded again at a lower bitrate (up to two more times) until it fits.
+  If a GPU encoder still can't get under, the CPU encoder takes over. A file
+  over the limit is never saved; you get a message saying what to change.
 - **Trim before compressing.** Step through the videos; each has a filmstrip
   timeline with a left and a right handle. Only the part between them is
   compressed, and the bitrate budget is spent on that part alone.
@@ -160,10 +162,11 @@ is not installed.
 
 The engine was first built and tested on Linux x86-64 with FFmpeg 6.1: all unit
 and end-to-end tests, and the app itself launched, trimmed and compressed real
-files. On Windows 11 with FFmpeg 9.0 the unit tests pass and the checks are
-clean, but on an NVIDIA GPU the NVENC encoder can overshoot small size limits
-and the result is kept anyway: a known bug, being fixed. The other hardware
-encoder paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) follow
+files. On Windows 11 with FFmpeg 9.0 and an NVIDIA RTX GPU, every test passes,
+including NVENC jobs. NVIDIA's H.264 encoder cannot go below roughly 600 kbps
+at 720p, so when a limit is too tight for it the job switches to the CPU
+encoder rather than save a file over the limit. The other hardware encoder
+paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) follow
 8mb.local's FFmpeg flags but have only been exercised through their
 failure-and-fallback path so far. The app window has not been run on Windows
 or macOS yet.

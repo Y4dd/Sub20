@@ -31,7 +31,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 ## Engine decisions
 
-**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. The original accepted 2% over, which is why it suggested 9.7 MB; here the default sizes are round. 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` is the original's formula and leaves about 2.3% for container overhead.
+**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. An over-limit file is never saved: `when_over` decides between another retry, a switch to the CPU encoder (hardware encoders only, with fresh retries from the planned bitrate), or an `OverLimit` error that names the fix. A hardware retry that shrinks the file by less than 5% means the encoder is at its floor, and the job moves to the CPU at once. Measured on an RTX 5070 Ti: `h264_nvenc` will not go under about 600 kbps on a busy 720p30 clip whatever the flags (691 kbps even at QP 51) and drifts 6–9% over larger targets; `hevc_nvenc` and `av1_nvenc` hit low targets. The original accepted 2% over, which is why it suggested 9.7 MB; here the default sizes are round. 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` is the original's formula and leaves about 2.3% for container overhead.
 
 **Planning is pure** (`plan.rs`), so the window calls it on every handle drag.
 - Audio yields on tight budgets: at most 34% of the total, stepped down to a floor (Opus 24, AAC 48 kbps). If video would get under 24 kbps the plan is refused with advice, since the result could not fit.
@@ -98,9 +98,11 @@ The owner wants these; each is to be discussed before it is built.
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Checked on Windows 11 with FFmpeg 9.0 and an NVIDIA GPU after the rename: `cargo fmt`, `clippy` and `svelte-check` are clean; all 44 unit tests pass; 4 of 11 e2e tests fail. The app window itself has not been launched on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 60 tests pass (46 unit, 12 e2e, 2 shell), including NVENC jobs that start on the GPU. The app window itself has not been launched on Windows yet.
 
-**Known bug: NVENC misses the size target.** On this machine the engine picks `h264_nvenc`, and the e2e tests assumed a GPU-less machine running libx264. Asked for 282 kbps on a busy 20 s 720p clip, NVENC delivered about 600 kbps (79% over). Two lower-bitrate retries did not get it under, and the engine then kept the over-limit file and reported success ("Keeping the closest result" in `engine.rs`), which breaks "the limit is strict". The same test forced to `libx264` passes. Two things to fix: NVENC rate control (its flags come from the original, VBR with `-maxrate`/`-bufsize`), and what the engine does when retries run out (fail, or fall back to the CPU encoder, rather than ship a file over the limit). The e2e tests should also pin `libx264` where they assert on it.
+E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
+
+Windows keeps a killed FFmpeg's output locked for a moment (error 32), so `Cleanup` removes files `patiently`, retrying for up to a second.
 
 Unverified, so check these first on a new machine:
 - Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags follow the original; only fail-and-fall-back has run.
