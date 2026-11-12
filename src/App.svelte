@@ -9,6 +9,7 @@
   import OptionsSheet from "./lib/components/OptionsSheet.svelte";
   import SettingsSheet from "./lib/components/SettingsSheet.svelte";
   import Stage from "./lib/components/Stage.svelte";
+  import TitleBar from "./lib/components/TitleBar.svelte";
 
   let stage = $state<ReturnType<typeof Stage> | null>(null);
 
@@ -91,13 +92,7 @@
 
 {#if app.ready}
   <main class:empty={app.clips.length === 0} class:over={app.dragging}>
-    <div class="top">
-      <span class="mark" aria-label="Sub20">Sub<i>20</i></span>
-      <div class="tools">
-        <button type="button" onclick={() => (app.sheet = "history")} aria-label="History" title="History"><Icon name="history" /></button>
-        <button type="button" onclick={() => (app.sheet = "settings")} aria-label="Settings" title="Settings"><Icon name="gear" /></button>
-      </div>
-    </div>
+    <TitleBar />
 
     {#if app.clips.length === 0}
       <DropStage />
@@ -149,53 +144,7 @@
     outline-offset: -3px;
   }
 
-  .top {
-    grid-column: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 12px 6px 20px;
-  }
-
-  main.empty .top {
-    padding-right: 16px;
-  }
-
-  .mark {
-    font-family: var(--display);
-    font-size: 1.625rem;
-    font-weight: 800;
-    font-stretch: 76%;
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-
-  .mark i {
-    font-style: normal;
-    font-weight: 500;
-    color: var(--muted);
-  }
-
-  .tools {
-    display: flex;
-    gap: 2px;
-  }
-
-  .tools button {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 7px;
-    color: var(--muted);
-  }
-
-  .tools button:hover {
-    background: var(--surface);
-    color: var(--text);
-  }
-
-  /* With clips, the rail sits under the top bar and the stage spans both rows. */
+  /* The title bar runs across the top; under it, the list beside the stage. */
   main:not(.empty) > :global(aside) {
     grid-column: 1;
     grid-row: 2;
@@ -203,7 +152,7 @@
 
   main:not(.empty) > :global(.stage) {
     grid-column: 2;
-    grid-row: 1 / 3;
+    grid-row: 2;
   }
 
   .notices {

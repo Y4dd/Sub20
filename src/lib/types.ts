@@ -210,8 +210,21 @@ export type DropEvent = { type: "over" } | { type: "leave" } | { type: "drop"; p
 
 /// Everything the window asks of the app. Implemented once for Tauri and
 /// once as an in-browser stand-in for design work.
+/**
+ * Who draws the window frame. "custom": the app draws its own title bar
+ * and window buttons (Windows). "overlay": the system's buttons sit over
+ * the app's bar, on the left (macOS). "native": the system frame (Linux).
+ */
+export type Frame = "custom" | "overlay" | "native";
+
 export interface Backend {
   readonly demo: boolean;
+  readonly frame: Frame;
+  minimize(): Promise<void>;
+  toggleMaximize(): Promise<void>;
+  closeWindow(): Promise<void>;
+  /** Calls back with whether the window is maximized, now and on each change. */
+  onMaximized(handler: (maximized: boolean) => void): Promise<() => void>;
   bootstrap(): Promise<Bootstrap>;
   ffmpegStatus(): Promise<FfmpegStatus>;
   addVideos(paths: string[]): Promise<Added[]>;

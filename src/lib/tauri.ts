@@ -3,9 +3,10 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
-import type { Added, Backend, JobEvent } from "./types";
+import type { Added, Backend, Frame, JobEvent } from "./types";
 
 /** File types offered in the "choose files" dialog. */
 const VIDEO_EXTENSIONS = [
@@ -19,8 +20,20 @@ const playUrls = new Map<string, string>();
 /** Thumbnail files by the URL the window shows them under; dragging needs the file. */
 const thumbFiles = new Map<string, string>();
 
+const agent = navigator.userAgent;
+const frame: Frame = agent.includes("Windows") ? "custom" : agent.includes("Mac") ? "overlay" : "native";
+
 export const tauriBackend: Backend = {
   demo: false,
+  frame,
+  minimize: () => getCurrentWindow().minimize(),
+  toggleMaximize: () => getCurrentWindow().toggleMaximize(),
+  closeWindow: () => getCurrentWindow().close(),
+  onMaximized: async (handler) => {
+    const window = getCurrentWindow();
+    handler(await window.isMaximized());
+    return window.onResized(async () => handler(await window.isMaximized()));
+  },
   bootstrap: () => invoke("bootstrap"),
   ffmpegStatus: () => invoke("ffmpeg_status"),
   addVideos: async (paths) => {

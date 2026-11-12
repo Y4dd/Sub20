@@ -19,6 +19,9 @@
     film: "M3 4.5h14v11H3zM3 8h14M3 12h14M7 4.5V8M13 4.5V8M7 12v3.5M13 12v3.5",
     copy: "M7.5 7.5h8.5v8.5H7.5zM4 12.5V4h8.5",
     grip: "M7.5 5.5h.01M12.5 5.5h.01M7.5 10h.01M12.5 10h.01M7.5 14.5h.01M12.5 14.5h.01",
+    minimize: "M5 10h10",
+    maximize: "M5.5 5.5h9v9h-9z",
+    restore: "M7.5 5.5h7v7M5.5 7.5h7v7h-7z",
   } as const;
 
   let { name, size = 18 }: { name: keyof typeof PATHS; size?: number } = $props();

@@ -3,7 +3,7 @@
 // ships behaviour: the desktop app always uses `tauri.ts`.
 
 import type {
-  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, HistoryEntry, JobEvent, JobResult, MediaInfo,
+  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, Frame, HistoryEntry, JobEvent, JobResult, MediaInfo,
   Plan, Quality, Report, Settings, Trim,
 } from "./types";
 
@@ -219,6 +219,18 @@ function simulate(id: string, job: CompressRequest) {
 
 export const mockBackend: Backend = {
   demo: true,
+  // The Windows frame by default; `?frame=overlay` or `?frame=native` shows the others.
+  frame: ((): Frame => {
+    const asked = new URLSearchParams(location.search).get("frame");
+    return asked === "overlay" || asked === "native" ? asked : "custom";
+  })(),
+  minimize: async () => {},
+  toggleMaximize: async () => {},
+  closeWindow: async () => {},
+  onMaximized: async (handler) => {
+    handler(false);
+    return () => {};
+  },
   bootstrap: async () => ({
     settings: structuredClone(settings),
     ffmpeg: { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" },
