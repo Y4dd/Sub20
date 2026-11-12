@@ -38,6 +38,28 @@ pub struct MediaInfo {
     /// the microphone on a track of its own; the facts above describe track 1.
     #[serde(default)]
     pub audio_tracks: u32,
+    /// High dynamic range, from the video's transfer characteristics.
+    #[serde(default)]
+    pub hdr: Option<Hdr>,
+}
+
+/// The two HDR kinds phones, consoles and capture tools record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Hdr {
+    /// HDR10 and Dolby Vision's base layer (SMPTE ST 2084).
+    Pq,
+    /// Hybrid log-gamma: iPhones, broadcast (ARIB STD-B67).
+    Hlg,
+}
+
+impl Hdr {
+    pub fn label(self) -> &'static str {
+        match self {
+            Hdr::Pq => "HDR10 (PQ)",
+            Hdr::Hlg => "HLG",
+        }
+    }
 }
 
 impl MediaInfo {
@@ -149,6 +171,11 @@ pub fn parse(json: &str) -> std::result::Result<MediaInfo, String> {
         info.display_height = if turned { info.width } else { info.height };
         info.video_codec = v.get("codec_name").and_then(Value::as_str).map(str::to_string);
         info.pixel_format = v.get("pix_fmt").and_then(Value::as_str).map(str::to_string);
+        info.hdr = match v.get("color_transfer").and_then(Value::as_str) {
+            Some("smpte2084") => Some(Hdr::Pq),
+            Some("arib-std-b67") => Some(Hdr::Hlg),
+            _ => None,
+        };
         info.fps = ["avg_frame_rate", "r_frame_rate"]
             .iter()
             .filter_map(|k| v.get(*k).and_then(Value::as_str))
@@ -199,6 +226,21 @@ mod tests {
         assert_eq!(info.audio_tracks, 1);
         assert!(info.is_high_bit_depth());
         assert_eq!(info.duration, 12.5);
+    }
+
+    #[test]
+    fn hdr_is_read_from_the_transfer_characteristics() {
+        let with = |transfer: &str| {
+            let json = format!(
+                r#"{{"streams":[{{"codec_type":"video","codec_name":"hevc","width":3840,"height":2160,"pix_fmt":"yuv420p10le","color_transfer":"{transfer}"}}],"format":{{"duration":"5"}}}}"#
+            );
+            parse(&json).unwrap().hdr
+        };
+        assert_eq!(with("smpte2084"), Some(Hdr::Pq));
+        assert_eq!(with("arib-std-b67"), Some(Hdr::Hlg));
+        assert_eq!(with("bt709"), None);
+        // An NVIDIA app recording: 10-bit is not HDR by itself.
+        assert_eq!(with("unknown"), None);
     }
 
     #[test]

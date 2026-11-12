@@ -28,7 +28,9 @@ pub fn explain(error: &Error, at: &Situation) -> String {
 
     // Checked first: a missing file explains every error that follows from it.
     if !at.input.exists() {
-        return format!("{name} was moved or deleted while it was being compressed. Put it back and compress again.");
+        return format!(
+            "{name} isn't where it was any more: it was moved, renamed or deleted. Put it back and compress again."
+        );
     }
     if !at.out_dir.is_dir() {
         return format!(
@@ -146,7 +148,7 @@ mod tests {
         let b = bench();
         std::fs::remove_file(&b.input).unwrap();
         let message = say(Error::Encode("clip.mp4: No such file or directory".into()), &b);
-        assert!(message.starts_with("clip.mp4 was moved or deleted"), "{message}");
+        assert!(message.starts_with("clip.mp4 isn't where it was any more"), "{message}");
     }
 
     #[test]

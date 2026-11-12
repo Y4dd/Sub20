@@ -389,6 +389,21 @@ impl Engine {
             height: plan.height,
         });
 
+        // HDR becomes ordinary colour, or the result plays grey in Discord.
+        let tone_map = info.hdr.is_some() && report.tone_map && !spec.options.audio_only;
+        if let (Some(hdr), false) = (info.hdr, spec.options.audio_only) {
+            self.log(
+                id,
+                if tone_map {
+                    format!("The source is {}: converted to ordinary colour (SDR) so it doesn't look grey.", hdr.label())
+                } else {
+                    format!(
+                        "The source is {}, but this FFmpeg has no zscale filter, so the result may look grey. A full FFmpeg build fixes this.",
+                        hdr.label()
+                    )
+                },
+            );
+        }
         let mut video_kbps = plan.video_kbps;
         let mut hardware_decode = spec.options.hardware_decode;
         let mut attempts = 0u32;
@@ -414,6 +429,7 @@ impl Engine {
                     video_kbps,
                     hardware_decode,
                     pass: *pass,
+                    tone_map,
                 });
                 self.log(id, command::display(&tools.ffmpeg, &args));
                 let span = Span {

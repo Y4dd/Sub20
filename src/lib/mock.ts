@@ -48,11 +48,13 @@ function info(width: number, height: number, duration: number, fps: number, mb: 
     duration, sizeBytes: mb * 1024 * 1024, hasVideo: true, hasAudio: true, width, height, displayWidth: width,
     displayHeight: height, rotation: 0, fps, videoCodec: codec, pixelFormat: "yuv420p",
     videoKbps: (mb * 8192) / duration - 160, audioCodec: "aac", audioKbps: 160, audioChannels: 2, audioTracks: 1,
+    hdr: null,
   };
 }
 
 const DEMOS: Demo[] = [
-  { name: "harbour-drone-take3.mov", info: info(3840, 2160, 72.4, 60, 612, "hevc"), hue: 205 },
+  // Drones and phones record HDR; it is tone-mapped on the way out.
+  { name: "harbour-drone-take3.mov", info: { ...info(3840, 2160, 72.4, 60, 612, "hevc"), pixelFormat: "yuv420p10le", hdr: "hlg" }, hue: 205 },
   // Game and microphone on separate tracks, as OBS records them.
   { name: "clutch-1v4-ranked.mp4", info: { ...info(2560, 1440, 41.0, 60, 248, "h264"), audioTracks: 2 }, hue: 280 },
   { name: "birthday-candles.mp4", info: info(1080, 1920, 18.6, 30, 46.2, "h264"), hue: 28 },
@@ -307,7 +309,7 @@ export const mockBackend: Backend = {
   },
   encoders: async (refresh): Promise<Report> => {
     if (refresh) await new Promise((resolve) => setTimeout(resolve, 900));
-    return { encoders: ENCODERS, ffmpegVersion: "ffmpeg version 7.1 (demo)", checkedAt: Date.now() / 1000 };
+    return { encoders: ENCODERS, ffmpegVersion: "ffmpeg version 7.1 (demo)", checkedAt: Date.now() / 1000, toneMap: true };
   },
   historyList: async () => history,
   historyRemove: async (id) => {
@@ -321,6 +323,10 @@ export const mockBackend: Backend = {
     lastScan: Date.now() / 1000, inProgress: 0, done: 0, failed: 0,
     problem: settings.watch.enabled && !settings.watch.folder ? "Choose a folder that exists." : null,
   }),
+  clipFolders: async () => [
+    { app: "NVIDIA app", path: "/Users/demo/Videos/NVIDIA", recursive: true },
+    { app: "Xbox Game Bar", path: "/Users/demo/Videos/Captures", recursive: false },
+  ],
   reveal: async () => {},
   openFile: async () => {},
   resultUrl: async () => null,

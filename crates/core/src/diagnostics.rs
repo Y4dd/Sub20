@@ -127,6 +127,7 @@ mod tests {
             ],
             ffmpeg_version: Some("ffmpeg version 9.0.2".into()),
             checked_at: 0,
+            tone_map: true,
         };
         let home = PathBuf::from(r"C:\Users\sam");
         let folder = PathBuf::from(r"C:\Users\sam\scoop\shims");

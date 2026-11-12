@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app, backend } from "../app.svelte";
   import { plain, sizeName, when, BIN, CODEC_LABEL } from "../format";
-  import type { EncoderStatus, Family, Profile, WatchStatus } from "../types";
+  import type { ClipFolder, EncoderStatus, Family, Profile, WatchStatus } from "../types";
   import Icon from "./Icon.svelte";
   import Segmented from "./Segmented.svelte";
   import Sheet from "./Sheet.svelte";
@@ -44,6 +44,21 @@
     testing = true;
     await app.loadReport(true);
     testing = false;
+  }
+
+  // Recording apps' clip folders, offered unless one is already being watched.
+  let clipFolders = $state.raw<ClipFolder[]>([]);
+  void backend.clipFolders().then((found) => (clipFolders = found));
+  const shortcuts = $derived(clipFolders.filter((found) => !(s.watch.enabled && s.watch.folder === found.path)));
+
+  function watchClips(found: ClipFolder) {
+    // New clips only: pointing the watch at a library shouldn't compress all of it.
+    void app.saveSettings((n) => {
+      n.watch.enabled = true;
+      n.watch.folder = found.path;
+      n.watch.recursive = found.recursive;
+      n.watch.existing = "newOnly";
+    });
   }
 
   async function pick(apply: (folder: string) => void) {
@@ -177,6 +192,13 @@
       Compress videos that appear in a folder
       <small class="muted">Runs while the app is open.</small>
     </Toggle>
+    {#if shortcuts.length}
+      <p class="note">
+        {#each shortcuts as found (found.path)}
+          <button type="button" class="link" title={found.path} onclick={() => watchClips(found)}>Watch {found.app} clips</button>
+        {/each}
+      </p>
+    {/if}
     {#if s.watch.enabled}
       <div class="rows">
         <div class="row">

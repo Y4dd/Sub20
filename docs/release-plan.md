@@ -99,9 +99,26 @@ its licence text and point to its exact source.
 - [ ] Test files from the NVIDIA app (Instant Replay), Steam Game
       Recording, Xbox Game Bar, OBS (MKV, several tracks), Medal, an iPhone
       (HEVC, HDR, rotated) and an Android phone (variable frame rate).
-- [ ] HDR sources: tone-map to SDR, so they don't come out grey.
-- [ ] Watch-folder shortcuts for the NVIDIA app, Steam and Xbox Game Bar
-      clip folders (detected, one click to turn on).
+  - [x] NVIDIA app: nine of the owner's clips over 20 MB (H.264 and AV1,
+        SDR, one sound track, up to 1 min 40 s) all came out under 20 MB, at
+        88–99.7% of the limit. `h264_nvenc` landed 17% and 6% over on two
+        short AV1 sources and the retry fixed both. A clip recorded at a
+        nominal 240 fps averaging 60 kept 60 fps. Tried with
+        `cargo run -p sub20-core --example compress -- FILE...`.
+  - [ ] The rest, and an NVIDIA clip with the microphone on its own track.
+- [x] HDR sources: tone-map to SDR, so they don't come out grey. PQ and HLG
+      are read from the transfer characteristics and converted with
+      `zscale` and the Mobius curve, then tagged BT.709. Checked on a
+      generated PQ clip: colour saturation 87 against the SDR original's
+      114, where the untreated result had 23. Needs an FFmpeg built with
+      zscale (the bundled one is); without it the clip compresses and the
+      stage warns that it may look grey.
+  - [ ] Try a real HDR clip (an iPhone, or a game recorded in HDR).
+- [x] Watch-folder shortcuts: Settings offers "Watch NVIDIA app clips"
+      (`Videos\NVIDIA`, with subfolders) and "Watch Xbox Game Bar clips"
+      (`Videos\Captures`) when those folders exist, new clips only. Steam
+      isn't offered: it keeps recordings as stream segments, not video
+      files, and saves an exported clip wherever the player chooses.
 
 **Installing and updating**
 - [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release

@@ -290,6 +290,12 @@ async fn watch_status(state: State<'_, AppState>) -> CommandResult<WatchStatus> 
     Ok(state.watcher.status())
 }
 
+/// Recording apps' clip folders found on this machine, for the watch shortcuts.
+#[tauri::command]
+fn clip_folders(app: AppHandle) -> Vec<watch::ClipFolder> {
+    app.path().video_dir().map(|videos| watch::clip_folders(&videos)).unwrap_or_default()
+}
+
 /// Shows a file in Finder / Explorer / the file manager.
 #[tauri::command]
 fn reveal(app: AppHandle, path: PathBuf) -> CommandResult<()> {
@@ -612,6 +618,7 @@ pub fn run() {
             history_remove,
             history_clear,
             watch_status,
+            clip_folders,
             reveal,
             open_file,
             result_url,

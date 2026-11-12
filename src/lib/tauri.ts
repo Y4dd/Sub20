@@ -66,6 +66,7 @@ export const tauriBackend: Backend = {
   historyRemove: (id) => invoke("history_remove", { id }),
   historyClear: () => invoke("history_clear"),
   watchStatus: () => invoke("watch_status"),
+  clipFolders: () => invoke("clip_folders"),
   reveal: (path) => invoke("reveal", { path }),
   openFile: (path) => invoke("open_file", { path }),
   resultUrl: async (path) => (await invoke<string | null>("result_url", { path })) ?? convertFileSrc(path),

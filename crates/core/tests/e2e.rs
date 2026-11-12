@@ -586,7 +586,10 @@ async fn a_source_moved_away_while_waiting_in_line_is_named() {
 
     first_done.await.unwrap().expect("the first job is unaffected");
     let error = second_done.await.unwrap().unwrap_err();
-    assert_eq!(error, "second.mp4 was moved or deleted while it was being compressed. Put it back and compress again.");
+    assert_eq!(
+        error,
+        "second.mp4 isn't where it was any more: it was moved, renamed or deleted. Put it back and compress again."
+    );
 }
 
 #[cfg(unix)]
@@ -610,4 +613,74 @@ async fn a_read_only_results_folder_says_what_to_do() {
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
     assert!(error.starts_with("Sub20 isn't allowed to save in"), "{error}");
     assert!(error.contains("Choose another folder for results in Settings"), "{error}");
+}
+
+/// Average saturation of a video, from FFmpeg's signalstats (0–~180).
+async fn saturation(tools: &Tools, path: &Path, filter: &str) -> f64 {
+    let mut cmd = tools.ffmpeg();
+    let chain = if filter.is_empty() {
+        "signalstats,metadata=print:file=-".to_string()
+    } else {
+        format!("{filter},signalstats,metadata=print:file=-")
+    };
+    cmd.args(["-loglevel", "error", "-i"]).arg(path).args(["-vf", &chain, "-f", "null", "-"]);
+    let out = ffmpeg::run(&mut cmd, Duration::from_secs(120)).await.unwrap();
+    let values: Vec<f64> = out
+        .stdout
+        .lines()
+        .filter_map(|l| l.strip_prefix("lavfi.signalstats.SATAVG="))
+        .filter_map(|v| v.trim().parse().ok())
+        .collect();
+    values.iter().sum::<f64>() / values.len().max(1) as f64
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_hdr_clip_comes_out_in_ordinary_colour() {
+    let Some(b) = bench().await else { return };
+    let report = b.engine.hardware(false).await.unwrap();
+    if !report.tone_map || !report.works("libx265") {
+        eprintln!("skipped: this FFmpeg lacks zscale or libx265");
+        return;
+    }
+    // A real HDR10 file: the test pattern converted to PQ and BT.2020, 10-bit
+    // HEVC, tagged the way a phone or console tags it.
+    let input = b.root.join("hdr.mp4");
+    let mut cmd = b.tools.ffmpeg();
+    cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=3"])
+        .args(["-vf", "zscale=tin=bt709:t=smpte2084:pin=bt709:p=bt2020:min=bt709:m=bt2020nc:rin=tv:r=tv:npl=100,format=yuv420p10le"])
+        .args(["-c:v", "libx265", "-crf", "16", "-x265-params", "log-level=error:hdr10=1"])
+        .args(["-color_primaries", "bt2020", "-color_trc", "smpte2084", "-colorspace", "bt2020nc"])
+        .arg(&input);
+    let out = ffmpeg::run(&mut cmd, Duration::from_secs(120)).await.unwrap();
+    assert!(out.ok, "could not make the HDR clip: {}", out.stderr);
+    let info = probe::probe(&b.tools, &input).await.unwrap();
+    assert_eq!(info.hdr, Some(sub20_core::probe::Hdr::Pq));
+
+    let options = EncodeOptions { target_mb: 3.0, encoder: Some("libx264".into()), ..EncodeOptions::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the HDR clip should compress");
+
+    let mut cmd = b.tools.ffprobe();
+    cmd.args([
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=color_transfer,color_primaries,pix_fmt",
+    ])
+    .args(["-of", "csv=p=0"])
+    .arg(&result.output);
+    let tags = ffmpeg::run(&mut cmd, Duration::from_secs(30)).await.unwrap().stdout;
+    assert_eq!(tags.trim().trim_end_matches(','), "yuv420p,bt709,bt709", "the result is tagged as ordinary colour");
+
+    // Played as if it were ordinary video, HDR looks grey: little colour.
+    let grey = saturation(&b.tools, &input, "format=yuv420p").await;
+    let made = saturation(&b.tools, &result.output, "").await;
+    assert!(made > grey * 2.5, "the result should have its colour back: saturation {made:.0}, untreated {grey:.0}");
+    assert!(b
+        .events
+        .all()
+        .iter()
+        .any(|e| matches!(e, JobEvent::Log { line, .. } if line.contains("converted to ordinary colour"))));
 }

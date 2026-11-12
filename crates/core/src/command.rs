@@ -33,7 +33,18 @@ pub struct EncodeArgs<'a> {
     pub video_kbps: u32,
     pub hardware_decode: bool,
     pub pass: Pass,
+    /// Turn an HDR source into ordinary colour (SDR). Set when the source is
+    /// HDR and this FFmpeg can (`Report::tone_map`).
+    pub tone_map: bool,
 }
+
+/// HDR to SDR: to linear light, BT.2020 to BT.709 primaries, Mobius
+/// tone mapping, back to BT.709 video levels in 8 bits. Without this an HDR
+/// clip plays grey and washed out: on a generated PQ clip, saturation came
+/// out at 23 against the original's 114. Mobius kept the most of it (87;
+/// Hable 64, Reinhard 81) and the most contrast.
+pub const TONE_MAP: &str =
+    "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=mobius:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p";
 
 struct Args(Vec<OsString>);
 
@@ -83,27 +94,32 @@ fn device_flags(encoder: Encoder, device: Option<&str>) -> Vec<String> {
     }
 }
 
-/// The frame format handed to QSV/VAAPI. HEVC keeps 10-bit sources 10-bit.
-fn surface_format(encoder: Encoder, info: &MediaInfo) -> &'static str {
-    let ten_bit_capable = matches!(encoder.name, "hevc_qsv" | "hevc_vaapi");
-    if ten_bit_capable && info.is_high_bit_depth() {
+/// The frame format handed to QSV/VAAPI. HEVC keeps 10-bit sources 10-bit,
+/// unless tone mapping has already made them 8-bit.
+fn surface_format(args: &EncodeArgs) -> &'static str {
+    let ten_bit_capable = matches!(args.encoder.name, "hevc_qsv" | "hevc_vaapi");
+    if ten_bit_capable && args.info.is_high_bit_depth() && !args.tone_map {
         "p010le"
     } else {
         "nv12"
     }
 }
 
-/// The `-vf` chain: scale, frame-rate cap, then upload to the GPU if needed.
+/// The `-vf` chain: tone mapping, scale, frame-rate cap, then upload to
+/// the GPU if needed.
 fn video_filters(args: &EncodeArgs) -> Vec<String> {
     let plan = args.plan;
     let mut filters = Vec::new();
+    if args.tone_map {
+        filters.push(TONE_MAP.to_string());
+    }
     if plan.scaled && plan.width > 0 && plan.height > 0 {
         filters.push(format!("scale={}:{}:flags=bicubic", plan.width, plan.height));
     }
     if let Some(cap) = plan.fps_cap {
         filters.push(format!("fps=fps={cap}"));
     }
-    let format = surface_format(args.encoder, args.info);
+    let format = surface_format(args);
     match args.encoder.family {
         Family::Qsv if cfg!(windows) => filters.push(format!("format={format}")),
         Family::Qsv => filters.push(format!("format={format},hwupload=extra_hw_frames=64")),
@@ -114,10 +130,11 @@ fn video_filters(args: &EncodeArgs) -> Vec<String> {
 }
 
 /// Pixel format and profile flags.
-fn format_flags(encoder: Encoder, info: &MediaInfo) -> Vec<&'static str> {
+fn format_flags(args: &EncodeArgs) -> Vec<&'static str> {
+    let encoder = args.encoder;
     match encoder.family {
         Family::Qsv | Family::Vaapi => {
-            if surface_format(encoder, info) == "p010le" {
+            if surface_format(args) == "p010le" {
                 vec!["-profile:v", "main10"]
             } else {
                 Vec::new()
@@ -284,7 +301,11 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
         a.push("-vf").push(filters.join(","));
     }
     a.push("-c:v").push(args.encoder.name);
-    a.extend(format_flags(args.encoder, args.info));
+    a.extend(format_flags(args));
+    if args.tone_map {
+        // Say what the picture now is, so players don't treat it as HDR.
+        a.extend(["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709"]);
+    }
     a.extend(rate_flags(args.encoder, args.video_kbps));
     a.extend(effort_flags(args.encoder, args.options));
 
@@ -396,6 +417,7 @@ mod tests {
             video_kbps: p.video_kbps,
             hardware_decode: options.hardware_decode,
             pass,
+            tone_map: info.hdr.is_some(),
         };
         build(&args).iter().map(|s| s.to_string_lossy().into_owned()).collect::<Vec<_>>().join(" ")
     }
@@ -460,6 +482,32 @@ mod tests {
         let cmd = render(&ten_bit, None, &options, "hevc_qsv", Pass::Single);
         assert!(cmd.contains("-init_hw_device qsv=hw@va -filter_hw_device hw"), "{cmd}");
         assert!(cmd.contains("format=p010le,hwupload=extra_hw_frames=64 -c:v hevc_qsv -profile:v main10"), "{cmd}");
+    }
+
+    #[test]
+    fn hdr_is_tone_mapped_first_and_tagged_as_ordinary_colour() {
+        let hdr = MediaInfo {
+            pixel_format: Some("yuv420p10le".into()),
+            hdr: Some(crate::probe::Hdr::Pq),
+            width: 3840,
+            height: 2160,
+            display_width: 3840,
+            display_height: 2160,
+            ..source()
+        };
+        let cmd = render(&hdr, None, &EncodeOptions::default(), "libx264", Pass::Single);
+        assert!(cmd.contains(&format!("-vf {TONE_MAP},scale=")), "tone mapping comes before scaling: {cmd}");
+        assert!(cmd.contains("-colorspace bt709 -color_primaries bt709 -color_trc bt709"), "{cmd}");
+
+        // Tone mapping makes 8-bit frames, so QSV's HEVC gets nv12, not p010.
+        let options = EncodeOptions { codec: Codec::Hevc, ..Default::default() };
+        let cmd = render(&hdr, None, &options, "hevc_qsv", Pass::Single);
+        assert!(cmd.contains("format=nv12") && !cmd.contains("p010le"), "{cmd}");
+        assert!(!cmd.contains("main10"), "{cmd}");
+
+        // Ordinary sources are left alone.
+        let cmd = render(&source(), None, &EncodeOptions::default(), "libx264", Pass::Single);
+        assert!(!cmd.contains("zscale") && !cmd.contains("-color_trc"), "{cmd}");
     }
 
     #[test]

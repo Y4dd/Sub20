@@ -87,6 +87,8 @@ export async function probe(file: File): Promise<MediaInfo> {
     const audio = await input.getPrimaryAudioTrack();
     const duration = await input.computeDuration();
     const stats = video ? await video.computePacketStats(240) : null;
+    // A plain string: TypeScript's DOM types list only the SDR transfer names.
+    const transfer: string | null = video ? ((await video.getColorSpace()).transfer ?? null) : null;
     return {
       duration,
       sizeBytes: file.size,
@@ -105,6 +107,7 @@ export async function probe(file: File): Promise<MediaInfo> {
       audioKbps: null,
       audioChannels: audio?.numberOfChannels ?? null,
       audioTracks: (await input.getAudioTracks()).length,
+      hdr: transfer === "pq" ? "pq" : transfer === "hlg" ? "hlg" : null,
     };
   } finally {
     input.dispose();

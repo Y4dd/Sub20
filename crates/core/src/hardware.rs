@@ -49,6 +49,10 @@ pub struct Report {
     pub ffmpeg_version: Option<String>,
     /// Unix time of the test run.
     pub checked_at: u64,
+    /// This FFmpeg has `zscale` and `tonemap`, so HDR sources can be
+    /// turned into ordinary colour (see `command::TONE_MAP`).
+    #[serde(default)]
+    pub tone_map: bool,
 }
 
 impl Report {
@@ -185,6 +189,19 @@ async fn test(tools: &Tools, encoder: Encoder) -> TestOutcome {
     Err(last_error)
 }
 
+/// Whether this FFmpeg has the filters HDR tone mapping needs. `zscale`
+/// comes with the zimg library, which most full builds include.
+async fn can_tone_map(tools: &Tools) -> bool {
+    let mut cmd = tools.ffmpeg();
+    cmd.arg("-filters");
+    let Ok(out) = ffmpeg::run(&mut cmd, Duration::from_secs(15)).await else {
+        return false;
+    };
+    // Lines look like ` .S zscale   V->V   Apply resizing…`.
+    let names: HashSet<&str> = out.stdout.lines().filter_map(|line| line.split_whitespace().nth(1)).collect();
+    names.contains("zscale") && names.contains("tonemap")
+}
+
 /// Names of the encoders this FFmpeg build includes.
 async fn built_in(tools: &Tools) -> HashSet<String> {
     let mut cmd = tools.ffmpeg();
@@ -212,6 +229,7 @@ pub async fn detect(tools: &Tools) -> Report {
         encoders: Vec::with_capacity(CATALOG.len()),
         ffmpeg_version: tools.version().await,
         checked_at: SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+        tone_map: can_tone_map(tools).await,
     };
 
     // Families are tested side by side; encoders within one family take

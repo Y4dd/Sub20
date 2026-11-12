@@ -28,6 +28,7 @@ Adding a capability touches, in order: a core function with a test → a command
 - `npm run tauri dev` runs the real app. A plain `cargo build` debug binary also loads `http://localhost:1420`, so it needs the Vite server.
 - `npx tauri build --debug --no-bundle` builds the way a release does (UI embedded, CSP enforced). Run this after touching `tauri.conf.json`, the CSP, or anything loaded by URL.
 - `cargo test --workspace`: `crates/core/tests/e2e.rs` runs real FFmpeg encodes and skips itself when FFmpeg is missing.
+- `cargo run -p sub20-core --example compress -- [--mb 20] [--encoder NAME] [--out DIR] FILE...` compresses real clips with the app's engine and prints size, encoder and attempts. History stays off.
 - Before finishing: `cargo fmt --all`, `cargo clippy --workspace --all-targets`, `npx svelte-check`. All three are clean today; keep them clean.
 - The repo lives in a OneDrive folder on the owner's machine. Point `CARGO_TARGET_DIR` outside it so build output is not synced.
 - CI (`.github/workflows/ci.yml`) runs fmt, `clippy -D warnings` and the tests on Windows, macOS and Ubuntu with FFmpeg installed, plus `svelte-check`, the build, `npm audit --omit=dev` and `cargo deny check advisories`. `deny.toml` fails "unmaintained" only for direct dependencies; the ones inside Tauri's tree (zbus, proc-macro-error) are Tauri's.
@@ -36,7 +37,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 ## Engine decisions
 
-**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. An over-limit file is never saved: `when_over` decides between another retry, a switch to the CPU encoder (hardware encoders only, with fresh retries from the planned bitrate), or an `OverLimit` error that names the fix. A hardware retry that shrinks the file by less than 5% means the encoder is at its floor, and the job moves to the CPU at once. Measured on an RTX 5070 Ti: `h264_nvenc` will not go under about 600 kbps on a busy 720p30 clip whatever the flags (691 kbps even at QP 51) and drifts 6–9% over larger targets; `hevc_nvenc` and `av1_nvenc` hit low targets. Because nothing over is ever saved, the default sizes can be round (no 9.7 MB to leave room). 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` (size in MiB × 8192 = kilobits) leaves about 2.3% for container overhead.
+**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. An over-limit file is never saved: `when_over` decides between another retry, a switch to the CPU encoder (hardware encoders only, with fresh retries from the planned bitrate), or an `OverLimit` error that names the fix. A hardware retry that shrinks the file by less than 5% means the encoder is at its floor, and the job moves to the CPU at once. Measured on an RTX 5070 Ti: `h264_nvenc` will not go under about 600 kbps on a busy 720p30 clip whatever the flags (691 kbps even at QP 51) and drifts 6–9% over larger targets (17% on a short clip from the owner's NVIDIA folder; the retry fixed it); `hevc_nvenc` and `av1_nvenc` hit low targets. Because nothing over is ever saved, the default sizes can be round (no 9.7 MB to leave room). 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` (size in MiB × 8192 = kilobits) leaves about 2.3% for container overhead.
 
 **Planning is pure** (`plan.rs`), so the window calls it on every handle drag.
 - Audio yields on tight budgets: at most 34% of the total, stepped down to a floor (Opus 24, AAC 48 kbps). If video would get under 24 kbps the plan is refused with advice, since the result could not fit.
@@ -51,6 +52,8 @@ Adding a capability touches, in order: a core function with a test → a command
 **Effort `Max`** keeps the size target: slowest preset everywhere, plus two passes on libx264 and libx265 only. Pass statistics use the encoder's default file names in the working directory, so each job runs FFmpeg from its own scratch folder; that avoids escaping Windows paths inside `-x265-params`. It never switches to constant quality, which would ignore the size.
 
 **Hardware decode** is `-hwaccel auto` with frames returned to system memory, so the software filter chain is unchanged; on failure the job retries with CPU decoding.
+
+**HDR** (PQ or HLG, read from `color_transfer` into `MediaInfo::hdr`) is tone-mapped to SDR first in the filter chain (`command::TONE_MAP`: `zscale` to linear, `tonemap` Mobius, back to BT.709), encoded 8-bit and tagged BT.709. Untreated, HDR came out grey (saturation 23 against the SDR original's 114 on a generated PQ clip); Mobius kept the most colour (87, against Reinhard 81 and Hable 64). It needs FFmpeg with zscale (`Report::tone_map`, from `ffmpeg -filters`); without it the job runs untreated, logs why, and the stage warns. Audio-only jobs skip it.
 
 **Stream mapping** is `0:V:0` (skips cover art), the sound, `-sn -dn`. Opus in MP4 becomes AAC. HEVC in MP4 gets `-tag:v hvc1`.
 
@@ -68,7 +71,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Progress** comes from `-progress pipe:1`; stderr is the log. `percent` is per attempt and restarts on `Retry`; two-pass splits it 0–50 and 50–100.
 
-**Folder watch polls** on a timer by design: it behaves the same on network shares and synced folders, and "stopped changing for N seconds" answers "has the copy finished?". Its memory (`watch.json`) is keyed by path plus size and mtime; the "already there" baseline is taken once per folder.
+**Folder watch polls** on a timer by design: it behaves the same on network shares and synced folders, and "stopped changing for N seconds" answers "has the copy finished?". Its memory (`watch.json`) is keyed by path plus size and mtime; the "already there" baseline is taken once per folder. `watch::clip_folders` finds the NVIDIA app's (`VideosNVIDIA`, a folder per game) and Xbox Game Bar's (`VideosCaptures`) clip folders on Windows; Settings offers each as a one-click watch, new clips only. Steam is left out: its recordings are stream segments, not video files.
 
 **Settings** deserialize with `#[serde(default)]` and pass through `tidy()`, so old or hand-edited files load. A damaged file is renamed to `settings.broken.json`. There is no file retention (no uploaded copies exist); the equivalent is `history_keep_days`. Settings live in the app data folder for the identifier `io.github.y4dd.sub20`.
 
@@ -122,7 +125,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 86 tests pass (68 unit, 16 e2e, 2 shell; the read-only-folder e2e test runs on Linux and macOS only), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 90 tests pass (71 unit, 17 e2e, 2 shell; the read-only-folder e2e test runs on Linux and macOS only), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 

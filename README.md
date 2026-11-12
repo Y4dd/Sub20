@@ -48,7 +48,10 @@ account, no upload and no ads.
   the mic on separate tracks; every track is mixed into the result.
 - **Options**: resolution, frame-rate cap, Opus/AAC/no sound, speed against
   quality, MP4 or MKV, fixed bitrate, sound only, saved profiles.
-- **Watch a folder** and compress whatever appears in it.
+- **HDR in ordinary colour.** HDR clips from phones and games are converted,
+  so they don't come out grey.
+- **Watch a folder** and compress whatever appears in it. The NVIDIA app's
+  and Xbox Game Bar's clip folders are offered in one click when found.
 - **History** of what was compressed and what it shrank to.
 
 ## Requirements

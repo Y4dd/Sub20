@@ -35,6 +35,11 @@ What changed in each release. The format follows
   still being recorded).
 - The About line names the licence, says Sub20 isn't affiliated with
   Discord, and links the bundled FFmpeg's licence.
+- HDR videos (HDR10 and HLG, from phones or games) are converted to
+  ordinary colour, so they no longer come out grey and washed out. The
+  stage says when a clip is HDR.
+- Settings offers to watch the NVIDIA app's and Xbox Game Bar's clip folders
+  in one click when they are found, compressing new clips as they are saved.
 
 ### Changed
 

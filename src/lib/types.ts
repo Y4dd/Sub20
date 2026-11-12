@@ -26,6 +26,8 @@ export interface MediaInfo {
   audioChannels: number | null;
   /** How many audio tracks; the facts above describe the first. */
   audioTracks: number;
+  /** High dynamic range, turned into ordinary colour when compressed. */
+  hdr: "pq" | "hlg" | null;
 }
 
 export interface Trim {
@@ -164,6 +166,8 @@ export interface Report {
   encoders: EncoderStatus[];
   ffmpegVersion: string | null;
   checkedAt: number;
+  /** This FFmpeg can turn HDR into ordinary colour. */
+  toneMap: boolean;
 }
 
 export interface HistoryEntry {
@@ -183,6 +187,14 @@ export interface WatchStatus {
   done: number;
   failed: number;
   problem: string | null;
+}
+
+/** A recording app's clip folder, offered as a one-click watch. */
+export interface ClipFolder {
+  app: string;
+  path: string;
+  /** Clips land in a subfolder per game. */
+  recursive: boolean;
 }
 
 export interface FfmpegStatus {
@@ -264,6 +276,8 @@ export interface Backend {
   historyRemove(id: string): Promise<void>;
   historyClear(): Promise<void>;
   watchStatus(): Promise<WatchStatus>;
+  /** Recording apps' clip folders found on this machine (Windows only). */
+  clipFolders(): Promise<ClipFolder[]>;
   reveal(path: string): Promise<void>;
   openFile(path: string): Promise<void>;
   /** A URL the stage can play a finished video from; null shows still frames. */

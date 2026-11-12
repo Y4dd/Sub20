@@ -30,6 +30,44 @@ pub fn is_video(path: &Path) -> bool {
         .is_some_and(|e| VIDEO_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
 }
 
+/// A recording app's clip folder, offered so the watch can be pointed at it
+/// in one click.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipFolder {
+    /// The app that saves there, as people know it.
+    pub app: String,
+    pub path: PathBuf,
+    /// Clips land in a subfolder per game.
+    pub recursive: bool,
+}
+
+/// The clip folders of recording apps found at their default places in the
+/// Videos folder. Windows only: that's where these apps run.
+///
+/// Steam isn't here: it keeps recordings as stream segments rather than video
+/// files, and saves an exported clip wherever the player chooses.
+pub fn clip_folders(videos: &Path) -> Vec<ClipFolder> {
+    if cfg!(windows) {
+        clip_folders_in(videos)
+    } else {
+        Vec::new()
+    }
+}
+
+fn clip_folders_in(videos: &Path) -> Vec<ClipFolder> {
+    [
+        // The NVIDIA app: Instant Replay and recordings, one folder per game.
+        ("NVIDIA app", "NVIDIA", true),
+        // Xbox Game Bar (Win+Alt+R, Win+Alt+G).
+        ("Xbox Game Bar", "Captures", false),
+    ]
+    .into_iter()
+    .map(|(app, folder, recursive)| ClipFolder { app: app.into(), path: videos.join(folder), recursive })
+    .filter(|found| found.path.is_dir())
+    .collect()
+}
+
 /// Size and modification time: enough to tell whether a file changed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct Fingerprint {
@@ -350,6 +388,25 @@ fn put_away(source: &Path, output: &Path, originals: Originals) -> std::io::Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clip_folders_are_offered_only_where_they_exist() {
+        let videos = tempfile::tempdir().unwrap();
+        assert!(clip_folders_in(videos.path()).is_empty());
+
+        std::fs::create_dir_all(videos.path().join("NVIDIA").join("The Finals")).unwrap();
+        std::fs::write(videos.path().join("Captures"), b"a file, not a folder").unwrap();
+        let found = clip_folders_in(videos.path());
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].app, "NVIDIA app");
+        assert_eq!(found[0].path, videos.path().join("NVIDIA"));
+        assert!(found[0].recursive, "the NVIDIA app saves a folder per game");
+
+        std::fs::remove_file(videos.path().join("Captures")).unwrap();
+        std::fs::create_dir(videos.path().join("Captures")).unwrap();
+        let apps: Vec<_> = clip_folders_in(videos.path()).into_iter().map(|f| f.app).collect();
+        assert_eq!(apps, ["NVIDIA app", "Xbox Game Bar"]);
+    }
 
     #[test]
     fn finds_videos_and_skips_our_own_output() {
