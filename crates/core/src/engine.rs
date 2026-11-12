@@ -611,8 +611,23 @@ struct Cleanup {
 
 impl Drop for Cleanup {
     fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.partial);
-        let _ = std::fs::remove_dir_all(&self.scratch);
+        patiently(|| std::fs::remove_file(&self.partial));
+        patiently(|| std::fs::remove_dir_all(&self.scratch));
+    }
+}
+
+/// Runs a removal, trying again for up to a second while the file is in use.
+/// On Windows a killed FFmpeg's output can stay locked for a moment after the
+/// process exits (antivirus and the indexer open new files), and removal then
+/// fails with a sharing violation.
+fn patiently(remove: impl Fn() -> std::io::Result<()>) {
+    for _ in 0..20 {
+        match remove() {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            _ => return,
+        }
     }
 }
 
