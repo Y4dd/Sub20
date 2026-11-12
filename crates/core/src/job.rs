@@ -114,7 +114,7 @@ pub struct EncodeOptions {
 impl Default for EncodeOptions {
     fn default() -> Self {
         EncodeOptions {
-            target_mb: 9.7,
+            target_mb: crate::settings::DEFAULT_TARGET_MB,
             video_kbps: None,
             codec: Codec::H264,
             encoder: None,

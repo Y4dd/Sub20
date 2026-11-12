@@ -107,7 +107,7 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        let base = EncodeOptions { target_mb: 10.0, ..EncodeOptions::default() };
+        let base = EncodeOptions { target_mb: DEFAULT_TARGET_MB, ..EncodeOptions::default() };
         Settings {
             profiles: vec![
                 Profile { name: "Everyday".into(), options: base.clone() },
@@ -127,7 +127,8 @@ impl Default for Settings {
                 },
             ],
             default_profile: "Everyday".into(),
-            sizes: vec![8.0, 10.0, 25.0, 50.0, 100.0],
+            // Discord: free, Nitro Basic (or a level 2 boost), a level 3 boost, Nitro.
+            sizes: vec![20.0, 50.0, 100.0, 500.0],
             disabled_encoders: vec!["libaom-av1".into()],
             output_mode: OutputMode::SameFolder,
             output_folder: None,
@@ -140,12 +141,16 @@ impl Default for Settings {
     }
 }
 
+/// The size a fresh install aims at: Discord's free upload limit since
+/// August 2026.
+pub const DEFAULT_TARGET_MB: f64 = 20.0;
+
 /// Largest size the app accepts, in MB (50 GB).
 pub const MAX_TARGET_MB: f64 = 51_200.0;
 
 fn tidy_options(options: &mut EncodeOptions) {
     if !options.target_mb.is_finite() || options.target_mb <= 0.0 {
-        options.target_mb = 10.0;
+        options.target_mb = DEFAULT_TARGET_MB;
     }
     options.target_mb = options.target_mb.min(MAX_TARGET_MB);
     options.audio_kbps = options.audio_kbps.clamp(16, 512);
@@ -282,7 +287,7 @@ mod tests {
         let before = settings.clone();
         settings.tidy();
         assert_eq!(settings, before);
-        assert_eq!(settings.default_options().target_mb, 10.0);
+        assert_eq!(settings.default_options().target_mb, DEFAULT_TARGET_MB);
     }
 
     #[test]
@@ -304,7 +309,7 @@ mod tests {
         assert_eq!(settings.disabled_encoders, vec!["libx265".to_string()]);
         assert_eq!(settings.parallel_jobs, 8);
         assert_eq!(settings.profiles.len(), 3);
-        assert_eq!(settings.profiles[0].options.target_mb, 10.0);
+        assert_eq!(settings.profiles[0].options.target_mb, DEFAULT_TARGET_MB);
         // A named encoder decides the codec.
         assert_eq!(settings.profiles[0].options.codec, Codec::Hevc);
         assert_eq!(settings.watch.poll_seconds, 2);
