@@ -406,7 +406,12 @@ mod tests {
 
     #[test]
     fn svt_av1_gets_no_peak_rate() {
-        let options = EncodeOptions { codec: Codec::Av1, container: Container::Mkv, ..Default::default() };
+        let options = EncodeOptions {
+            codec: Codec::Av1,
+            container: Container::Mkv,
+            audio: AudioChoice::Opus,
+            ..Default::default()
+        };
         let cmd = render(&source(), None, &options, "libsvtav1", Pass::Single);
         assert!(!cmd.contains("-maxrate"), "{cmd}");
         assert!(cmd.contains("-preset 8"), "{cmd}");

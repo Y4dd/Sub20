@@ -118,7 +118,8 @@ impl Default for EncodeOptions {
             video_kbps: None,
             codec: Codec::H264,
             encoder: None,
-            audio: AudioChoice::Opus,
+            // AAC: the default container is MP4, where Opus would be swapped out anyway.
+            audio: AudioChoice::Aac,
             audio_kbps: 128,
             effort: Effort::P4,
             tune: Tune::Hq,

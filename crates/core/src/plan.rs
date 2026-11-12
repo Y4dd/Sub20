@@ -469,7 +469,8 @@ mod tests {
     fn audio_yields_when_the_budget_is_tight() {
         // 4 MB over 5 minutes is 109 kbps in total.
         let info = source(1280, 720, 300.0);
-        let options = EncodeOptions { target_mb: 4.0, container: Container::Mkv, ..Default::default() };
+        let options =
+            EncodeOptions { target_mb: 4.0, container: Container::Mkv, audio: AudioChoice::Opus, ..Default::default() };
         let p = plan(&info, None, &options).unwrap();
         assert_eq!(p.audio, Some(AudioCodec::Opus));
         assert_eq!(p.audio_kbps, 32);

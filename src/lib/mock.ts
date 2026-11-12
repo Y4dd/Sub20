@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 const DEFAULT_OPTIONS: EncodeOptions = {
-  targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "opus", audioKbps: 128, effort: "p4",
+  targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
   maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
 };
@@ -17,7 +17,7 @@ let settings: Settings = {
   profiles: [
     { name: "Everyday", options: { ...DEFAULT_OPTIONS } },
     { name: "Sharper (HEVC)", options: { ...DEFAULT_OPTIONS, codec: "hevc", effort: "p5" } },
-    { name: "Smallest (AV1)", options: { ...DEFAULT_OPTIONS, codec: "av1", effort: "p5", container: "mkv" } },
+    { name: "Smallest (AV1)", options: { ...DEFAULT_OPTIONS, codec: "av1", effort: "p5", container: "mkv", audio: "opus" } },
   ],
   defaultProfile: "Everyday",
   sizes: [8, 10, 25, 50, 100],

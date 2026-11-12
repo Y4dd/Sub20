@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::encoders::Codec;
 use crate::error::{Error, IoContext, Result};
-use crate::job::{Container, Effort, EncodeOptions};
+use crate::job::{AudioChoice, Container, Effort, EncodeOptions};
 
 /// A named set of options.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -117,7 +117,13 @@ impl Default for Settings {
                 },
                 Profile {
                     name: "Smallest (AV1)".into(),
-                    options: EncodeOptions { codec: Codec::Av1, effort: Effort::P5, container: Container::Mkv, ..base },
+                    options: EncodeOptions {
+                        codec: Codec::Av1,
+                        effort: Effort::P5,
+                        container: Container::Mkv,
+                        audio: AudioChoice::Opus,
+                        ..base
+                    },
                 },
             ],
             default_profile: "Everyday".into(),

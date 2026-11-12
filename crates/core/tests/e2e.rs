@@ -158,6 +158,7 @@ async fn hevc_av1_and_two_pass_all_land_under_the_limit() {
                 target_mb: 0.5,
                 container: Container::Mkv,
                 effort: Effort::P2,
+                audio: AudioChoice::Opus,
                 ..Default::default()
             },
             "av1",
