@@ -20,11 +20,9 @@ pub const MIN_VIDEO_KBPS: f64 = 24.0;
 /// Short-side heights the automatic resolution steps through.
 const LADDER: [u32; 7] = [2160, 1440, 1080, 720, 480, 360, 240];
 
-/// kbps per megapixel that still looks right.
+/// Weighted kbps per megapixel (see `density`) that looks good.
 const DENSITY_OK: f64 = 550.0;
-/// Acceptable when the budget is tight.
-const DENSITY_FALLBACK: f64 = 350.0;
-/// Under this even 720p is too starved to keep.
+/// Under this the picture looks rough.
 const DENSITY_FLOOR: f64 = 220.0;
 
 /// The audio track that will be written.
@@ -44,8 +42,8 @@ impl AudioCodec {
     }
 }
 
-/// How the result is expected to look.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// How the result is expected to look, best first (so `max` is the worse).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Quality {
     Sharp,
@@ -116,49 +114,48 @@ fn even(value: f64) -> u32 {
     (((value / 2.0).floor() as u32) * 2).max(2)
 }
 
+/// kbps per megapixel, weighted the way the eye sees it: newer codecs do
+/// more with the same bits, and higher frame rates need more. The resolution
+/// choice and the quality verdict both use this, so they cannot disagree.
+fn density(codec: Codec, video_kbps: f64, width: u32, height: u32, fps: f64) -> f64 {
+    let efficiency = match codec {
+        Codec::H264 => 1.0,
+        Codec::Hevc => 1.5,
+        Codec::Av1 => 1.8,
+    };
+    let motion = (fps / 30.0).clamp(0.8, 2.0).sqrt();
+    let megapixels = f64::from(width) * f64::from(height) / 1_000_000.0;
+    video_kbps * efficiency / (megapixels * motion)
+}
+
 /// Picks the short-side height to encode at, or `None` to keep the source
-/// size. The idea: more pixels than the bitrate can feed look worse than
-/// fewer pixels that are well fed.
-pub fn auto_short_side(width: u32, height: u32, video_kbps: f64, min_side: u32) -> Option<u32> {
+/// size: the size whose result will look best, judged by `rate` (which
+/// weighs both how well the bits feed the pixels and how far the picture
+/// was shrunk). Ties go to the larger picture, except when every choice
+/// looks rough: then fewer pixels at least hold together.
+///
+/// Because each size's verdict only improves with more bitrate, so does the
+/// best one: a shorter trim or a larger limit never looks worse (sharp may
+/// give way to good as the picture grows)
+/// (`shorter_trims_never_look_worse`).
+pub fn auto_short_side(width: u32, height: u32, video_kbps: f64, codec: Codec, fps: f64, min_side: u32) -> Option<u32> {
     if width == 0 || height == 0 {
         return None;
     }
     let short = width.min(height);
-    let megapixels = f64::from(width) * f64::from(height) / 1_000_000.0;
-    let density_at = |side: u32| {
-        let ratio = f64::from(side) / f64::from(short);
-        video_kbps / (megapixels * ratio * ratio)
+    let floor = LADDER.iter().rev().copied().find(|r| *r >= min_side).unwrap_or(LADDER[0]);
+    // The source, then the rungs below it and not under the floor, largest first.
+    let mut sizes = vec![short];
+    sizes.extend(LADDER.iter().copied().filter(|r| *r < short && *r >= floor.min(short)));
+    let verdict = |side: u32| {
+        let (w, h) = if side == short { (width, height) } else { scale_to_short_side(width, height, side) };
+        rate(codec, video_kbps, w, h, fps, side != short)
     };
-    let floor_rung = *LADDER.iter().rev().find(|r| **r >= min_side).unwrap_or(&LADDER[0]);
-
-    let density = video_kbps / megapixels;
-    if density >= DENSITY_OK {
-        return None;
-    }
-    // Rungs strictly below the source, largest first.
-    let rungs: Vec<u32> = LADDER.iter().copied().filter(|r| *r < short).collect();
-    if rungs.is_empty() {
-        return None;
-    }
-    // How far we may drop: two rungs when the source is merely tight, any
-    // distance when it is starved.
-    let max_steps = if density >= DENSITY_FALLBACK { 2 } else { rungs.len() };
-
-    let wanted = rungs
-        .iter()
-        .position(|r| density_at(*r) >= DENSITY_OK)
-        .or_else(|| rungs.iter().position(|r| density_at(*r) >= DENSITY_FALLBACK))
-        .unwrap_or(rungs.len() - 1);
-    let mut side = rungs[wanted.min(max_steps - 1)];
-
-    // Prefer 1080p for big sources and hold 720p unless it is hopeless.
-    if short >= 1440 && side < 1080 && density_at(1080) >= DENSITY_FALLBACK {
-        side = 1080;
-    }
-    if short >= 720 && side < 720 && density_at(720) >= DENSITY_FLOOR {
-        side = 720;
-    }
-    side = side.max(floor_rung.min(short));
+    // Good is good enough: a larger good picture beats a smaller sharp one.
+    let verdict = |side: u32| verdict(side).max(Quality::Good);
+    let best = sizes.iter().map(|s| verdict(*s)).min()?;
+    let mut matching = sizes.into_iter().filter(|s| verdict(*s) == best);
+    let side = if best == Quality::Rough { matching.next_back() } else { matching.next() }?;
     (side < short).then_some(side)
 }
 
@@ -182,20 +179,14 @@ fn scale_to_limits(width: u32, height: u32, max_w: Option<u32>, max_h: Option<u3
     }
 }
 
-fn rate(codec: Codec, video_kbps: f64, width: u32, height: u32, fps: f64) -> Quality {
+/// How the result will look. `scaled` says the picture was shrunk to fit:
+/// below 720p it looks small however well fed, so the verdict is capped.
+fn rate(codec: Codec, video_kbps: f64, width: u32, height: u32, fps: f64, scaled: bool) -> Quality {
     if width == 0 || height == 0 {
         return Quality::Good;
     }
-    // Newer codecs do more with the same bits; high frame rates need more.
-    let efficiency = match codec {
-        Codec::H264 => 1.0,
-        Codec::Hevc => 1.5,
-        Codec::Av1 => 1.8,
-    };
-    let motion = (fps / 30.0).clamp(0.8, 2.0).sqrt();
-    let megapixels = f64::from(width) * f64::from(height) / 1_000_000.0;
-    let density = video_kbps * efficiency / (megapixels * motion);
-    if density >= 1400.0 {
+    let density = density(codec, video_kbps, width, height, fps);
+    let by_bits = if density >= 1400.0 {
         Quality::Sharp
     } else if density >= DENSITY_OK {
         Quality::Good
@@ -203,7 +194,14 @@ fn rate(codec: Codec, video_kbps: f64, width: u32, height: u32, fps: f64) -> Qua
         Quality::Soft
     } else {
         Quality::Rough
-    }
+    };
+    let short = width.min(height);
+    let by_size = match (scaled, short) {
+        (true, s) if s < 480 => Quality::Rough,
+        (true, s) if s < 720 => Quality::Soft,
+        _ => Quality::Sharp,
+    };
+    by_bits.max(by_size)
 }
 
 /// Lowest bitrate each audio codec is still listenable at.
@@ -300,12 +298,27 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
         }
     };
 
+    // Frame rate. Before the picture size, which depends on it.
+    let fps_cap = match (options.max_fps.filter(|f| *f > 0.0), info.fps) {
+        (Some(cap), Some(source)) if source > cap + 0.01 => {
+            notes.push(format!("Frame rate capped at {cap} fps (source is {source:.2})."));
+            Some(cap)
+        }
+        _ => None,
+    };
+    let fps = fps_cap.or(info.fps).unwrap_or(30.0);
+
+    // Whole kbps from here on, so the size is chosen with the same number
+    // the verdict is given with.
+    let video_kbps = video_kbps.round().max(1.0) as u32;
+
     // Picture size.
     let (src_w, src_h) = (info.display_width, info.display_height);
     let (mut width, mut height) = (src_w, src_h);
     if src_w > 0 && src_h > 0 {
         if options.auto_resolution {
-            if let Some(side) = auto_short_side(src_w, src_h, video_kbps, options.min_auto_height) {
+            let kbps = f64::from(video_kbps);
+            if let Some(side) = auto_short_side(src_w, src_h, kbps, options.codec, fps, options.min_auto_height) {
                 (width, height) = scale_to_short_side(src_w, src_h, side);
                 notes.push(format!("Resolution lowered to {width}×{height} so the bitrate is not spread too thin."));
             }
@@ -322,17 +335,6 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
     }
     let scaled = (width, height) != (src_w, src_h);
 
-    // Frame rate.
-    let fps_cap = match (options.max_fps.filter(|f| *f > 0.0), info.fps) {
-        (Some(cap), Some(source)) if source > cap + 0.01 => {
-            notes.push(format!("Frame rate capped at {cap} fps (source is {source:.2})."));
-            Some(cap)
-        }
-        _ => None,
-    };
-    let fps = fps_cap.or(info.fps).unwrap_or(30.0);
-
-    let video_kbps = video_kbps.round().max(1.0) as u32;
     let expected_bytes = match target_bytes {
         Some(bytes) => bytes,
         None => (f64::from(video_kbps + audio_kbps) * 1000.0 / 8.0 * duration) as u64,
@@ -349,7 +351,7 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
         height,
         scaled,
         fps_cap,
-        quality: rate(options.codec, f64::from(video_kbps), width, height, fps),
+        quality: rate(options.codec, f64::from(video_kbps), width, height, fps, scaled),
         expected_bytes,
         notes,
     })
@@ -413,28 +415,78 @@ mod tests {
 
     #[test]
     fn auto_resolution_keeps_well_fed_sources() {
-        assert_eq!(auto_short_side(1920, 1080, 4000.0, 240), None);
-        assert_eq!(auto_short_side(1280, 720, 600.0, 240), None);
+        assert_eq!(auto_short_side(1920, 1080, 4000.0, Codec::H264, 30.0, 240), None);
+        assert_eq!(auto_short_side(1280, 720, 600.0, Codec::H264, 30.0, 240), None);
     }
 
     #[test]
     fn auto_resolution_steps_down_when_starved() {
         // 1080p at 900 kbps is 434 kbps/MP: tight, so drop to 720p.
-        assert_eq!(auto_short_side(1920, 1080, 900.0, 240), Some(720));
+        assert_eq!(auto_short_side(1920, 1080, 900.0, Codec::H264, 30.0, 240), Some(720));
         // 4K at 2 Mbps holds 1080p.
-        assert_eq!(auto_short_side(3840, 2160, 2000.0, 240), Some(1080));
-        // 1080p at 150 kbps is hopeless even at 720p; 360p is the first
-        // size that is properly fed.
-        assert_eq!(auto_short_side(1920, 1080, 150.0, 240), Some(360));
+        assert_eq!(auto_short_side(3840, 2160, 2000.0, Codec::H264, 30.0, 240), Some(1080));
+        // 1080p at 150 kbps is hopeless at 720p. 360p would be well fed but
+        // looks small; 480p is a little soft, the best on offer.
+        assert_eq!(auto_short_side(1920, 1080, 150.0, Codec::H264, 30.0, 240), Some(480));
         // The floor is respected.
-        assert_eq!(auto_short_side(1920, 1080, 30.0, 480), Some(480));
+        assert_eq!(auto_short_side(1920, 1080, 30.0, Codec::H264, 30.0, 480), Some(480));
         // Never upscale a small source.
-        assert_eq!(auto_short_side(320, 240, 20.0, 240), None);
+        assert_eq!(auto_short_side(320, 240, 20.0, Codec::H264, 30.0, 240), None);
+    }
+
+    /// Trimming shorter gives every second more bits, so the verdict may
+    /// only stay or improve. It once went from "720p, good" to "1080p, a
+    /// little soft" when a 4K 60 fps clip was trimmed from 48 s to 40 s.
+    /// Sharp may give way to good when the picture grows; that is a larger
+    /// picture, not a worse one.
+    #[test]
+    fn shorter_trims_never_look_worse() {
+        let sources = [
+            (3840, 2160, 60.0, Codec::H264),
+            (1920, 1080, 30.0, Codec::H264),
+            (1080, 1920, 30.0, Codec::H264),
+            (2560, 1440, 60.0, Codec::Hevc),
+            (1280, 720, 30.0, Codec::Av1),
+        ];
+        for (w, h, fps, codec) in sources {
+            for target_mb in [10.0, 20.0, 50.0] {
+                let info = MediaInfo { fps: Some(fps), ..source(w, h, 900.0) };
+                // No sound: its bitrate rises in steps, which can take a few
+                // kbps from the picture as the trim shortens. The claim is
+                // about the picture getting more bits.
+                let options = EncodeOptions { target_mb, codec, audio: AudioChoice::None, ..Default::default() };
+                let mut previous: Option<(f64, Quality)> = None;
+                for tenths in (20..=6000).rev().step_by(7) {
+                    let end = f64::from(tenths) / 10.0;
+                    let Ok(p) = plan(&info, Some(Trim { start: 0.0, end }), &options) else { continue };
+                    if let Some((longer, before)) = previous {
+                        assert!(
+                            p.quality.max(Quality::Good) <= before.max(Quality::Good),
+                            "{w}x{h}@{fps} {codec:?} {target_mb} MB: {longer} s was {before:?}, {end} s is {:?} at {}x{}",
+                            p.quality,
+                            p.width,
+                            p.height
+                        );
+                    }
+                    previous = Some((end, p.quality));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_reported_case_keeps_its_verdict() {
+        let info = MediaInfo { fps: Some(60.0), ..source(3840, 2160, 72.4) };
+        let options = EncodeOptions { target_mb: 10.0, ..Default::default() };
+        let longer = plan(&info, Some(Trim { start: 15.8, end: 64.3 }), &options).unwrap();
+        let shorter = plan(&info, Some(Trim { start: 15.8, end: 55.4 }), &options).unwrap();
+        assert!(shorter.quality <= longer.quality, "{:?} then {:?}", longer.quality, shorter.quality);
+        assert!(shorter.height >= longer.height);
     }
 
     #[test]
     fn auto_resolution_treats_portrait_like_landscape() {
-        assert_eq!(auto_short_side(1080, 1920, 900.0, 240), Some(720));
+        assert_eq!(auto_short_side(1080, 1920, 900.0, Codec::H264, 30.0, 240), Some(720));
         let info = source(1080, 1920, 60.0);
         let options = EncodeOptions { target_mb: 8.0, ..Default::default() };
         let p = plan(&info, None, &options).unwrap();

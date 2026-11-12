@@ -331,7 +331,9 @@ async fn tiny_targets_are_retried_until_they_fit() {
     let input = b.root.join("short.mp4");
     make_source(&b.tools, &input, 2, "1280x720").await;
     // 60 KB for two busy seconds: the first try usually overshoots.
-    let options = EncodeOptions { target_mb: 0.06, effort: Effort::P1, ..Default::default() };
+    // libx264 by name: a GPU encoder would add a hand-over to the CPU.
+    let options =
+        EncodeOptions { target_mb: 0.06, effort: Effort::P1, encoder: Some("libx264".into()), ..Default::default() };
     let (id, done) = b.engine.submit_and_wait(spec(&input, options));
     let result = done.await.unwrap().expect("the job should succeed");
     let retries = b.events.all().iter().filter(|e| e.id() == id && matches!(e, JobEvent::Retry { .. })).count();

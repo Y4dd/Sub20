@@ -107,22 +107,34 @@ function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOptions): 
   }
   let [width, height] = [source.displayWidth, source.displayHeight];
   const short = Math.min(width, height);
-  const megapixels = (width * height) / 1e6;
+  const fps = options.maxFps && source.fps && source.fps > options.maxFps ? options.maxFps : source.fps ?? 30;
+  const kbps = Math.round(video);
+  // Same rule as plan.rs: weighted density, a cap for pictures shrunk under
+  // 720p, and the size with the best verdict (good is good enough).
+  const RANK: Quality[] = ["sharp", "good", "soft", "rough"];
+  const rate = (side: number): Quality => {
+    const efficiency = { h264: 1, hevc: 1.5, av1: 1.8 }[options.codec];
+    const megapixels = ((width * side) / short) * ((height * side) / short) / 1e6;
+    const density = (kbps * efficiency) / (megapixels * Math.sqrt(Math.min(2, Math.max(0.8, fps / 30))));
+    const byBits = density >= 1400 ? 0 : density >= 550 ? 1 : density >= 220 ? 2 : 3;
+    const bySize = side === short ? 0 : side < 480 ? 3 : side < 720 ? 2 : 0;
+    return RANK[Math.max(byBits, bySize)];
+  };
   let side = short;
-  if (options.autoResolution && video / megapixels < 550) {
-    side = LADDER.filter((r) => r < short).find((r) => video / (megapixels * (r / short) ** 2) >= 550) ?? 240;
-    if (short >= 720 && side < 720 && video / (megapixels * (720 / short) ** 2) >= 220) side = 720;
-  } else if (!options.autoResolution && options.maxShortSide && options.maxShortSide < short) {
+  if (options.autoResolution) {
+    const sizes = [short, ...LADDER.filter((r) => r < short && r >= Math.min(options.minAutoHeight, short))];
+    const score = (s: number) => Math.max(1, RANK.indexOf(rate(s)));
+    const best = Math.min(...sizes.map(score));
+    const matching = sizes.filter((s) => score(s) === best);
+    side = best === 3 ? matching[matching.length - 1] : matching[0];
+  } else if (options.maxShortSide && options.maxShortSide < short) {
     side = options.maxShortSide;
   }
+  const quality = rate(side);
   if (side < short) {
     const even = (v: number) => Math.max(2, Math.floor(v / 2) * 2);
     [width, height] = [even((width * side) / short), even((height * side) / short)];
   }
-  const efficiency = { h264: 1, hevc: 1.5, av1: 1.8 }[options.codec];
-  const fps = options.maxFps && source.fps && source.fps > options.maxFps ? options.maxFps : source.fps ?? 30;
-  const density = (video * efficiency) / (((width * height) / 1e6) * Math.sqrt(Math.min(2, Math.max(0.8, fps / 30))));
-  const quality: Quality = density >= 1400 ? "sharp" : density >= 550 ? "good" : density >= 220 ? "soft" : "rough";
   return {
     start, duration, trimmed, targetBytes: options.videoKbps ? null : options.targetMb * 1024 * 1024,
     videoKbps: Math.round(video), audio: options.audio === "none" ? null : options.container === "mp4" ? "aac" : "opus",
