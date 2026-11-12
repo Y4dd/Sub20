@@ -86,7 +86,7 @@
       <span class="mark" aria-label="Sub20">Sub<i>20</i></span>
       <div class="tools">
         <button type="button" onclick={() => (app.sheet = "history")} aria-label="History" title="History"><Icon name="history" /></button>
-        <button type="button" onclick={() => (app.sheet = "settings")} aria-label="Settings" title="Settings"><Icon name="sliders" /></button>
+        <button type="button" onclick={() => (app.sheet = "settings")} aria-label="Settings" title="Settings"><Icon name="gear" /></button>
       </div>
     </div>
 

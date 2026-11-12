@@ -81,29 +81,6 @@
 <Sheet title="Options" onclose={() => (app.sheet = null)}>
   <div class="rows">
     <div class="row">
-      <label for="opt-profile">Profile</label>
-      <div>
-        <select id="opt-profile" class="field" value={app.profile ?? ""} onchange={(event) => app.loadProfile(event.currentTarget.value)}>
-          {#if !app.profile}<option value="">Unsaved</option>{/if}
-          {#each app.settings?.profiles ?? [] as profile (profile.name)}
-            <option value={profile.name}>{profile.name}{profile.name === app.settings?.defaultProfile ? " (default)" : ""}</option>
-          {/each}
-        </select>
-        {#if naming}
-          <form class="inline" onsubmit={(event) => { event.preventDefault(); void saveProfile(); }}>
-            <!-- svelte-ignore a11y_autofocus -->
-            <input class="field" placeholder="Name for these options" aria-label="Profile name" bind:value={profileName} autofocus />
-            <button type="submit" class="link">Save</button>
-          </form>
-        {:else}
-          <p class="note">
-            <button type="button" class="link quiet" onclick={() => { naming = true; profileName = app.profile ?? ""; }}>Save these options as a profile</button>
-          </p>
-        {/if}
-      </div>
-    </div>
-
-    <div class="row">
       <span class="label">Format</span>
       <div>
         <Segmented
@@ -225,6 +202,30 @@
         {/if}
       </div>
     </div>
+
+    <!-- Profiles come last: they are for coming back to, not for each video. -->
+    <div class="row profile">
+      <label for="opt-profile">Profile</label>
+      <div>
+        <select id="opt-profile" class="field" value={app.profile ?? ""} onchange={(event) => app.loadProfile(event.currentTarget.value)}>
+          {#if !app.profile}<option value="">Unsaved</option>{/if}
+          {#each app.settings?.profiles ?? [] as profile (profile.name)}
+            <option value={profile.name}>{profile.name}{profile.name === app.settings?.defaultProfile ? " (default)" : ""}</option>
+          {/each}
+        </select>
+        {#if naming}
+          <form class="inline" onsubmit={(event) => { event.preventDefault(); void saveProfile(); }}>
+            <!-- svelte-ignore a11y_autofocus -->
+            <input class="field" placeholder="Name for these options" aria-label="Profile name" bind:value={profileName} autofocus />
+            <button type="submit" class="link">Save</button>
+          </form>
+        {:else}
+          <p class="note">
+            <button type="button" class="link quiet" onclick={() => { naming = true; profileName = app.profile ?? ""; }}>Save these options as a profile</button>
+          </p>
+        {/if}
+      </div>
+    </div>
   </div>
 
   <details>
@@ -326,6 +327,11 @@
     grid-template-columns: 96px minmax(0, 1fr);
     gap: 12px;
     align-items: start;
+  }
+
+  .row.profile {
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
   }
 
   .row > label,

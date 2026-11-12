@@ -91,7 +91,7 @@
     bottom: 13px;
     width: 3px;
     border-radius: 2px;
-    background: var(--trim);
+    background: var(--trim-mark);
   }
 
   .pick {
@@ -136,7 +136,7 @@
   .words {
     display: grid;
     min-width: 0;
-    padding-right: 14px;
+    padding-right: 30px;
   }
 
   .name {
@@ -168,14 +168,16 @@
     right: 6px;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     color: var(--muted);
     opacity: 0;
   }
 
+  /* Shown on hover, on focus, and always on the clip you are working on. */
   li:hover .remove,
+  li.selected .remove,
   .remove:focus-visible {
     opacity: 1;
   }

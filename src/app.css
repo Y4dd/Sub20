@@ -13,6 +13,10 @@
   /* The trim color: the yellow every video editor uses for the kept range. */
   --trim: #ffd02b;
   --trim-ink: #1c1600;
+  /* Yellow carries meaning on its own on dark; on light it needs a deeper
+     companion for marks and edges (the light yellow is only 1.35:1). */
+  --trim-mark: var(--trim);
+  --trim-edge: transparent;
   --ok: #6fd6a8;
   --bad: #ff8576;
   --shade: rgb(0 0 0 / 0.45);
@@ -44,7 +48,9 @@
     --well: #101216;
     --trim: #ffc61a;
     --trim-ink: #1c1600;
-    --ok: #0b8554;
+    --trim-mark: #9a7000;
+    --trim-edge: #9a7000;
+    --ok: #08774a;
     --bad: #c43727;
     --shade: rgb(20 22 27 / 0.28);
     color-scheme: light;
@@ -127,7 +133,9 @@ p {
 .link {
   color: var(--text);
   text-decoration: underline;
-  text-decoration-color: var(--line-strong);
+  /* Derived from the text so the underline reads as a link in both themes
+     (the old line colour was 1.6:1 on light). */
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
   border-radius: 3px;

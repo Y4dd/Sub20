@@ -228,6 +228,7 @@
     bottom: -3px;
     width: var(--handle);
     background: var(--trim);
+    box-shadow: inset 0 0 0 1px var(--trim-edge);
     pointer-events: auto;
     cursor: ew-resize;
     touch-action: none;

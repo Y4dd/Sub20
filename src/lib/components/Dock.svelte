@@ -106,7 +106,7 @@
   <div class="actions">
     {#if busy > 0}
       <span class="muted">{finished} of {finished + busy + pending} done</span>
-      <button type="button" class="quiet" onclick={() => app.cancelAll()}>Stop</button>
+      <button type="button" class="quiet" onclick={() => app.cancelAll()}>Cancel all</button>
     {:else if pending > 0}
       <button type="button" class="primary" onclick={() => app.compress()} title="Compress ({shortcut})">
         Compress {pending === 1 && app.clips.length === 1 ? "" : plural(pending, "video")}
@@ -224,6 +224,7 @@
   .choices button.current {
     border-color: var(--trim);
     background: var(--trim);
+    box-shadow: inset 0 0 0 1px var(--trim-edge);
     color: var(--trim-ink);
   }
 
@@ -293,6 +294,7 @@
 
   .primary {
     background: var(--trim);
+    box-shadow: inset 0 0 0 1px var(--trim-edge);
     color: var(--trim-ink);
     transition: transform 120ms var(--ease), filter 120ms;
   }

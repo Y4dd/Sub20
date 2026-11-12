@@ -20,7 +20,6 @@
   let stillTicket = 0;
 
   const url = $derived(backend.videoUrl(clip.path));
-  const index = $derived(app.clips.indexOf(clip));
 
   // A different clip: start over at its in point.
   $effect(() => {
@@ -124,17 +123,6 @@
       <h1 title={clip.path}>{clip.name}</h1>
       <p class="muted">{facts}</p>
     </div>
-    {#if app.clips.length > 1}
-      <nav aria-label="Videos">
-        <button type="button" onclick={() => app.step(-1)} disabled={index === 0} aria-label="Previous video" title="Previous video (↑)">
-          <Icon name="left" />
-        </button>
-        <span>{index + 1} of {app.clips.length}</span>
-        <button type="button" onclick={() => app.step(1)} disabled={index === app.clips.length - 1} aria-label="Next video" title="Next video (↓)">
-          <Icon name="right" />
-        </button>
-      </nav>
-    {/if}
   </header>
 
   <div class="well">
@@ -291,31 +279,6 @@
     white-space: nowrap;
   }
 
-  nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  nav button {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    color: var(--text);
-  }
-
-  nav button:hover:not(:disabled) {
-    background: var(--raised);
-  }
-
-  nav button:disabled {
-    color: var(--line-strong);
-  }
-
   .well {
     position: relative;
     flex: 1;
@@ -396,26 +359,29 @@
 
   .edge {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 6px;
   }
 
+  /* Always drawn as a field, so it is plain that a time can be typed. */
   .edge input {
-    width: 8ch;
-    padding: 3px 5px;
-    margin: -3px -5px;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    background: none;
+    width: 9ch;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
     font-weight: 600;
-  }
-
-  .edge.end input {
-    text-align: right;
+    text-align: center;
   }
 
   .edge input:hover:not(:disabled) {
-    border-color: var(--line);
+    border-color: var(--line-strong);
+  }
+
+  .edge input:disabled {
+    background: none;
+    border-color: transparent;
   }
 
   .edge input:focus {

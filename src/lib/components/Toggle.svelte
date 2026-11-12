@@ -63,6 +63,7 @@
 
   input:checked + .track {
     background: var(--trim);
+    box-shadow: inset 0 0 0 1px var(--trim-edge);
   }
 
   input:checked + .track::after {
