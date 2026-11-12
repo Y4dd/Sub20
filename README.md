@@ -32,9 +32,18 @@ app (Python, Celery, Redis and SvelteKit in Docker) that inspired it.
   SVT-AV1). Every encoder is tested with a real encode at startup. Jobs use
   the best one that works and fall back to the CPU if a GPU encoder fails
   mid-job.
+- **Straight into Discord.** A finished video is one Ctrl+C away from the
+  clipboard, so Ctrl+V in Discord attaches it, or drag it from the window
+  straight into a channel. The preview switches to the result so you can
+  check it first.
+- **Sizes named after Discord's limits**: 20 MB (free, the default), 50 MB
+  (Nitro Basic), 100 MB (a level 3 server boost) and 500 MB (Nitro), or any
+  size you type.
 - **Automatic resolution.** When the limit is too tight for the source
-  resolution, the picture is scaled down a step or two rather than smeared.
-  Portrait videos are treated the same as landscape ones.
+  resolution, the picture is scaled to the size that will look best, and the
+  app tells you how it will look before you compress. Trimming shorter never
+  makes that verdict worse. Portrait videos are treated the same as landscape
+  ones.
 - **A queue** with live progress, time left, per-video cancel, and the FFmpeg
   log one click away.
 - **Options**: resolution, frame-rate cap, Opus/AAC/no sound, speed against
@@ -65,7 +74,10 @@ and `.exe` on Windows, `.dmg` and `.app` on macOS, `.deb`, `.rpm` and
 `.AppImage` on Linux).
 
 To work on the interface alone, `npm run dev` opens it in a browser at
-`http://localhost:1420` with invented clips and simulated encodes.
+`http://localhost:1420` with invented clips and simulated encodes. Add
+`?clips` to the address to start with the demo clips loaded, and
+`?frame=overlay` or `?frame=native` to see the macOS or Linux window frame
+instead of the Windows one.
 
 ### Bundling FFmpeg
 
@@ -83,12 +95,14 @@ FFmpeg build you ship: builds with x264 and x265 are GPL.
 
 1. Drop videos on the window, or click to choose them. You can also start the
    app with files: `sub20 clip1.mp4 clip2.mov`.
-2. For each video, drag the yellow handles to keep the part you want. The line
-   under the timeline says what the result will be.
-3. Click the size at the bottom left to change it.
+2. For each video, drag the yellow handles to keep the part you want. The row
+   under the timeline says what will come out and how it should look.
+3. Click the size at the bottom left to change it (20 MB to start).
 4. Press **Compress**.
+5. When it is done, press Ctrl+C and paste into Discord, or drag the file
+   from under the timeline into a channel.
 
-Results are saved next to the originals as `name-10mb.mp4` (or in one folder,
+Results are saved next to the originals as `name-20mb.mp4` (or in one folder,
 if you set that in Settings). Originals are never changed.
 
 | Key | Does |
@@ -99,6 +113,7 @@ if you set that in Settings). Originals are never changed.
 | ↑ ↓ | Previous or next video |
 | Delete | Remove the video from the list |
 | Ctrl/⌘ + Enter | Compress |
+| Ctrl/⌘ + C | Copy the finished video, ready to paste into Discord |
 
 With a trim handle focused, the arrow keys move that handle.
 
@@ -174,7 +189,6 @@ or macOS yet.
 ## Coming next
 
 - FFmpeg bundled in the app, so it works straight after install.
-- A cleaner interface.
 - Downloads on the [Releases](../../releases) page, with and without FFmpeg
   bundled.
 

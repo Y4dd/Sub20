@@ -35,7 +35,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Planning is pure** (`plan.rs`), so the window calls it on every handle drag.
 - Audio yields on tight budgets: at most 34% of the total, stepped down to a floor (Opus 24, AAC 48 kbps). If video would get under 24 kbps the plan is refused with advice, since the result could not fit.
-- Automatic resolution works on the short side using kbps per megapixel (550 good, 350 fallback, 220 floor) over a 2160…240 ladder. Ported from the original with two fixes: portrait behaves like landscape, and a well-fed source of non-standard size keeps its size.
+- Automatic resolution picks the size whose result will look best, judged by `rate`: weighted kbps per megapixel (`density`: codec efficiency, frame rate) with 550 good and 220 rough, and a cap for pictures shrunk below 720p (soft) or 480p (rough). Good counts as good enough, ties go to the larger picture (to the smaller when all are rough), and the size is chosen with the same rounded kbps the verdict is given with. Choice and verdict share one measure, so a shorter trim never looks worse (`shorter_trims_never_look_worse`). This replaced a rule that preferred 1080p and judged by raw kbps, which turned "720p, good" into "1080p, soft" when a clip was trimmed shorter. Portrait behaves like landscape; the source size is a candidate too.
 - The scale filter gets explicit even `W:H`, computed in the planner from display dimensions (rotation applied).
 - A trim that keeps the whole video is treated as no trim.
 
@@ -69,36 +69,39 @@ Adding a capability touches, in order: a core function with a test → a command
 - A source the webview cannot decode fires `<video>`'s `onerror`, and the stage switches to still frames from `preview_frame`.
 - On exit the shell cancels all jobs and waits briefly so no FFmpeg child outlives the app.
 - Paths passed on the command line open as clips ("Open with Sub20").
+- **Results** are remembered in `AppState::results` as job `Done` events pass through the sink. `result_url` (preview) and `copy_file` (clipboard, via `clipboard-rs`; CF_HDROP on Windows) refuse any other path. Drag-out is `tauri-plugin-drag` called from the window, with a filmstrip thumbnail file as the drag image (`tauri.ts` keeps thumbnail URL → file).
+- **Window frame** differs by platform: `tauri.windows.conf.json` turns decorations off and the window draws its own buttons (`Frame` "custom"); macOS keeps its traffic lights over an overlay title bar ("overlay", `titleBarStyle: Overlay`); Linux keeps the native frame ("native"). The title bar is `data-tauri-drag-region`; the window permissions it needs are listed in `capabilities/default.json`.
 - Out of scope by decision: login, the Android app, upload storage.
 
 ## Interface decisions
 
 The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was answered so far:
 
-- **One screen.** Clip list, stage (preview, timeline, one status sentence), dock (size, options summary, one action). Options, Settings and History are sheets that slide over it.
+- **One screen.** A title bar across the top (wordmark, History, Settings, and on Windows the window buttons), clip list, stage (preview, timeline, the plan or result row), dock (size, options summary, one action or the batch progress). Options, Settings and History are sheets that slide over it.
 - **The trim bracket is the signature.** Yellow handles are the convention for the kept range in video editors. The bracket is the empty-state drop target, the timeline control, the app icon (with "20" inside), and the progress display (the kept range fills from the left while encoding). `--trim` is reserved for the bracket, the primary action, the selected-clip marker and switched-on toggles.
-- **One primary button.** Everything else is a text link inside the status sentence (`.link`), and icons are limited to history, settings, close and remove. A new action goes into the sentence where it applies before it becomes a button.
+- **One primary button.** Everything else is a text link (`.link`) where it applies; the exceptions are the finished clip's file chip (drag it out, click to play) and Copy, because getting the file into Discord is the point. Icons are limited to history, settings, close, remove, copy, the drag grip and the window buttons.
 - **Size and options are global** to the list; **trim is per clip**. Editing a finished clip's trim puts it back to ready.
 - **Copy:** sentence case, plain verbs, commas between facts. The status line says what will happen, is happening, or happened. Errors name the cause and the fix. An action keeps one name everywhere.
-- **Tokens** live in `src/app.css`. Dark by default, light through `prefers-color-scheme`. Fonts are bundled (the app works offline): Bricolage Grotesque for display, condensed with `font-stretch`, and Hanken Grotesk for the interface, with tabular figures. Monospace appears only in the FFmpeg log. Corner radii differ by role.
+- **Getting it into Discord** is the end of every job: the finished state previews the result (Original/Result switch), offers Copy (Ctrl+C) and a file chip to drag out. The size picker names the Discord limit each preset matches (`discordTier` in `format.ts`; change it when Discord changes its plans). Presets live in settings as plain numbers, default 20 MB (`DEFAULT_TARGET_MB`).
+- **Tokens** live in `src/app.css`. Dark by default, light through `prefers-color-scheme`. Yellow on the light background is only 1.35:1, so marks drawn in yellow use `--trim-mark` and yellow shapes get a `--trim-edge` outline (both a deep amber in light, plain yellow / nothing in dark). Fonts are bundled (the app works offline): Bricolage Grotesque for display, condensed with `font-stretch`, and Hanken Grotesk for the interface, with tabular figures. Monospace appears only in the FFmpeg log. Corner radii differ by role.
 - **Icon source** is `public/icon.svg`. Regenerate the app icons with `npx tauri icon public/icon.svg`, then delete the `android` and `ios` folders it creates.
 - **State** lives in `src/lib/app.svelte.ts`. `Clip` is a class with `$state` fields. Job events can arrive before `compress()` returns its ids, hence the `#early` buffer.
 - **Keyboard** handling is in `App.svelte`; the README has the table.
-- Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes.
+- Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes. `?clips` opens the demo clips at startup and `?frame=overlay|native` shows the other frames, so a headless browser can capture a state without clicking. The built-in browser pane's screenshots crop on a display scaled to 150%; a headless Edge or Chrome at a fixed size works. If a component's styles stop updating in `npm run dev`, restart it: Vite's per-component CSS can go stale.
+- The mock planner in `mock.ts` copies the Rust rule for resolution and verdict; change them together.
 
 ## Planned next
 
 The owner wants these; each is to be discussed before it is built.
 
 - **FFmpeg bundled** in the app, so a fresh install works without a separate download.
-- **A more tasteful interface and better UX** than the current one.
 - **GitHub releases** with two downloads per platform: one with FFmpeg bundled, one without (uses the system FFmpeg).
 
 ## Verified, and not
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 60 tests pass (46 unit, 12 e2e, 2 shell), including NVENC jobs that start on the GPU. The app window itself has not been launched on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 62 tests pass (48 unit, 12 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 
