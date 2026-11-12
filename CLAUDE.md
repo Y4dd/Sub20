@@ -98,10 +98,12 @@ The owner wants these; each is to be discussed before it is built.
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 after the rename: `cargo fmt`, `clippy`, `svelte-check` clean and the workspace tests pass. The app window itself has not been launched on Windows yet.
+Checked on Windows 11 with FFmpeg 9.0 and an NVIDIA GPU after the rename: `cargo fmt`, `clippy` and `svelte-check` are clean; all 44 unit tests pass; 4 of 11 e2e tests fail. The app window itself has not been launched on Windows yet.
+
+**Known bug: NVENC misses the size target.** On this machine the engine picks `h264_nvenc`, and the e2e tests assumed a GPU-less machine running libx264. Asked for 282 kbps on a busy 20 s 720p clip, NVENC delivered about 600 kbps (79% over). Two lower-bitrate retries did not get it under, and the engine then kept the over-limit file and reported success ("Keeping the closest result" in `engine.rs`), which breaks "the limit is strict". The same test forced to `libx264` passes. Two things to fix: NVENC rate control (its flags come from the original, VBR with `-maxrate`/`-bufsize`), and what the engine does when retries run out (fail, or fall back to the CPU encoder, rather than ship a file over the limit). The e2e tests should also pin `libx264` where they assert on it.
 
 Unverified, so check these first on a new machine:
-- Hardware encoder success paths (NVENC, Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags follow the original; only fail-and-fall-back has run. The owner's machine has an NVIDIA GPU, so NVENC is the first to check.
+- Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags follow the original; only fail-and-fall-back has run.
 - Windows and macOS app runs, including asset-protocol video playback and the `CREATE_NO_WINDOW` flag on FFmpeg children.
 
 ## Loose ends
