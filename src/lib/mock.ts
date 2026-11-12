@@ -211,7 +211,11 @@ export const mockBackend: Backend = {
     settings: structuredClone(settings),
     ffmpeg: { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" },
     version: "0.1.0",
-    openedWith: [],
+    // `?clips` opens the demo clips at startup, so a headless screenshot can
+    // show the bench without clicking.
+    openedWith: new URLSearchParams(location.search).has("clips")
+      ? DEMOS.slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`)
+      : [],
   }),
   ffmpegStatus: async () => ({ found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" }),
   addVideos: async (paths): Promise<Added[]> => {
