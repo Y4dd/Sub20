@@ -54,6 +54,21 @@ export function plain(value: number, digits = 2): string {
   return trimZero(value.toFixed(digits));
 }
 
+/**
+ * The Discord upload limit a size matches, for the size picker. Discord sets
+ * these; check them when it changes its plans.
+ */
+const DISCORD_TIERS: Record<number, string> = {
+  20: "Discord",
+  50: "Nitro Basic",
+  100: "Boost level 3",
+  500: "Nitro",
+};
+
+export function discordTier(mb: number): string | null {
+  return DISCORD_TIERS[mb] ?? null;
+}
+
 /** Bytes as MB (1024 × 1024), matching the size limit the user typed. */
 export function megabytes(bytes: number): string {
   const mb = bytes / (1024 * 1024);

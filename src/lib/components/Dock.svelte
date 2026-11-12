@@ -1,7 +1,7 @@
 <script lang="ts">
   // The bottom bar: one size, one sentence of options, one action.
   import { app } from "../app.svelte";
-  import { plain, plural, CODEC_LABEL } from "../format";
+  import { discordTier, plain, plural, CODEC_LABEL } from "../format";
   import Icon from "./Icon.svelte";
 
   let picking = $state(false);
@@ -62,6 +62,7 @@
         <b>{plain(app.options.videoKbps, 0)}</b><span>kbps</span>
       {:else}
         <b>{plain(app.options.targetMb)}</b><span>MB</span>
+        {#if discordTier(app.options.targetMb)}<small class="tier">{discordTier(app.options.targetMb)}</small>{/if}
       {/if}
       <Icon name="down" size={16} />
     </button>
@@ -71,7 +72,8 @@
         <div class="choices">
           {#each sizes as size (size)}
             <button type="button" class:current={!app.options.videoKbps && size === app.options.targetMb} onclick={() => setSize(size)}>
-              {plain(size)}<span>MB</span>
+              <b>{plain(size)}<span>MB</span></b>
+              {#if discordTier(size)}<small>{discordTier(size)}</small>{/if}
             </button>
           {/each}
         </div>
@@ -171,6 +173,18 @@
     color: var(--muted);
   }
 
+  .figure .tier {
+    align-self: center;
+    margin-left: 4px;
+    padding: 2px 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--muted);
+    font-family: var(--body);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
   .figure :global(svg) {
     align-self: center;
     margin-left: 2px;
@@ -193,27 +207,46 @@
     z-index: 10;
   }
 
+  /* Tiles: the size, and under it the Discord limit it matches. */
   .choices {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 
   .choices button {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-    height: 34px;
-    padding: 0 12px;
+    display: grid;
+    gap: 1px;
+    min-height: 52px;
+    padding: 8px 12px;
     border: 1px solid var(--line);
-    border-radius: 17px;
-    font-weight: 600;
+    border-radius: 10px;
+    text-align: left;
   }
 
-  .choices button span {
+  .choices b {
+    font-family: var(--display);
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-stretch: 85%;
+  }
+
+  .choices b span {
+    margin-left: 3px;
+    color: var(--muted);
+    font-family: var(--body);
+    font-size: var(--step--1);
+    font-weight: 500;
+  }
+
+  .choices small {
     color: var(--muted);
     font-size: var(--step--1);
-    font-weight: 450;
+  }
+
+  .choices button.current small {
+    color: inherit;
+    opacity: 0.75;
   }
 
   .choices button:hover {

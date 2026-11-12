@@ -34,6 +34,8 @@ export class Clip {
   retries = $state(0);
   fallback = $state<{ from: string; to: string } | null>(null);
   result = $state<JobResult | null>(null);
+  /** Just copied to the clipboard; the Copy button says so for a moment. */
+  copied = $state(false);
   error = $state<string | null>(null);
   log = $state.raw<string[]>([]);
   plan = $state.raw<Plan | null>(null);
@@ -319,6 +321,29 @@ class App {
 
   async cancelAll() {
     await backend.cancelAll();
+  }
+
+  /** Puts a finished clip on the clipboard, for pasting into Discord. */
+  async copy(clip: Clip) {
+    if (!clip.result) return;
+    try {
+      await backend.copyFile(clip.result.output);
+      clip.copied = true;
+      window.setTimeout(() => (clip.copied = false), 2400);
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
+  /** Drags a finished clip out of the window, into Discord or a folder. */
+  async dragOut(clip: Clip) {
+    if (!clip.result) return;
+    const thumb = clip.thumbs[Math.floor(clip.thumbs.length / 2)] ?? null;
+    try {
+      await backend.dragOut(clip.result.output, thumb);
+    } catch (error) {
+      this.notify(String(error));
+    }
   }
 
   async saveSettings(change: (settings: Settings) => void) {

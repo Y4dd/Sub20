@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 const DEFAULT_OPTIONS: EncodeOptions = {
-  targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
+  targetMb: 20, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
   maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
 };
@@ -20,7 +20,7 @@ let settings: Settings = {
     { name: "Smallest (AV1)", options: { ...DEFAULT_OPTIONS, codec: "av1", effort: "p5", container: "mkv", audio: "opus" } },
   ],
   defaultProfile: "Everyday",
-  sizes: [8, 10, 25, 50, 100],
+  sizes: [20, 50, 100, 500],
   disabledEncoders: ["libaom-av1"],
   outputMode: "sameFolder",
   outputFolder: null,
@@ -235,7 +235,8 @@ export const mockBackend: Backend = {
   },
   videoUrl: () => null,
   previewFrame: async (path, at) => {
-    const demo = added.get(path)!;
+    // A finished file is painted from the clip it was made from.
+    const demo = added.get(path) ?? DEMOS.find((d) => path.includes(d.name.replace(/\.[^.]+$/, "")))!;
     const ratio = demo.info.displayWidth / demo.info.displayHeight;
     return paint(demo, at, Math.round(540 * ratio), 540);
   },
@@ -281,6 +282,9 @@ export const mockBackend: Backend = {
   }),
   reveal: async () => {},
   openFile: async () => {},
+  resultUrl: async () => null,
+  copyFile: () => new Promise((resolve) => setTimeout(resolve, 120)),
+  dragOut: async () => {},
   pickVideos: async () => {
     const fresh = DEMOS.filter((demo) => ![...added.values()].includes(demo));
     return (fresh.length ? fresh : DEMOS).slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`);

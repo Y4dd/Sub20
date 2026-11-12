@@ -233,6 +233,12 @@ export interface Backend {
   watchStatus(): Promise<WatchStatus>;
   reveal(path: string): Promise<void>;
   openFile(path: string): Promise<void>;
+  /** A URL the stage can play a finished video from; null shows still frames. */
+  resultUrl(path: string): Promise<string | null>;
+  /** Puts a finished video on the clipboard as a file, ready to paste into Discord. */
+  copyFile(path: string): Promise<void>;
+  /** Drags a finished video out of the window, a filmstrip thumbnail under the pointer. */
+  dragOut(path: string, thumb: string | null): Promise<void>;
   pickVideos(): Promise<string[]>;
   pickFolder(): Promise<string | null>;
   onJob(handler: (event: JobEvent) => void): Promise<() => void>;

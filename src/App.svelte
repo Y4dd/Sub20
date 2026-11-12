@@ -28,6 +28,15 @@
       void app.compress();
       return;
     }
+    // Ctrl+C on a finished clip copies the file, unless text is selected.
+    if ((event.metaKey || event.ctrlKey) && event.key === "c" && !typing && !app.sheet) {
+      const done = app.selected?.result;
+      if (done && !window.getSelection()?.toString()) {
+        event.preventDefault();
+        void app.copy(app.selected!);
+      }
+      return;
+    }
     if (event.key === "Escape" && app.sheet) {
       app.sheet = null;
       return;

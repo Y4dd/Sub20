@@ -17,13 +17,15 @@
     refresh: "M16 10a6 6 0 1 1-1.8-4.3M16 4v3h-3",
     trash: "M4 6h12M8 6V4h4v2M6 6l.7 10h6.6L14 6",
     film: "M3 4.5h14v11H3zM3 8h14M3 12h14M7 4.5V8M13 4.5V8M7 12v3.5M13 12v3.5",
+    copy: "M7.5 7.5h8.5v8.5H7.5zM4 12.5V4h8.5",
+    grip: "M7.5 5.5h.01M12.5 5.5h.01M7.5 10h.01M12.5 10h.01M7.5 14.5h.01M12.5 14.5h.01",
   } as const;
 
   let { name, size = 18 }: { name: keyof typeof PATHS; size?: number } = $props();
 </script>
 
 <svg width={size} height={size} viewBox="0 0 20 20" fill={name === "play" ? "currentColor" : "none"}
-  stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  stroke="currentColor" stroke-width={name === "grip" ? 2.6 : 1.6} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d={PATHS[name]} />
 </svg>
 

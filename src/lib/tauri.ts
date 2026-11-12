@@ -4,6 +4,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
+import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import type { Added, Backend, JobEvent } from "./types";
 
 /** File types offered in the "choose files" dialog. */
@@ -14,6 +15,9 @@ const VIDEO_EXTENSIONS = [
 
 /** Preview URLs handed out by the app for platforms that need them. */
 const playUrls = new Map<string, string>();
+
+/** Thumbnail files by the URL the window shows them under; dragging needs the file. */
+const thumbFiles = new Map<string, string>();
 
 export const tauriBackend: Backend = {
   demo: false,
@@ -26,7 +30,11 @@ export const tauriBackend: Backend = {
   },
   filmstrip: async (path, duration, count) => {
     const files = await invoke<string[]>("filmstrip", { path, duration, count });
-    return files.map((file) => convertFileSrc(file));
+    return files.map((file) => {
+      const url = convertFileSrc(file);
+      thumbFiles.set(url, file);
+      return url;
+    });
   },
   videoUrl: (path) => playUrls.get(path) ?? convertFileSrc(path),
   previewFrame: (path, at) => invoke("preview_frame", { path, at }),
@@ -44,6 +52,13 @@ export const tauriBackend: Backend = {
   watchStatus: () => invoke("watch_status"),
   reveal: (path) => invoke("reveal", { path }),
   openFile: (path) => invoke("open_file", { path }),
+  resultUrl: async (path) => (await invoke<string | null>("result_url", { path })) ?? convertFileSrc(path),
+  copyFile: (path) => invoke("copy_file", { path }),
+  dragOut: async (path, thumb) => {
+    const icon = (thumb && thumbFiles.get(thumb)) ?? thumbFiles.values().next().value;
+    if (!icon) return;
+    await startDrag({ item: [path], icon });
+  },
   pickVideos: async () => {
     const picked = await open({
       multiple: true,

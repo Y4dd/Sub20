@@ -5,8 +5,9 @@
 
 mod media;
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use base64::Engine as _;
@@ -30,6 +31,9 @@ struct AppState {
     /// Serves previews over loopback HTTP where the asset protocol cannot
     /// play video (Linux).
     media: Option<media::MediaServer>,
+    /// Files this app has written. Only these may be previewed or copied to
+    /// the clipboard as results.
+    results: Arc<Mutex<HashSet<PathBuf>>>,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -266,10 +270,41 @@ fn open_file(app: AppHandle, path: PathBuf) -> CommandResult<()> {
     app.opener().open_path(path.to_string_lossy(), None::<&str>).map_err(text)
 }
 
+/// Refuses paths this app did not write.
+fn produced(state: &AppState, path: &Path) -> CommandResult<()> {
+    if !state.results.lock().expect("results lock").contains(path) {
+        return Err("Only videos Sub20 made can be used here.".into());
+    }
+    if !path.is_file() {
+        return Err("That file is no longer there.".into());
+    }
+    Ok(())
+}
+
+/// Lets the window play a finished video, for the Result view of the stage.
+#[tauri::command]
+fn result_url(app: AppHandle, state: State<'_, AppState>, path: PathBuf) -> CommandResult<Option<String>> {
+    produced(&state, &path)?;
+    app.asset_protocol_scope().allow_file(&path).map_err(text)?;
+    Ok(state.media.as_ref().map(|server| server.url_for(&path)))
+}
+
+/// Puts a finished video on the clipboard as a file, so pasting into Discord
+/// (or a folder) attaches it.
+#[tauri::command]
+fn copy_file(state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
+    use clipboard_rs::{Clipboard, ClipboardContext};
+    produced(&state, &path)?;
+    let file = path.to_string_lossy().into_owned();
+    let clipboard = ClipboardContext::new().map_err(|e| format!("The clipboard could not be opened: {e}"))?;
+    clipboard.set_files(vec![file]).map_err(|e| format!("The clipboard refused the file: {e}"))
+}
+
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_drag::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             let cache_dir = app.path().app_cache_dir()?;
@@ -291,8 +326,13 @@ pub fn run() {
                 bundled.push(beside);
             }
 
+            let results: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
+            let produced = results.clone();
             let window = app.handle().clone();
             let sink = Arc::new(move |event: JobEvent| {
+                if let JobEvent::Done { result, .. } = &event {
+                    produced.lock().expect("results lock").insert(result.output.clone());
+                }
                 let _ = window.emit("job", event);
             });
             let engine = Engine::new(&data_dir, &cache_dir.join("work"), bundled, sink);
@@ -321,7 +361,7 @@ pub fn run() {
                 None
             };
 
-            app.manage(AppState { engine, watcher, thumbs_dir, opened_with, media });
+            app.manage(AppState { engine, watcher, thumbs_dir, opened_with, media, results });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -342,6 +382,8 @@ pub fn run() {
             watch_status,
             reveal,
             open_file,
+            result_url,
+            copy_file,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start Sub20");

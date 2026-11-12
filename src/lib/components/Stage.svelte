@@ -112,9 +112,38 @@
     rough: "Will look rough. Trim it shorter or raise the size.",
   } as const;
 
-  const overLimit = $derived(
-    clip.result?.targetMb != null && clip.result.sizeBytes > clip.result.targetMb * 1024 * 1024,
-  );
+  // A finished clip opens on its result: that is what is about to be sent.
+  let view = $state<"original" | "result">("original");
+  let resultSrc = $state<string | null>(null);
+  let resultStill = $state<string | null>(null);
+
+  $effect(() => {
+    const output = clip.result?.output ?? null;
+    untrack(() => {
+      view = output ? "result" : "original";
+      resultSrc = null;
+      resultStill = null;
+    });
+    if (!output) return;
+    const target = clip;
+    void backend
+      .resultUrl(output)
+      .then((src) => {
+        if (target !== clip) return;
+        resultSrc = src;
+        // No playable URL: show a frame from the middle of the result.
+        if (!src) return backend.previewFrame(output, clip.kept / 2).then((frame) => (resultStill = frame));
+      })
+      .catch(() => (view = "original"));
+  });
+
+  // Showing the result pauses the original.
+  $effect(() => {
+    if (view === "result") untrack(() => video?.pause());
+  });
+
+  const thumb = $derived(clip.thumbs[Math.floor(clip.thumbs.length / 2)] ?? null);
+  const copyKey = navigator.platform.toLowerCase().includes("mac") ? "⌘C" : "Ctrl+C";
 </script>
 
 <section class="stage" aria-label={clip.name}>
@@ -128,6 +157,13 @@
   <div class="well">
     {#if showLog}
       <pre class="log" aria-label="FFmpeg log">{clip.log.join("\n") || "Nothing logged yet."}</pre>
+    {:else if view === "result" && clip.result}
+      {#if resultSrc}
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video class="picture" src={resultSrc} controls preload="metadata" playsinline></video>
+      {:else if resultStill}
+        <img class="picture" src={resultStill} alt="" draggable="false" />
+      {/if}
     {:else if stills}
       {#if still}
         <img class="picture" src={still} alt="" draggable="false" />
@@ -157,6 +193,12 @@
         <span>{clock(playhead)}</span>
       </button>
     {/if}
+    {#if clip.result && !showLog}
+      <div class="views" role="group" aria-label="Preview">
+        <button type="button" aria-pressed={view === "original"} onclick={() => (view = "original")}>Original</button>
+        <button type="button" aria-pressed={view === "result"} onclick={() => (view = "result")}>Result</button>
+      </div>
+    {/if}
   </div>
 
   <Timeline {clip} {playhead} onseek={seek} />
@@ -173,7 +215,7 @@
       />
     </label>
 
-    <p class="status" aria-live="polite">
+    <div class="status" aria-live="polite">
       {#if clip.status === "queued"}
         Waiting for its turn.
         <button type="button" class="link" onclick={() => app.cancel(clip)}>Cancel</button>
@@ -193,20 +235,44 @@
           <strong>{Math.floor(clip.percent)}%</strong>{#if clip.eta != null && clip.percent > 2}, {remaining(clip.eta)}{/if}.
         {/if}
         {#if clip.fallback}
-          <span class="muted">The graphics card's encoder failed, so the CPU took over.</span>
+          <span class="muted">The graphics card could not do this one, so the CPU took over.</span>
         {/if}
         <button type="button" class="link" onclick={() => app.cancel(clip)}>Cancel</button>
       {:else if clip.status === "done" && clip.result}
-        {#if overLimit}
-          <span class="bad">Saved at {megabytes(clip.result.sizeBytes)}, over the {plain(clip.result.targetMb ?? 0)} MB limit.</span>
-          It could not be made smaller.
-        {:else}
-          <span class="ok"><Icon name="check" size={16} /></span>
-          Saved {baseName(clip.result.output)} at <strong>{megabytes(clip.result.sizeBytes)}</strong>, down from {megabytes(clip.result.originalBytes)}.
-        {/if}
-        <button type="button" class="link" onclick={() => backend.reveal(clip.result!.output).catch((e) => app.notify(String(e)))}>Show in folder</button>
-        <button type="button" class="link" onclick={() => backend.openFile(clip.result!.output).catch((e) => app.notify(String(e)))}>Play it</button>
-        <button type="button" class="link quiet" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Compress again</button>
+        {@const result = clip.result}
+        <div class="result">
+          <!-- The file itself: drag it into Discord, or click to play it. -->
+          <button
+            type="button"
+            class="file"
+            draggable="true"
+            ondragstart={(event) => {
+              event.preventDefault();
+              void app.dragOut(clip);
+            }}
+            onclick={() => backend.openFile(result.output).catch((e) => app.notify(String(e)))}
+            title="Drag into Discord or a folder, or click to play"
+          >
+            <span class="thumb">{#if thumb}<img src={thumb} alt="" draggable="false" />{/if}</span>
+            <span class="words">
+              <span class="name">{baseName(result.output)}</span>
+              <span class="size"><Icon name="check" size={14} /><span><strong>{megabytes(result.sizeBytes)}</strong>, down from {megabytes(result.originalBytes)}</span></span>
+            </span>
+            <span class="grip" aria-hidden="true"><Icon name="grip" size={16} /></span>
+          </button>
+          <button type="button" class="copy" class:copied={clip.copied} onclick={() => app.copy(clip)}>
+            <Icon name={clip.copied ? "check" : "copy"} size={16} />
+            {clip.copied ? "Copied" : "Copy"}
+            <kbd>{copyKey}</kbd>
+          </button>
+        </div>
+        <p class="after">
+          <button type="button" class="link" onclick={() => backend.reveal(result.output).catch((e) => app.notify(String(e)))}>Show in folder</button>
+          <button type="button" class="link quiet" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Compress again</button>
+          {#if clip.log.length > 0}
+            <button type="button" class="link quiet" onclick={() => (showLog = !showLog)}>{showLog ? "Hide log" : "Show log"}</button>
+          {/if}
+        </p>
       {:else if clip.status === "failed"}
         <span class="bad">{clip.error}</span>
         <button type="button" class="link" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Try again</button>
@@ -227,10 +293,10 @@
       {:else}
         &nbsp;
       {/if}
-      {#if clip.log.length > 0 && clip.status !== "ready"}
+      {#if clip.log.length > 0 && clip.status !== "ready" && clip.status !== "done"}
         <button type="button" class="link quiet" onclick={() => (showLog = !showLog)}>{showLog ? "Hide log" : "Show log"}</button>
       {/if}
-    </p>
+    </div>
 
     <label class="edge end">
       <span class="muted">to</span>
@@ -401,13 +467,156 @@
     margin-left: 6px;
   }
 
-  .ok {
-    display: inline-block;
-    vertical-align: -3px;
+  .bad {
+    color: var(--bad);
+  }
+
+  /* Original / Result, over the preview. */
+  .views {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgb(12 13 16 / 0.72);
+    backdrop-filter: blur(8px);
+  }
+
+  .views button {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 7px;
+    color: #c9cdd6;
+    font-weight: 600;
+  }
+
+  .views button:hover {
+    color: #fff;
+  }
+
+  .views button[aria-pressed="true"] {
+    background: #fff;
+    color: #14161b;
+  }
+
+  /* The finished file, ready to go. */
+  .result {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    max-width: 440px;
+    padding: 6px 10px 6px 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--surface);
+    text-align: left;
+    cursor: grab;
+    transition: transform 120ms var(--ease), border-color 120ms;
+  }
+
+  .file:hover {
+    border-color: var(--ok);
+    transform: translateY(-1px);
+  }
+
+  .file:active {
+    cursor: grabbing;
+    transform: none;
+  }
+
+  .file .thumb {
+    flex: none;
+    width: 54px;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: var(--well);
+  }
+
+  .file .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .file .words {
+    display: grid;
+    min-width: 0;
+  }
+
+  .file .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .file .size {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+
+  .file .size :global(svg),
+  .file .size strong {
     color: var(--ok);
   }
 
-  .bad {
-    color: var(--bad);
+  .file .grip {
+    margin-left: auto;
+    color: var(--faint);
+  }
+
+  .copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .copy:hover {
+    background: var(--raised);
+  }
+
+  .copy:active {
+    transform: scale(0.98);
+  }
+
+  .copy.copied {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  kbd {
+    padding: 1px 6px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 500;
+  }
+
+  .after {
+    margin-top: 6px;
+  }
+
+  .after .link:first-child {
+    margin-left: 0;
   }
 </style>
