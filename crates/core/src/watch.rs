@@ -205,7 +205,7 @@ fn scan(
 ) {
     let skip = match config.output_mode {
         OutputMode::Folder => config.output_folder.as_deref(),
-        OutputMode::SameFolder => None,
+        OutputMode::SameFolder | OutputMode::Replace => None,
     };
     let files = candidates(folder, config.recursive, skip);
     let now = Instant::now();
@@ -277,7 +277,7 @@ fn dispatch(shared: &Arc<Shared>, config: &WatchSettings, path: PathBuf, k: Stri
         .unwrap_or_else(|| settings.default_options());
     let output_dir = match config.output_mode {
         OutputMode::Folder => config.output_folder.clone(),
-        OutputMode::SameFolder => None,
+        OutputMode::SameFolder | OutputMode::Replace => None,
     };
     shared.in_flight.lock().expect("flight lock").insert(k.clone());
     let (_, outcome) = shared.engine.submit_and_wait(JobSpec {
@@ -286,6 +286,8 @@ fn dispatch(shared: &Arc<Shared>, config: &WatchSettings, path: PathBuf, k: Stri
         options,
         output_dir,
         origin: Origin::Watch,
+        output_name: None,
+        replace_original: false,
     });
 
     let shared = shared.clone();

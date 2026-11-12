@@ -1,6 +1,6 @@
 //! A record of finished compressions.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -64,6 +64,21 @@ impl History {
         self.save(&entries)
     }
 
+    /// Points entries for a file that was renamed at its new name.
+    pub fn retarget(&self, from: &Path, to: &Path) -> Result<()> {
+        let mut entries = self.entries.lock().expect("history lock");
+        let mut changed = false;
+        for entry in entries.iter_mut().filter(|e| e.result.output == from) {
+            entry.result.output = to.to_path_buf();
+            changed = true;
+        }
+        if changed {
+            self.save(&entries)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn remove(&self, id: &str) -> Result<()> {
         let mut entries = self.entries.lock().expect("history lock");
         entries.retain(|e| e.id != id);
@@ -119,6 +134,7 @@ mod tests {
                 attempts: 1,
                 elapsed_seconds: 12.0,
                 target_mb: Some(10.0),
+                replaced_original: false,
             },
         }
     }

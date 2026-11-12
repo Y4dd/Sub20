@@ -22,6 +22,7 @@ pub mod ffmpeg;
 pub mod hardware;
 pub mod history;
 pub mod job;
+pub mod output;
 pub mod plan;
 pub mod probe;
 pub mod progress;

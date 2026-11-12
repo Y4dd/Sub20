@@ -157,6 +157,13 @@ pub struct JobSpec {
     /// Where the result goes. `None` puts it next to the source.
     #[serde(default)]
     pub output_dir: Option<PathBuf>,
+    /// What to call the result, as typed; `None` uses `name-20mb`. Cleaned
+    /// with `output::clean_name`.
+    #[serde(default)]
+    pub output_name: Option<String>,
+    /// Put the result in place of the source, which goes to the Recycle Bin.
+    #[serde(default)]
+    pub replace_original: bool,
     #[serde(default)]
     pub origin: Origin,
 }
@@ -184,6 +191,9 @@ pub struct JobResult {
     pub elapsed_seconds: f64,
     /// `None` in fixed-bitrate mode.
     pub target_mb: Option<f64>,
+    /// The source went to the Recycle Bin and this file took its place.
+    #[serde(default)]
+    pub replaced_original: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -17,6 +17,7 @@ use crate::ffmpeg::Tools;
 use crate::hardware::{self, Report};
 use crate::history::{self, Entry, History};
 use crate::job::{EncodeOptions, JobEvent, JobId, JobResult, JobSpec, Phase};
+use crate::output;
 use crate::plan::{self, Plan};
 use crate::probe::{self, MediaInfo};
 use crate::progress::{Eta, Reader};
@@ -167,6 +168,16 @@ impl Engine {
 
     pub fn history(&self) -> &Arc<History> {
         &self.inner.history
+    }
+
+    /// Renames a finished file to what was typed, keeping its extension,
+    /// and points its history entry at the new name.
+    pub fn rename_result(&self, path: &Path, typed: &str) -> Result<PathBuf> {
+        let renamed = output::rename(path, typed)?;
+        if let Err(e) = self.inner.history.retarget(path, &renamed) {
+            log::warn!("could not update history: {e}");
+        }
+        Ok(renamed)
     }
 
     /// FFmpeg and FFprobe, located once and remembered.
@@ -498,8 +509,18 @@ impl Engine {
             eta_seconds: Some(0.0),
             out_bytes: size,
         });
-        let output = free_name(&out_dir, &output_stem(&stem, &plan, &spec.options), extension);
-        std::fs::rename(&partial, &output).ctx(format!("could not save {}", output.display()))?;
+        // A typed name wins; replacing keeps the original's name; else name-20mb.
+        let default_stem = if spec.replace_original { stem.clone() } else { output_stem(&stem, &plan, &spec.options) };
+        let final_stem =
+            spec.output_name.as_deref().and_then(|typed| output::clean_name(typed, extension)).unwrap_or(default_stem);
+        let original = spec.replace_original.then_some(input.as_path());
+        let placed = output::place(&partial, &out_dir, &final_stem, extension, original, |file| {
+            trash::delete(file).map_err(std::io::Error::other)
+        })?;
+        if let Some(note) = &placed.note {
+            self.log(id, note.clone());
+        }
+        let output = placed.path;
 
         Ok(JobResult {
             output,
@@ -520,6 +541,7 @@ impl Engine {
             attempts,
             elapsed_seconds: started.elapsed().as_secs_f64(),
             target_mb: plan.target_bytes.map(|_| spec.options.target_mb),
+            replaced_original: placed.replaced,
         })
     }
 
@@ -794,15 +816,6 @@ pub fn looks_generated(stem: &str) -> bool {
     tail.strip_suffix("mb").is_some_and(number) || tail.strip_suffix('k').is_some_and(number)
 }
 
-/// `dir/stem.ext`, or `dir/stem-2.ext` and so on when that is taken.
-fn free_name(dir: &Path, stem: &str, extension: &str) -> PathBuf {
-    let first = dir.join(format!("{stem}.{extension}"));
-    if !first.exists() {
-        return first;
-    }
-    (2..).map(|n| dir.join(format!("{stem}-{n}.{extension}"))).find(|p| !p.exists()).expect("a free name")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -820,10 +833,10 @@ mod tests {
     #[test]
     fn free_names_do_not_collide() {
         let dir = tempfile::tempdir().unwrap();
-        let first = free_name(dir.path(), "clip-10mb", "mp4");
+        let first = output::free_name(dir.path(), "clip-10mb", "mp4");
         assert_eq!(first.file_name().unwrap(), "clip-10mb.mp4");
         std::fs::write(&first, b"x").unwrap();
-        let second = free_name(dir.path(), "clip-10mb", "mp4");
+        let second = output::free_name(dir.path(), "clip-10mb", "mp4");
         assert_eq!(second.file_name().unwrap(), "clip-10mb-2.mp4");
     }
 

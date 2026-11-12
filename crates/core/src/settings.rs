@@ -25,6 +25,9 @@ pub enum OutputMode {
     SameFolder,
     /// In one chosen folder.
     Folder,
+    /// In place of the original, which goes to the Recycle Bin. Manual jobs
+    /// only: the folder watch treats it as `SameFolder`.
+    Replace,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -200,6 +203,10 @@ impl Settings {
         self.history_keep_days = self.history_keep_days.min(3650);
         self.watch.stable_seconds = self.watch.stable_seconds.clamp(2, 60);
         self.watch.poll_seconds = self.watch.poll_seconds.clamp(2, 300);
+        // Replacing files in the folder being watched would feed the watch.
+        if self.watch.output_mode == OutputMode::Replace {
+            self.watch.output_mode = OutputMode::SameFolder;
+        }
         if let Some(name) = &self.watch.profile {
             if !self.profiles.iter().any(|p| &p.name == name) {
                 self.watch.profile = None;

@@ -73,7 +73,15 @@ async fn bench() -> Option<Bench> {
 }
 
 fn spec(input: &Path, options: EncodeOptions) -> JobSpec {
-    JobSpec { input: input.to_path_buf(), trim: None, options, output_dir: None, origin: Origin::Manual }
+    JobSpec {
+        input: input.to_path_buf(),
+        trim: None,
+        options,
+        output_dir: None,
+        origin: Origin::Manual,
+        output_name: None,
+        replace_original: false,
+    }
 }
 
 fn no_leftovers(dir: &Path) {
@@ -448,4 +456,24 @@ async fn folder_watch_compresses_new_files_and_moves_originals() {
     b.engine.settings().update(|s| s.watch.enabled = false).unwrap();
     watcher.reload();
     assert!(!watcher.status().running);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_typed_name_is_used_and_a_result_can_be_renamed() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 2, "640x360").await;
+    let options = EncodeOptions { target_mb: 0.5, encoder: Some("libx264".into()), ..Default::default() };
+    let job = JobSpec { output_name: Some("  for: discord.mp4 ".into()), ..spec(&input, options) };
+    let (_, done) = b.engine.submit_and_wait(job);
+    let result = done.await.unwrap().expect("the job should succeed");
+    assert_eq!(result.output, b.root.join("for discord.mp4"));
+    assert!(!result.replaced_original);
+    assert!(input.exists(), "the original stays without Replace");
+
+    let renamed = b.engine.rename_result(&result.output, "final cut").unwrap();
+    assert_eq!(renamed, b.root.join("final cut.mp4"));
+    assert!(renamed.exists() && !result.output.exists());
+    assert_eq!(b.engine.history().list()[0].result.output, renamed, "history follows the rename");
+    no_leftovers(&b.root);
 }
