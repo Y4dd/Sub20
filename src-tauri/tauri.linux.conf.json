@@ -1,0 +1,109 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "fileAssociations": [
+      {
+        "ext": [
+          "mp4"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/mp4"
+      },
+      {
+        "ext": [
+          "m4v"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/x-m4v"
+      },
+      {
+        "ext": [
+          "mkv"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/x-matroska"
+      },
+      {
+        "ext": [
+          "mov"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/quicktime"
+      },
+      {
+        "ext": [
+          "webm"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/webm"
+      },
+      {
+        "ext": [
+          "avi"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/x-msvideo"
+      },
+      {
+        "ext": [
+          "wmv"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/x-ms-wmv"
+      },
+      {
+        "ext": [
+          "flv"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/x-flv"
+      },
+      {
+        "ext": [
+          "ts",
+          "m2ts",
+          "mts"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/mp2t"
+      },
+      {
+        "ext": [
+          "mpg",
+          "mpeg"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/mpeg"
+      },
+      {
+        "ext": [
+          "3gp"
+        ],
+        "name": "Video",
+        "description": "Video",
+        "role": "Viewer",
+        "mimeType": "video/3gpp"
+      }
+    ]
+  }
+}

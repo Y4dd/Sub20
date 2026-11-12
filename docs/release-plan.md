@@ -84,6 +84,17 @@ its licence text and point to its exact source.
 - [ ] The same pass on macOS (Apple Silicon) and Linux (Ubuntu, plus Fedora
       or Arch).
 - [ ] At least one Intel and one AMD GPU, through beta testers.
+- [ ] Built and checked only on the mock backend, with generated files or
+      from the command line, so far:
+  - [ ] The watch shortcuts ("Watch NVIDIA app clips", "Watch Xbox Game Bar
+        clips") in the real window, and a clip saved while watching.
+  - [ ] A real HDR clip (an iPhone, or a game recorded in HDR): it should
+        come out in ordinary colour, and the stage should say it was HDR.
+  - [ ] A long real recording (an hour or more): memory use, the time
+        estimate, Page Up and Page Down on the trim handles.
+  - [ ] A screen reader pass (NVDA on Windows, VoiceOver on macOS), and the
+        keyboard changes in the real window: focus kept in sheets, the size
+        picker, arrow keys in segmented choices.
 
 **Clip sources gamers actually use**
 - [x] **Multiple audio tracks.** OBS and the NVIDIA app often record game
@@ -113,7 +124,6 @@ its licence text and point to its exact source.
       114, where the untreated result had 23. Needs an FFmpeg built with
       zscale (the bundled one is); without it the clip compresses and the
       stage warns that it may look grey.
-  - [ ] Try a real HDR clip (an iPhone, or a game recorded in HDR).
 - [x] Watch-folder shortcuts: Settings offers "Watch NVIDIA app clips"
       (`Videos\NVIDIA`, with subfolders) and "Watch Xbox Game Bar clips"
       (`Videos\Captures`) when those folders exist, new clips only. Steam
@@ -134,8 +144,13 @@ its licence text and point to its exact source.
       it off); a link in the title bar says when one is out.
   - [ ] Add the `TAURI_SIGNING_PRIVATE_KEY` secret and back up the key.
   - [ ] Try an update from one real release to the next.
-- [ ] "Open with Sub20" for video files, and a "Compress with Sub20" entry
-      in Explorer's context menu (NSIS installer).
+- [x] "Open with Sub20" for video files, and a "Compress with Sub20" entry
+      in Explorer's context menu (NSIS installer hooks; never the default
+      player). macOS and Linux declare the video types too. A video opened
+      while Sub20 is running joins the open window (single instance).
+  - [ ] Try them on each system from an installed build: Open with, the
+        Explorer entry with several videos selected, Finder, and a video
+        opened while Sub20 is running.
 - [ ] Code signing. See [Signing](#signing).
 
 **Small gaps that look broken to a stranger**
@@ -153,8 +168,6 @@ its licence text and point to its exact source.
       refused with how long a clip fits ("it holds 37 minutes at most").
       The FFmpeg log is capped at its last lines. Page Up and Page Down move
       a trim handle a twentieth of the video.
-  - [ ] Watch memory and the time estimate in the real window on a long
-        real recording.
 - [x] **Copy diagnostics** in Settings: the app and FFmpeg versions, the
       encoder report, the operating system, and the last job's log, ready
       to paste into a bug report, with the home folder hidden. No
@@ -168,7 +181,6 @@ its licence text and point to its exact source.
       every control named). Sheets keep Tab inside and return focus to
       what opened them; the size picker works by keyboard and says which
       size is chosen; segmented choices move with the arrow keys.
-  - [ ] Try it with a screen reader (NVDA on Windows, VoiceOver on macOS).
 - [x] About box: version, licence, the FFmpeg licence, "not affiliated
       with Discord" (the end of Settings).
 

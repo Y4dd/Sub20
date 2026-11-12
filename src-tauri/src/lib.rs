@@ -30,8 +30,6 @@ struct AppState {
     engine: Engine,
     watcher: Arc<Watcher>,
     thumbs_dir: PathBuf,
-    /// Videos passed on the command line ("Open with Sub20").
-    opened_with: Vec<PathBuf>,
     /// Serves previews over loopback HTTP where the asset protocol cannot
     /// play video (Linux).
     media: Option<media::MediaServer>,
@@ -94,7 +92,12 @@ async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
         settings: state.engine.settings().get(),
         ffmpeg: ffmpeg_state(&state.engine).await,
         version: env!("CARGO_PKG_VERSION"),
-        opened_with: state.opened_with.clone(),
+        opened_with: {
+            // From here on, opened videos go to the window as events.
+            let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+            WINDOW_READY.store(true, Ordering::SeqCst);
+            std::mem::take(&mut *waiting)
+        },
         bundled: option_env!("SUB20_BUNDLED").is_some(),
         ffmpeg_notice: state.ffmpeg_notice.clone(),
     })
@@ -357,6 +360,42 @@ fn copy_file(state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
     clipboard.set_files(vec![file]).map_err(|e| format!("The clipboard refused the file: {e}"))
 }
 
+/// Videos handed to Sub20 by the system ("Open with", Explorer's "Compress
+/// with Sub20", Finder) that the window hasn't taken yet. Static, because
+/// macOS can hand files over before the app's state exists.
+static OPENED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
+/// Set when the window takes the waiting videos; later ones are sent to it
+/// as `opened` events.
+static WINDOW_READY: AtomicBool = AtomicBool::new(false);
+
+/// The videos among command-line arguments, made absolute against the folder
+/// they were given in.
+fn opened_paths<P: Into<PathBuf>>(args: impl IntoIterator<Item = P>, cwd: &Path) -> Vec<PathBuf> {
+    args.into_iter()
+        .map(Into::into)
+        .map(|path| if path.is_absolute() { path } else { cwd.join(path) })
+        .filter(|path| path.exists())
+        .collect()
+}
+
+/// Brings the window forward with the videos it was asked to open.
+fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
+    if paths.is_empty() {
+        return;
+    }
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+    let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+    if WINDOW_READY.load(Ordering::SeqCst) {
+        let _ = app.emit("opened", paths);
+    } else {
+        waiting.extend(paths);
+    }
+}
+
 /// Which update feed this build follows. The release with FFmpeg inside is
 /// built with `SUB20_BUNDLED=1`; every other build is the lean one, so an
 /// install keeps the kind it started as.
@@ -517,6 +556,12 @@ async fn diagnostics(app: &AppHandle, state: &AppState, log: Vec<String>) -> Str
 
 pub fn run() {
     let app = tauri::Builder::default()
+        // First, so a second launch ("Open with" while Sub20 is open, several
+        // files from Explorer) hands its videos over and quits before
+        // anything else starts.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            hand_over(app, opened_paths(argv.into_iter().skip(1), Path::new(&cwd)));
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drag::init())
@@ -572,12 +617,8 @@ pub fn run() {
             });
 
             // Files handed over by "Open with" or dropped on the app icon.
-            let opened_with: Vec<PathBuf> = std::env::args_os()
-                .skip(1)
-                .map(PathBuf::from)
-                .filter(|path| path.exists())
-                .filter_map(|path| std::path::absolute(path).ok())
-                .collect();
+            let cwd = std::env::current_dir().unwrap_or_default();
+            hand_over(app.handle(), opened_paths(std::env::args_os().skip(1), &cwd));
 
             let media = if cfg!(target_os = "linux") {
                 tauri::async_runtime::block_on(media::MediaServer::start())
@@ -591,7 +632,6 @@ pub fn run() {
                 engine,
                 watcher,
                 thumbs_dir,
-                opened_with,
                 media,
                 results,
                 update: Mutex::default(),
@@ -642,6 +682,12 @@ pub fn run() {
                 api.prevent_exit();
             }
         }
+        // Finder's "Open With" and files dropped on the Dock icon.
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        RunEvent::Opened { urls } => {
+            let paths = urls.iter().filter_map(|url| url.to_file_path().ok()).filter(|p| p.exists()).collect();
+            hand_over(app, paths);
+        }
         RunEvent::Exit => {
             // Stop FFmpeg before the process goes away, so nothing keeps
             // encoding in the background and no partial files are left.
@@ -654,4 +700,18 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn opened_files_are_made_absolute_and_missing_ones_dropped() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("clip.mp4"), b"x").unwrap();
+        let absolute = dir.path().join("clip.mp4");
+        let found = opened_paths(["clip.mp4", "--flag", "gone.mp4", absolute.to_str().unwrap()], dir.path());
+        assert_eq!(found, [absolute.clone(), absolute]);
+    }
 }

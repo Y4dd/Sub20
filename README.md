@@ -109,8 +109,11 @@ Intel) and Linux, and puts them on a draft release with the update feed
 
 ## Using it
 
-1. Drop videos on the window, or click to choose them. You can also start the
-   app with files: `sub20 clip1.mp4 clip2.mov`.
+1. Drop videos on the window, or click to choose them. You can also
+   right-click videos in Explorer and choose **Compress with Sub20**, use
+   **Open with** on any system, or start the app with files:
+   `sub20 clip1.mp4 clip2.mov`. Videos opened while Sub20 is running join
+   the open window.
 2. For each video, drag the yellow handles to keep the part you want. The row
    under the timeline says what will come out and how it should look.
 3. Click the size at the bottom left to change it (20 MB to start).

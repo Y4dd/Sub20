@@ -376,4 +376,5 @@ export const mockBackend: Backend = {
     return () => listeners.delete(handler);
   },
   onDrop: async () => () => {},
+  onOpened: async () => () => {},
 };

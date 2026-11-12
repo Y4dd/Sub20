@@ -94,6 +94,7 @@ export const tauriBackend: Backend = {
     return typeof picked === "string" ? picked : null;
   },
   onJob: (handler) => listen<JobEvent>("job", (event) => handler(event.payload)),
+  onOpened: (handler) => listen<string[]>("opened", (event) => handler(event.payload)),
   onDrop: (handler) =>
     getCurrentWebview().onDragDropEvent((event) => {
       const payload = event.payload;

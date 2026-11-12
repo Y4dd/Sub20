@@ -44,6 +44,10 @@ What changed in each release. The format follows
   for long recordings.
 - Sheets keep keyboard focus inside and return it when closed; the size
   picker and the segmented choices work fully from the keyboard.
+- Right-click videos in Explorer and choose "Compress with Sub20", or use
+  "Open with" on any system; Sub20 doesn't make itself the default player.
+  Videos opened while Sub20 is running join the open window instead of
+  starting a second copy.
 - Settings offers to watch the NVIDIA app's and Xbox Game Bar's clip folders
   in one click when they are found, compressing new clips as they are saved.
 

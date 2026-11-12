@@ -147,6 +147,7 @@ class App {
     if (boot.settings.lastOptions) this.#restore(boot.settings.lastOptions);
     this.#rememberOptions();
     await backend.onJob((event) => this.#onJob(event));
+    await backend.onOpened((paths) => void this.add(paths));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
         this.dragging = false;
