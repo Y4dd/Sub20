@@ -64,10 +64,14 @@
 
   function nudge(which: "start" | "end", event: KeyboardEvent) {
     const step = event.shiftKey ? 1 : 0.1;
+    // A twentieth of the video, so a long recording is crossed in a few presses.
+    const page = Math.max(5, clip.duration / 20);
     const now = which === "start" ? clip.start : clip.end;
     let next: number | null = null;
     if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = now - step;
     else if (event.key === "ArrowRight" || event.key === "ArrowUp") next = now + step;
+    else if (event.key === "PageDown") next = now - page;
+    else if (event.key === "PageUp") next = now + page;
     else if (event.key === "Home") next = which === "start" ? 0 : clip.start;
     else if (event.key === "End") next = which === "start" ? clip.end : clip.duration;
     if (next === null) return;

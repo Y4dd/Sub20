@@ -148,7 +148,9 @@ repeats one (`5l`, `3j`, `2G`). Press `?` in the app for this list.
 | Ctrl/⌘ + Enter | Compress |
 | `?` | Show the keys |
 
-With a trim handle focused, the arrow keys move that handle.
+With a trim handle focused, the arrow keys move it a tenth of a second
+(a second with Shift), Page Up and Page Down a twentieth of the video, and
+Home and End to the furthest it can go.
 
 ## How it is put together
 

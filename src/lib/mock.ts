@@ -100,6 +100,17 @@ const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
  * The Lite size test (`src/lab`) borrows it until the planner is built to
  * WebAssembly.
  */
+/** A length in words, as `timecode::spoken` says it in Rust. */
+function spoken(seconds: number): string {
+  const unit = (n: number, one: string) => (n === 1 ? `1 ${one}` : `${n} ${one}s`);
+  if (!(seconds > 0)) return "0 seconds";
+  if (seconds < 90) return unit(Math.round(seconds), "second");
+  const minutes = Math.round(seconds / 60);
+  const [h, m] = [Math.floor(minutes / 60), minutes % 60];
+  if (h === 0) return unit(m, "minute");
+  return m === 0 ? unit(h, "hour") : `${unit(h, "hour")} ${unit(m, "minute")}`;
+}
+
 export function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOptions): Plan {
   const start = trim?.start ?? 0;
   const duration = (trim?.end ?? source.duration) - start;
@@ -112,7 +123,9 @@ export function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOpt
   }
   const video = options.videoKbps ?? total - audioKbps;
   if (video < 24) {
-    throw `${options.targetMb} MB is too small for ${Math.round(duration)} seconds of video. Trim it shorter or raise the size.`;
+    const fits = (options.targetMb * 8192) / (24 + audioKbps);
+    const most = fits >= 90 ? Math.floor(fits / 60) * 60 : Math.floor(fits);
+    throw `${options.targetMb} MB is too small for ${spoken(duration)} of video: it holds ${spoken(most)} at most. Trim it shorter or raise the size.`;
   }
   let [width, height] = [source.displayWidth, source.displayHeight];
   const short = Math.min(width, height);

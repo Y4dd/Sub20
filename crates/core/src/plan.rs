@@ -9,6 +9,7 @@ use crate::encoders::Codec;
 use crate::error::{Error, Result};
 use crate::job::{AudioChoice, Container, EncodeOptions, Trim};
 use crate::probe::MediaInfo;
+use crate::timecode;
 
 /// Kilobits in one MB of target size. Using 8192 instead of the exact 8388.6
 /// keeps about 2.3% back for container overhead.
@@ -295,10 +296,14 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
             }
             let video = total - f64::from(audio_kbps);
             if video < MIN_VIDEO_KBPS {
+                // The longest stretch that still fits, rounded down so it's a promise.
+                let fits = options.target_mb * KBIT_PER_MB / (MIN_VIDEO_KBPS + f64::from(audio_kbps));
+                let fits = if fits >= 90.0 { (fits / 60.0).floor() * 60.0 } else { fits.floor() };
                 return Err(Error::Invalid(format!(
-                    "{} MB is too small for {:.0} seconds of video. Trim it shorter or raise the size.",
+                    "{} MB is too small for {} of video: it holds {} at most. Trim it shorter or raise the size.",
                     trim_number(options.target_mb),
-                    duration
+                    timecode::spoken(duration),
+                    timecode::spoken(fits)
                 )));
             }
             (video, Some((options.target_mb * 1024.0 * 1024.0) as u64))
@@ -542,6 +547,27 @@ mod tests {
         let options = EncodeOptions { target_mb: 4.0, ..Default::default() };
         let err = plan(&info, None, &options).unwrap_err().to_string();
         assert!(err.contains("too small"), "{err}");
+    }
+
+    #[test]
+    fn a_long_video_too_big_for_the_size_says_how_much_fits() {
+        // Two hours of 4K at 60 fps, the sort of thing a stream recording is.
+        let info = MediaInfo { fps: Some(60.0), ..source(3840, 2160, 7200.0) };
+        let free = EncodeOptions { target_mb: 20.0, ..Default::default() };
+        let err = plan(&info, None, &free).unwrap_err().to_string();
+        assert_eq!(
+            err,
+            "20 MB is too small for 2 hours of video: it holds 37 minutes at most. Trim it shorter or raise the size."
+        );
+        // And what it says fits does fit.
+        let trim = Some(Trim { start: 0.0, end: 37.0 * 60.0 });
+        assert!(plan(&info, trim, &free).is_ok());
+
+        // The large sizes plan it, at a smaller picture.
+        let boosted = plan(&info, None, &EncodeOptions { target_mb: 500.0, ..Default::default() }).unwrap();
+        assert_eq!((boosted.width, boosted.height), (1280, 720));
+        let nitro = plan(&info, None, &EncodeOptions { target_mb: 1024.0, ..Default::default() }).unwrap();
+        assert_eq!(nitro.quality, Quality::Good);
     }
 
     #[test]

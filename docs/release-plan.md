@@ -146,8 +146,15 @@ its licence text and point to its exact source.
 - [x] Disk full, a read-only folder, a file that vanishes mid-job, a corrupt
       file: each one gives a message that names the fix (`advice.rs`).
       Disk full is covered by unit tests only.
-- [ ] Very long and very large sources (a 2-hour 4K file): the planner,
-      memory use, the time estimate.
+- [x] Very long and very large sources (a 2-hour 4K file): the planner,
+      memory use, the time estimate. A generated 2-hour 4K file (3.5 GB)
+      came out at 491 MB for 500 MB (1080p, `h264_nvenc`, 3.9% over on the
+      first try, fixed by the retry) in 4.5 minutes. At 20 MB the plan is
+      refused with how long a clip fits ("it holds 37 minutes at most").
+      The FFmpeg log is capped at its last lines. Page Up and Page Down move
+      a trim handle a twentieth of the video.
+  - [ ] Watch memory and the time estimate in the real window on a long
+        real recording.
 - [x] **Copy diagnostics** in Settings: the app and FFmpeg versions, the
       encoder report, the operating system, and the last job's log, ready
       to paste into a bug report, with the home folder hidden. No

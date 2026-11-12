@@ -37,9 +37,36 @@ pub fn format(seconds: f64) -> String {
     }
 }
 
+/// A length as people say it: "45 seconds", "12 minutes", "1 hour 5 minutes".
+/// Rounded to the second under a minute and a half, to the minute above.
+pub fn spoken(seconds: f64) -> String {
+    let seconds = if seconds.is_finite() && seconds > 0.0 { seconds } else { 0.0 };
+    let unit = |n: u64, one: &str| if n == 1 { format!("1 {one}") } else { format!("{n} {one}s") };
+    if seconds < 90.0 {
+        return unit(seconds.round() as u64, "second");
+    }
+    let minutes = (seconds / 60.0).round() as u64;
+    match (minutes / 60, minutes % 60) {
+        (0, m) => unit(m, "minute"),
+        (h, 0) => unit(h, "hour"),
+        (h, m) => format!("{} {}", unit(h, "hour"), unit(m, "minute")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lengths_are_said_the_way_people_say_them() {
+        assert_eq!(spoken(1.0), "1 second");
+        assert_eq!(spoken(45.4), "45 seconds");
+        assert_eq!(spoken(130.0), "2 minutes");
+        assert_eq!(spoken(3600.0), "1 hour");
+        assert_eq!(spoken(3900.0), "1 hour 5 minutes");
+        assert_eq!(spoken(7200.0), "2 hours");
+        assert_eq!(spoken(f64::NAN), "0 seconds");
+    }
 
     #[test]
     fn parses_common_forms() {

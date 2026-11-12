@@ -25,6 +25,7 @@
         [["b", "w", "H", "L"], "Back or forward 1 s"],
         [["0", "$"], "Start or end of the kept part"],
         [["i", "o"], "Set the start or end at the playhead"],
+        [["PgUp", "PgDn"], "With a trim handle focused, move it a twentieth of the video"],
       ],
     },
     {

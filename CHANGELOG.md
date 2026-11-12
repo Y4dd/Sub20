@@ -38,6 +38,12 @@ What changed in each release. The format follows
 - HDR videos (HDR10 and HLG, from phones or games) are converted to
   ordinary colour, so they no longer come out grey and washed out. The
   stage says when a clip is HDR.
+- A video too long for the size says how long a clip the size holds, in
+  hours and minutes, instead of a count of seconds.
+- Page Up and Page Down move a focused trim handle a twentieth of the video,
+  for long recordings.
+- Sheets keep keyboard focus inside and return it when closed; the size
+  picker and the segmented choices work fully from the keyboard.
 - Settings offers to watch the NVIDIA app's and Xbox Game Bar's clip folders
   in one click when they are found, compressing new clips as they are saved.
 
