@@ -1,0 +1,9 @@
+node_modules/
+dist/
+target/
+src-tauri/gen/
+*.log
+.DS_Store
+
+# FFmpeg binaries placed here for bundling; fetched at build time, never committed.
+src-tauri/ffmpeg/
