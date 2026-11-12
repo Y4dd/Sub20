@@ -1,0 +1,180 @@
+/* Tokens. Dark is the default because the app is a place to look at video;
+   light follows the system when the system asks for it. */
+:root {
+  --bench: #15171c;
+  --surface: #1c1f26;
+  --raised: #252933;
+  --line: #2f3440;
+  --line-strong: #454c5b;
+  --text: #eceef2;
+  --muted: #9aa1ae;
+  --faint: #6c7381;
+  --well: #0b0c0f;
+  /* The trim color: the yellow every video editor uses for the kept range. */
+  --trim: #ffd02b;
+  --trim-ink: #1c1600;
+  --ok: #6fd6a8;
+  --bad: #ff8576;
+  --shade: rgb(0 0 0 / 0.45);
+
+  --display: "Bricolage Grotesque Variable", "Hanken Grotesk Variable", system-ui, sans-serif;
+  --body: "Hanken Grotesk Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --step--1: 0.75rem;
+  --step-0: 0.84375rem;
+  --step-1: 0.9375rem;
+  --step-2: 1.125rem;
+  --step-3: 1.5rem;
+  --step-4: 2.25rem;
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bench: #eceef2;
+    --surface: #ffffff;
+    --raised: #f4f5f8;
+    --line: #dcdfe6;
+    --line-strong: #b9bfcb;
+    --text: #14161b;
+    --muted: #596070;
+    --faint: #858c9a;
+    --well: #101216;
+    --trim: #ffc61a;
+    --trim-ink: #1c1600;
+    --ok: #0b8554;
+    --bad: #c43727;
+    --shade: rgb(20 22 27 / 0.28);
+    color-scheme: light;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bench);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+:focus-visible {
+  outline: 2px solid var(--trim);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-color-scheme: light) {
+  :focus-visible {
+    outline-color: var(--text);
+  }
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+/* Text that behaves like a button: an action named in words, no chrome. */
+.link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  border-radius: 3px;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+.link.quiet {
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Form controls shared by the sheets. */
+.field {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--bench);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.field:hover {
+  border-color: var(--line-strong);
+}
+
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 14px, calc(100% - 10px) 14px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

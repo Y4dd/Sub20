@@ -1,0 +1,395 @@
+// The window's state: the clips on the bench, what is selected, the options
+// in force, and the bridge to the backend.
+
+import { mockBackend } from "./mock";
+import { tauriBackend } from "./tauri";
+import type {
+  Backend, EncodeOptions, FfmpegStatus, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
+} from "./types";
+
+export const backend: Backend = "__TAURI_INTERNALS__" in window ? tauriBackend : mockBackend;
+
+export type ClipStatus = "ready" | "queued" | "running" | "done" | "failed" | "canceled";
+
+/** Shortest piece a trim may keep, in seconds. */
+export const MIN_KEEP = 0.5;
+
+const LOG_LINES = 400;
+
+export class Clip {
+  readonly key = crypto.randomUUID();
+  readonly path: string;
+  readonly name: string;
+  readonly info: MediaInfo;
+
+  start = $state(0);
+  end = $state(0);
+  thumbs = $state.raw<string[]>([]);
+  status = $state<ClipStatus>("ready");
+  jobId = $state<string | null>(null);
+  phase = $state<Phase | null>(null);
+  percent = $state(0);
+  eta = $state<number | null>(null);
+  encoder = $state<string | null>(null);
+  retries = $state(0);
+  fallback = $state<{ from: string; to: string } | null>(null);
+  result = $state<JobResult | null>(null);
+  error = $state<string | null>(null);
+  log = $state.raw<string[]>([]);
+  plan = $state.raw<Plan | null>(null);
+  planError = $state<string | null>(null);
+
+  constructor(path: string, name: string, info: MediaInfo) {
+    this.path = path;
+    this.name = name;
+    this.info = info;
+    this.end = info.duration;
+  }
+
+  get duration(): number {
+    return this.info.duration;
+  }
+
+  get trimmed(): boolean {
+    return this.start > 0.02 || this.duration - this.end > 0.02;
+  }
+
+  get trim(): Trim | null {
+    return this.trimmed ? { start: this.start, end: this.end } : null;
+  }
+
+  get kept(): number {
+    return this.end - this.start;
+  }
+
+  /** Queued or encoding: the trim is locked. */
+  get busy(): boolean {
+    return this.status === "queued" || this.status === "running";
+  }
+
+  /** Will be included the next time "Compress" is pressed. */
+  get pending(): boolean {
+    return (this.status === "ready" || this.status === "failed" || this.status === "canceled") && !this.planError;
+  }
+}
+
+export type Sheet = "options" | "settings" | "history" | null;
+
+const FALLBACK_OPTIONS: EncodeOptions = {
+  targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "opus", audioKbps: 128, effort: "p4",
+  tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
+  maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
+};
+
+class App {
+  ready = $state(false);
+  version = $state("");
+  clips = $state<Clip[]>([]);
+  selectedKey = $state<string | null>(null);
+  options = $state<EncodeOptions>({ ...FALLBACK_OPTIONS });
+  /** The profile the options were last loaded from. */
+  profile = $state<string | null>(null);
+  settings = $state<Settings | null>(null);
+  ffmpeg = $state<FfmpegStatus>({ found: true, version: null, folder: null });
+  report = $state.raw<Report | null>(null);
+  sheet = $state<Sheet>(null);
+  /** Files are being dragged over the window. */
+  dragging = $state(false);
+  /** Dropped files are being read. */
+  adding = $state(false);
+  notices = $state<{ id: number; text: string }[]>([]);
+
+  #byJob = new Map<string, Clip>();
+  #early: JobEvent[] = [];
+  #planTimers = new Map<string, number>();
+  #noticeId = 0;
+
+  get selected(): Clip | null {
+    return this.clips.find((clip) => clip.key === this.selectedKey) ?? this.clips[0] ?? null;
+  }
+
+  get pending(): Clip[] {
+    return this.clips.filter((clip) => clip.pending);
+  }
+
+  get busy(): Clip[] {
+    return this.clips.filter((clip) => clip.busy);
+  }
+
+  get finished(): Clip[] {
+    return this.clips.filter((clip) => clip.status === "done");
+  }
+
+  async init() {
+    const boot = await backend.bootstrap();
+    this.settings = boot.settings;
+    this.ffmpeg = boot.ffmpeg;
+    this.version = boot.version;
+    this.loadProfile(boot.settings.defaultProfile);
+    await backend.onJob((event) => this.#onJob(event));
+    await backend.onDrop((event) => {
+      if (event.type === "drop") {
+        this.dragging = false;
+        void this.add(event.paths);
+      } else {
+        this.dragging = event.type === "over";
+      }
+    });
+    this.ready = true;
+    if (boot.ffmpeg.found) void this.loadReport(false);
+    if (boot.openedWith.length) void this.add(boot.openedWith);
+  }
+
+  async loadReport(refresh: boolean) {
+    try {
+      this.report = await backend.encoders(refresh);
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
+  loadProfile(name: string) {
+    const profile = this.settings?.profiles.find((p) => p.name === name);
+    if (!profile) return;
+    this.options = structuredClone($state.snapshot(profile.options));
+    this.profile = name;
+  }
+
+  notify(text: string) {
+    const id = ++this.#noticeId;
+    this.notices.push({ id, text });
+    window.setTimeout(() => this.dismiss(id), 7000);
+  }
+
+  dismiss(id: number) {
+    this.notices = this.notices.filter((notice) => notice.id !== id);
+  }
+
+  async choose() {
+    const paths = await backend.pickVideos();
+    if (paths.length) await this.add(paths);
+  }
+
+  async add(paths: string[]) {
+    if (!paths.length) return;
+    this.adding = true;
+    try {
+      const results = await backend.addVideos(paths);
+      let first: Clip | null = null;
+      const rejected: string[] = [];
+      for (const item of results) {
+        if (!item.info) {
+          rejected.push(item.name);
+          continue;
+        }
+        if (this.clips.some((clip) => clip.path === item.path)) continue;
+        const clip = new Clip(item.path, item.name, item.info);
+        this.clips.push(clip);
+        first ??= clip;
+        this.replan(clip, 0);
+        void this.#loadThumbs(clip);
+      }
+      if (first) this.selectedKey = first.key;
+      if (rejected.length === 1) this.notify(`${rejected[0]} is not a video this app can read.`);
+      else if (rejected.length > 1) this.notify(`${rejected.length} files are not videos this app can read.`);
+    } catch (error) {
+      this.notify(String(error));
+      this.ffmpeg = await backend.ffmpegStatus();
+    } finally {
+      this.adding = false;
+    }
+  }
+
+  async #loadThumbs(clip: Clip) {
+    const ratio = clip.info.displayWidth / Math.max(1, clip.info.displayHeight);
+    // Enough tiles to fill a wide timeline: fewer for landscape, more for portrait.
+    const count = Math.round(Math.min(32, Math.max(10, 22 / ratio)));
+    try {
+      clip.thumbs = await backend.filmstrip(clip.path, clip.duration, count);
+    } catch {
+      clip.thumbs = [];
+    }
+  }
+
+  select(clip: Clip) {
+    this.selectedKey = clip.key;
+  }
+
+  /** Moves the selection up or down the list. */
+  step(offset: number) {
+    const current = this.selected;
+    if (!current) return;
+    const index = this.clips.indexOf(current) + offset;
+    if (index >= 0 && index < this.clips.length) this.selectedKey = this.clips[index].key;
+  }
+
+  remove(clip: Clip) {
+    if (clip.busy && clip.jobId) void backend.cancel(clip.jobId);
+    const index = this.clips.indexOf(clip);
+    this.clips = this.clips.filter((other) => other !== clip);
+    if (this.selectedKey === clip.key) {
+      this.selectedKey = (this.clips[index] ?? this.clips[index - 1])?.key ?? null;
+    }
+  }
+
+  clearFinished() {
+    this.clips = this.clips.filter((clip) => clip.status !== "done");
+    if (!this.clips.some((clip) => clip.key === this.selectedKey)) this.selectedKey = this.clips[0]?.key ?? null;
+  }
+
+  /** Sets a clip's trim, keeping it inside the video and at least MIN_KEEP long. */
+  setTrim(clip: Clip, start: number, end: number) {
+    if (clip.busy) return;
+    const least = Math.min(MIN_KEEP, clip.duration);
+    start = Math.min(Math.max(0, start), clip.duration - least);
+    end = Math.max(Math.min(clip.duration, end), start + least);
+    if (start === clip.start && end === clip.end) return;
+    clip.start = start;
+    clip.end = end;
+    // Changing the cut makes an earlier result stale.
+    if (clip.status !== "ready") this.reset(clip);
+    this.replan(clip);
+  }
+
+  /** Puts a finished or failed clip back in line. */
+  reset(clip: Clip) {
+    clip.status = "ready";
+    clip.result = null;
+    clip.error = null;
+    clip.percent = 0;
+    clip.eta = null;
+    clip.phase = null;
+    clip.retries = 0;
+    clip.fallback = null;
+    clip.jobId = null;
+  }
+
+  /** Recomputes what the encode will look like, shortly after the last change. */
+  replan(clip: Clip, delay = 60) {
+    window.clearTimeout(this.#planTimers.get(clip.key));
+    const run = async () => {
+      const { start, end } = clip;
+      try {
+        const plan = await backend.estimate($state.snapshot(clip.info), clip.trim, $state.snapshot(this.options));
+        if (clip.start !== start || clip.end !== end) return; // Stale answer.
+        clip.plan = plan;
+        clip.planError = null;
+      } catch (error) {
+        clip.plan = null;
+        clip.planError = String(error);
+      }
+    };
+    this.#planTimers.set(clip.key, window.setTimeout(run, delay));
+  }
+
+  replanAll() {
+    for (const clip of this.clips) if (!clip.busy) this.replan(clip);
+  }
+
+  async compress() {
+    const clips = this.pending;
+    if (!clips.length) return;
+    const options = $state.snapshot(this.options);
+    for (const clip of clips) {
+      this.reset(clip);
+      clip.status = "queued";
+      clip.log = [];
+    }
+    try {
+      const ids = await backend.compress(clips.map((clip) => ({ path: clip.path, trim: clip.trim, options })));
+      ids.forEach((id, index) => {
+        clips[index].jobId = id;
+        this.#byJob.set(id, clips[index]);
+      });
+      const early = this.#early;
+      this.#early = [];
+      for (const event of early) this.#onJob(event);
+    } catch (error) {
+      for (const clip of clips) {
+        clip.status = "failed";
+        clip.error = String(error);
+      }
+      this.ffmpeg = await backend.ffmpegStatus();
+    }
+  }
+
+  async cancel(clip: Clip) {
+    if (clip.jobId) await backend.cancel(clip.jobId);
+  }
+
+  async cancelAll() {
+    await backend.cancelAll();
+  }
+
+  async saveSettings(change: (settings: Settings) => void) {
+    if (!this.settings) return;
+    const next = structuredClone($state.snapshot(this.settings));
+    change(next);
+    try {
+      const before = this.settings.ffmpegFolder;
+      this.settings = await backend.saveSettings(next);
+      if (this.settings.ffmpegFolder !== before) {
+        this.ffmpeg = await backend.ffmpegStatus();
+        if (this.ffmpeg.found) void this.loadReport(true);
+      }
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
+  #onJob(event: JobEvent) {
+    const clip = this.#byJob.get(event.id);
+    if (!clip) {
+      // Either a folder-watch job, or an event that beat the reply to
+      // `compress`. Keep the latter until the ids are known.
+      if (this.clips.some((c) => c.status === "queued" && !c.jobId)) this.#early.push(event);
+      return;
+    }
+    if (clip.jobId !== event.id) return; // From an earlier run of this clip.
+    switch (event.type) {
+      case "queued":
+        clip.status = "queued";
+        break;
+      case "started":
+        clip.status = "running";
+        clip.encoder = event.encoder;
+        break;
+      case "progress":
+        clip.status = "running";
+        clip.phase = event.phase;
+        clip.percent = event.percent;
+        clip.eta = event.etaSeconds;
+        break;
+      case "log":
+        clip.log = [...clip.log.slice(-(LOG_LINES - 1)), event.line];
+        break;
+      case "fallback":
+        clip.fallback = { from: event.from, to: event.to };
+        clip.encoder = event.to;
+        break;
+      case "retry":
+        clip.retries = event.attempt;
+        clip.percent = 0;
+        clip.eta = null;
+        break;
+      case "done":
+        clip.status = "done";
+        clip.percent = 100;
+        clip.result = event.result;
+        this.#byJob.delete(event.id);
+        break;
+      case "failed":
+        clip.status = "failed";
+        clip.error = event.error;
+        this.#byJob.delete(event.id);
+        break;
+      case "canceled":
+        clip.status = "canceled";
+        clip.percent = 0;
+        this.#byJob.delete(event.id);
+        break;
+    }
+  }
+}
+
+export const app = new App();

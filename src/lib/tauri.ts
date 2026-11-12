@@ -1,0 +1,68 @@
+// The real backend: Rust commands over Tauri's IPC.
+
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-dialog";
+import type { Added, Backend, JobEvent } from "./types";
+
+/** File types offered in the "choose files" dialog. */
+const VIDEO_EXTENSIONS = [
+  "mp4", "mkv", "mov", "avi", "webm", "m4v", "wmv", "flv", "mpeg", "mpg", "ts", "m2ts", "3gp", "3g2", "mts",
+  "mxf", "ogv", "vob",
+];
+
+/** Preview URLs handed out by the app for platforms that need them. */
+const playUrls = new Map<string, string>();
+
+export const tauriBackend: Backend = {
+  demo: false,
+  bootstrap: () => invoke("bootstrap"),
+  ffmpegStatus: () => invoke("ffmpeg_status"),
+  addVideos: async (paths) => {
+    const added = await invoke<Added[]>("add_videos", { paths });
+    for (const item of added) if (item.playUrl) playUrls.set(item.path, item.playUrl);
+    return added;
+  },
+  filmstrip: async (path, duration, count) => {
+    const files = await invoke<string[]>("filmstrip", { path, duration, count });
+    return files.map((file) => convertFileSrc(file));
+  },
+  videoUrl: (path) => playUrls.get(path) ?? convertFileSrc(path),
+  previewFrame: (path, at) => invoke("preview_frame", { path, at }),
+  estimate: (info, trim, options) => invoke("estimate", { info, trim, options }),
+  compress: (jobs) => invoke("compress", { jobs }),
+  cancel: async (id) => {
+    await invoke("cancel", { id });
+  },
+  cancelAll: () => invoke("cancel_all"),
+  saveSettings: (settings) => invoke("save_settings", { settings }),
+  encoders: (refresh) => invoke("encoders", { refresh }),
+  historyList: () => invoke("history_list"),
+  historyRemove: (id) => invoke("history_remove", { id }),
+  historyClear: () => invoke("history_clear"),
+  watchStatus: () => invoke("watch_status"),
+  reveal: (path) => invoke("reveal", { path }),
+  openFile: (path) => invoke("open_file", { path }),
+  pickVideos: async () => {
+    const picked = await open({
+      multiple: true,
+      title: "Choose videos",
+      filters: [{ name: "Videos", extensions: VIDEO_EXTENSIONS }],
+    });
+    if (!picked) return [];
+    return Array.isArray(picked) ? picked : [picked];
+  },
+  pickFolder: async () => {
+    const picked = await open({ directory: true, multiple: false, title: "Choose a folder" });
+    return typeof picked === "string" ? picked : null;
+  },
+  onJob: (handler) => listen<JobEvent>("job", (event) => handler(event.payload)),
+  onDrop: (handler) =>
+    getCurrentWebview().onDragDropEvent((event) => {
+      const payload = event.payload;
+      if (payload.type === "drop") handler({ type: "drop", paths: payload.paths });
+      else if (payload.type === "leave") handler({ type: "leave" });
+      else handler({ type: "over" });
+    }),
+};
