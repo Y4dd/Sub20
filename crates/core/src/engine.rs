@@ -638,15 +638,20 @@ impl Drop for Cleanup {
     }
 }
 
-/// Runs a removal, trying again for up to a second while the file is in use.
-/// On Windows a killed FFmpeg's output can stay locked for a moment after the
-/// process exits (antivirus and the indexer open new files), and removal then
-/// fails with a sharing violation.
+/// Runs a removal, trying again for about five seconds while the file is in
+/// use, backing off from 25 ms to 400 ms between tries. On Windows a killed
+/// FFmpeg's output can stay locked for a moment after the process exits
+/// (antivirus and the indexer open new files), and removal then fails with a
+/// sharing violation. On a CI runner Defender held one for over a second.
 fn patiently(remove: impl Fn() -> std::io::Result<()>) {
-    for _ in 0..20 {
+    let mut pause = 25;
+    let mut waited = 0;
+    loop {
         match remove() {
-            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-                std::thread::sleep(std::time::Duration::from_millis(50));
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound && waited < 5_000 => {
+                std::thread::sleep(std::time::Duration::from_millis(pause));
+                waited += pause;
+                pause = (pause * 2).min(400);
             }
             _ => return,
         }

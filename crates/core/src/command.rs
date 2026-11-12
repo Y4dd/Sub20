@@ -425,10 +425,9 @@ mod tests {
         let options = EncodeOptions { target_mb: 3.0, ..Default::default() };
         let cmd = render(&source(), None, &options, "h264_vaapi", Pass::Single);
         assert!(cmd.starts_with("-y -init_hw_device vaapi=va:/dev/dri/renderD129 -filter_hw_device va -i"), "{cmd}");
-        assert!(
-            cmd.contains("-vf scale=1280:720:flags=bicubic,format=nv12|vaapi,hwupload -c:v h264_vaapi -b:v"),
-            "{cmd}"
-        );
+        // The planner picks the size; this checks only what VAAPI adds after it.
+        assert!(cmd.contains("-vf scale="), "{cmd}");
+        assert!(cmd.contains(":flags=bicubic,format=nv12|vaapi,hwupload -c:v h264_vaapi -b:v"), "{cmd}");
 
         let ten_bit = MediaInfo { pixel_format: Some("yuv420p10le".into()), ..source() };
         let options = EncodeOptions { codec: Codec::Hevc, ..Default::default() };

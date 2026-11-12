@@ -113,7 +113,7 @@ Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 
-Windows keeps a killed FFmpeg's output locked for a moment (error 32), so `Cleanup` removes files `patiently`, retrying for up to a second.
+Windows keeps a killed FFmpeg's output locked for a moment (error 32), so `Cleanup` removes files `patiently`, retrying for up to about five seconds (a CI runner's Defender held one for over a second).
 
 Unverified, so check these first on a new machine:
 - Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags follow the original; only fail-and-fall-back has run.
