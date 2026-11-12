@@ -1,0 +1,5 @@
+# cargo deny check advisories (run in CI).
+[advisories]
+# Vulnerabilities always fail. "Unmaintained" notices fail only for crates
+# Sub20 depends on directly; the ones deep in Tauri's tree are Tauri's to fix.
+unmaintained = "workspace"

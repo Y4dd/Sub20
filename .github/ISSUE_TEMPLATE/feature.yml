@@ -1,0 +1,15 @@
+name: Idea
+description: Something Sub20 should do.
+labels: [idea]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The situation, not the solution. "I record with OBS and my mic is on a second track" helps more than "add a track menu".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help

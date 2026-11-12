@@ -1,0 +1,135 @@
+#lab {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  overflow: auto;
+  height: 100%;
+}
+
+#lab h1 {
+  margin: 0 0 8px;
+  font-size: var(--step-2);
+}
+
+#lab .lead {
+  max-width: 70ch;
+  margin: 0 0 8px;
+}
+
+#lab .muted {
+  color: var(--muted);
+}
+
+#browser {
+  font-size: var(--step--1);
+  overflow-wrap: anywhere;
+}
+
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 20px;
+  margin: 24px 0 16px;
+}
+
+#controls label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+#controls input,
+#controls select {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--well);
+  color: var(--text);
+  font: inherit;
+}
+
+#controls input[type="number"] {
+  width: 6em;
+}
+
+#controls button {
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+}
+
+#run {
+  background: var(--trim) !important;
+  color: var(--trim-ink) !important;
+  border-color: var(--trim-edge) !important;
+}
+
+#controls button:disabled {
+  opacity: 0.45;
+}
+
+#summary {
+  min-height: 1.5em;
+  font-weight: 600;
+}
+
+#lab .scroll {
+  overflow-x: auto;
+}
+
+#lab table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step--1);
+}
+
+#lab th,
+#lab td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+#lab th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+#lab td.name {
+  max-width: 18ch;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+#lab td.attempts {
+  white-space: pre;
+}
+
+#lab td.ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+#lab td.bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+#lab a {
+  color: var(--text);
+}
+
+#lab td.result {
+  max-width: 32ch;
+  white-space: pre-line;
+}

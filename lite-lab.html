@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>Sub20 Lite size test</title>
+  </head>
+  <body>
+    <main id="lab">
+      <h1>Sub20 Lite size test</h1>
+      <p class="lead">
+        Encodes each video in this browser, with its own hardware encoder, aimed at the size below. Each result is
+        measured and encoded again at a lower bitrate if it lands over, up to two more times, as the desktop app does.
+        Nothing is uploaded.
+      </p>
+      <p id="browser" class="muted"></p>
+
+      <form id="controls">
+        <label>Videos <input id="files" type="file" accept="video/*" multiple /></label>
+        <label>Size, MB <input id="target" type="number" min="1" step="1" value="20" /></label>
+        <label>
+          Bitrate mode
+          <select id="mode">
+            <option value="constant">Constant</option>
+            <option value="variable">Variable</option>
+          </select>
+        </label>
+        <label>
+          Encoder
+          <select id="hardware">
+            <option value="no-preference">Browser's choice</option>
+            <option value="prefer-hardware">Prefer GPU</option>
+            <option value="prefer-software">Prefer CPU</option>
+          </select>
+        </label>
+        <button id="run" type="submit" disabled>Run</button>
+        <button id="copy" type="button" disabled>Copy results</button>
+      </form>
+
+      <p id="summary" role="status"></p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Video</th>
+              <th>Source</th>
+              <th>Plan</th>
+              <th>Attempts</th>
+              <th>Result</th>
+              <th>Speed</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </main>
+    <script type="module" src="/src/lab/lab.ts"></script>
+  </body>
+</html>

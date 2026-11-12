@@ -7,7 +7,7 @@ import type {
   Plan, Quality, Report, Settings, Trim,
 } from "./types";
 
-const DEFAULT_OPTIONS: EncodeOptions = {
+export const DEFAULT_OPTIONS: EncodeOptions = {
   targetMb: 20, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
   maxHeight: null, maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false,
@@ -90,8 +90,12 @@ function paint(demo: Demo, at: number, width: number, height: number): string {
 
 const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
 
-/** A trimmed-down copy of the Rust planner, enough to drive the interface. */
-function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOptions): Plan {
+/**
+ * A trimmed-down copy of the Rust planner, enough to drive the interface.
+ * The Lite size test (`src/lab`) borrows it until the planner is built to
+ * WebAssembly.
+ */
+export function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOptions): Plan {
   const start = trim?.start ?? 0;
   const duration = (trim?.end ?? source.duration) - start;
   const trimmed = !!trim && !(start < 0.02 && source.duration - trim.end < 0.02);

@@ -215,3 +215,12 @@ or macOS yet.
 follows its bitrate and resolution rules and its FFmpeg flags for each encoder,
 so it carries the same terms for now. Read that licence before distributing
 this or using it commercially, and keep the credit to JMS1717.
+
+Sub20 is not affiliated with or endorsed by Discord. "Discord" names the
+service the size presets are made for.
+
+## Contributing
+
+Bug reports, test results from Intel, AMD and Apple GPUs, and pull requests
+are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), and
+[SECURITY.md](SECURITY.md) for security problems.

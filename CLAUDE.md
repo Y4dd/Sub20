@@ -28,6 +28,9 @@ Adding a capability touches, in order: a core function with a test → a command
 - `cargo test --workspace`: `crates/core/tests/e2e.rs` runs real FFmpeg encodes and skips itself when FFmpeg is missing.
 - Before finishing: `cargo fmt --all`, `cargo clippy --workspace --all-targets`, `npx svelte-check`. All three are clean today; keep them clean.
 - The repo lives in a OneDrive folder on the owner's machine. Point `CARGO_TARGET_DIR` outside it so build output is not synced.
+- CI (`.github/workflows/ci.yml`) runs fmt, `clippy -D warnings` and the tests on Windows, macOS and Ubuntu with FFmpeg installed, plus `svelte-check`, the build, `npm audit --omit=dev` and `cargo deny check advisories`. `deny.toml` fails "unmaintained" only for direct dependencies; the ones inside Tauri's tree (zbus, proc-macro-error) are Tauri's.
+- `npm run set-version -- x.y.z` writes the version into `package.json`, `tauri.conf.json` and the workspace `Cargo.toml`, and refreshes both lock files.
+- `/lite-lab.html` under `npm run dev` is the Sub20 Lite size test: it encodes chosen files with WebCodecs through `src/lib/web/fit.ts` and reports how close each lands to the limit. Dev only; neither build includes it. `lab.run(files)` runs it from a script.
 
 ## Engine decisions
 
@@ -91,14 +94,16 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 - **Keyboard** handling is in `App.svelte`: arrow keys and vim motions in one interpreter (`vim()`), with counts and two-key commands (`gg`, `dd`, `cw`) that wait a second for their second key. Plain letters are safe because the handler ignores keys typed into fields and keys while a sheet is open. `?` opens `KeysSheet`; keep it, the README table and `vim()` in step.
 - **Renaming** happens in the clip list (double-click, F2, `r`, or the pencil). Before compressing it sets `Clip::outputName`; afterwards it renames the file on disk through `rename_result`. A renamed clip shows its new name in the list; the stage keeps the source name.
 - Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes. `?clips` opens the demo clips at startup and `?frame=overlay|native` shows the other frames, so a headless browser can capture a state without clicking. The built-in browser pane's screenshots crop on a display scaled to 150%; a headless Edge or Chrome at a fixed size works. If a component's styles stop updating in `npm run dev`, restart it: Vite's per-component CSS can go stale.
-- The mock planner in `mock.ts` copies the Rust rule for resolution and verdict; change them together.
+- The mock planner in `mock.ts` copies the Rust rule for resolution and verdict; change them together. The Lite size test uses it too (`planFor`), and `fit.ts` copies `lower_bitrate` and `SIZE_RETRIES`, until the planner is built to WebAssembly.
 
 ## Planned next
 
-The owner wants these; each is to be discussed before it is built.
+`docs/release-plan.md` is the road to a public 1.0: blockers, desktop hardening, Sub20 Lite, the website and the launch, with exit criteria per phase. Keep it current as items land. Highlights:
 
-- **FFmpeg bundled** in the app, so a fresh install works without a separate download.
-- **GitHub releases** with two downloads per platform: one with FFmpeg bundled, one without (uses the system FFmpeg).
+- **Licence first.** The project is CC BY-NC 4.0 until JMS1717 agrees to a permissive licence or the borrowed parts are re-derived; the owner wants it free for anyone, and free Windows signing (SignPath) needs an OSI licence.
+- **FFmpeg bundled** as a Tauri sidecar, with a lean build without it; both on GitHub Releases, auto-updating on separate feeds.
+- **Sub20 Lite**: a third `Backend` on WebCodecs and Mediabunny (`src/lib/web/`), the planner shared through a WebAssembly build of `plan.rs`, capability flags to hide desktop-only features. Gated on the size test in `/lite-lab.html`.
+- **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; the free limit is 20 MiB per Discord's API docs, which matches the app's 1024 × 1024 MB.
 
 ## Verified, and not
 
@@ -119,4 +124,4 @@ Unverified, so check these first on a new machine:
 - Quitting while jobs run cancels them without asking.
 - Filmstrip thumbnails arrive all at once, not progressively.
 - The current options are not remembered between launches except as saved profiles.
-- There is no LICENSE file. 8mb.local is CC BY-NC 4.0 and this engine follows its rules and flags; `Cargo.toml` declares the same licence. The owner decides the final terms.
+- There is no LICENSE file. 8mb.local is CC BY-NC 4.0 and this engine follows its rules and flags; `Cargo.toml` declares the same licence. The owner wants Sub20 free for anyone's use; see the licence section of `docs/release-plan.md`.

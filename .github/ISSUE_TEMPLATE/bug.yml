@@ -1,0 +1,47 @@
+name: Bug report
+description: Something doesn't work, or a result came out wrong.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sub20 version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux
+        - Sub20 Lite (in a browser)
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU and FFmpeg version
+      placeholder: "NVIDIA RTX 4070, FFmpeg 7.1"
+  - type: textarea
+    id: log
+    attributes:
+      label: FFmpeg log
+      description: For a failed or wrong result, "Show log" under that video. Paste it here.
+      render: text
+  - type: textarea
+    id: source
+    attributes:
+      label: About the source video
+      description: Where it came from (NVIDIA app, OBS, phone, ...), its length, resolution and size. A link to a short clip that shows the problem helps most.
