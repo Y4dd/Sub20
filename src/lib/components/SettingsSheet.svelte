@@ -309,7 +309,7 @@
 
   <p class="about muted">
     <button type="button" class="link quiet" onclick={() => (app.sheet = "keys")}>Keyboard shortcuts (?)</button><br />
-    Sub20 {app.version}. Inspired by 8mb.local by JMS1717, whose bitrate and resolution rules it follows.
+    Sub20 {app.version}, free and open source under the MIT licence.
   </p>
 </Sheet>
 

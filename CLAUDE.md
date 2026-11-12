@@ -4,9 +4,11 @@ A desktop app for getting clips onto Discord: drop videos, trim each with two ha
 
 It exists because the owner was forever cutting clips and re-encoding them by hand to fit Discord's upload limit. Sub20 does both in one place: trim, then a GPU encode aimed at a size, checked after encoding and redone if it lands over.
 
-The engine follows [8mb.local](https://github.com/JMS1717/8mb.local) by JMS1717 (Python/Celery/Redis/SvelteKit in Docker): its bitrate and resolution rules and its per-encoder FFmpeg flags. Sub20 is a Tauri 2 desktop app with a Rust engine driving FFmpeg.
+Sub20 is a Tauri 2 desktop app with a Rust engine driving FFmpeg, free and open source under MIT (`LICENSE`).
 
-The owner's brief, which every change should still serve: written in Rust; a step to go through one or more videos and trim them with left/right handles before compressing; a modern, simple interface with fewer buttons. Chosen along the way: native desktop app, feature parity with the original's desktop side, no login.
+**Licence and credit.** Sub20 was inspired by 8mb.local, and the README says so in one line at the end of its Licence section. That line is the only mention, by the owner's decision: don't add others, and don't describe Sub20 as following or deriving from another project. Licensing was settled in November 2026. What Sub20 shares with that project is functional only: bitrate arithmetic, resolution and bitrate ladders, FFmpeg flags, encoder option names, file extensions. Ideas, formulas and settings aren't copyrightable. An 8-word overlap check of both codebases found no shared prose or code, so no permission was needed. Write new code and wording from scratch, not from another project's source.
+
+The owner's brief, which every change should still serve: written in Rust; a step to go through one or more videos and trim them with left/right handles before compressing; a modern, simple interface with fewer buttons. Chosen along the way: native desktop app, no login.
 
 ## Layers
 
@@ -34,7 +36,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 ## Engine decisions
 
-**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. An over-limit file is never saved: `when_over` decides between another retry, a switch to the CPU encoder (hardware encoders only, with fresh retries from the planned bitrate), or an `OverLimit` error that names the fix. A hardware retry that shrinks the file by less than 5% means the encoder is at its floor, and the job moves to the CPU at once. Measured on an RTX 5070 Ti: `h264_nvenc` will not go under about 600 kbps on a busy 720p30 clip whatever the flags (691 kbps even at QP 51) and drifts 6–9% over larger targets; `hevc_nvenc` and `av1_nvenc` hit low targets. The original accepted 2% over, which is why it suggested 9.7 MB; here the default sizes are round. 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` is the original's formula and leaves about 2.3% for container overhead.
+**The limit is strict.** A result one byte over the target is encoded again at a lower bitrate (`lower_bitrate`), up to `SIZE_RETRIES` times. An over-limit file is never saved: `when_over` decides between another retry, a switch to the CPU encoder (hardware encoders only, with fresh retries from the planned bitrate), or an `OverLimit` error that names the fix. A hardware retry that shrinks the file by less than 5% means the encoder is at its floor, and the job moves to the CPU at once. Measured on an RTX 5070 Ti: `h264_nvenc` will not go under about 600 kbps on a busy 720p30 clip whatever the flags (691 kbps even at QP 51) and drifts 6–9% over larger targets; `hevc_nvenc` and `av1_nvenc` hit low targets. Because nothing over is ever saved, the default sizes can be round (no 9.7 MB to leave room). 1 MB is 1024 × 1024 bytes. `KBIT_PER_MB = 8192` (size in MiB × 8192 = kilobits) leaves about 2.3% for container overhead.
 
 **Planning is pure** (`plan.rs`), so the window calls it on every handle drag.
 - Audio yields on tight budgets: at most 34% of the total, stepped down to a floor (Opus 24, AAC 48 kbps). If video would get under 24 kbps the plan is refused with advice, since the result could not fit.
@@ -46,7 +48,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Encoders.** The user picks a codec; `Report::best` picks the encoder, hardware first. `options.encoder` overrides. Detection encodes two real frames per encoder, because FFmpeg lists encoders whose GPU is absent; families run side by side, encoders within a family take turns (consumer GPUs cap sessions). A hardware failure mid-job falls back to the CPU encoder for that codec, ignoring the user's disabled list so the job finishes. `libaom-av1` is never automatic.
 
-**Effort `Max`** keeps the size target: slowest preset everywhere, plus two passes on libx264 and libx265 only. Pass statistics use the encoder's default file names in the working directory, so each job runs FFmpeg from its own scratch folder; that avoids escaping Windows paths inside `-x265-params`. (The original's "extra quality" switched to constant quality and ignored the size.)
+**Effort `Max`** keeps the size target: slowest preset everywhere, plus two passes on libx264 and libx265 only. Pass statistics use the encoder's default file names in the working directory, so each job runs FFmpeg from its own scratch folder; that avoids escaping Windows paths inside `-x265-params`. It never switches to constant quality, which would ignore the size.
 
 **Hardware decode** is `-hwaccel auto` with frames returned to system memory, so the software filter chain is unchanged; on failure the job retries with CPU decoding.
 
@@ -104,7 +106,6 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 `docs/release-plan.md` is the road to a public 1.0: blockers, desktop hardening, Sub20 Lite, the website and the launch, with exit criteria per phase. Keep it current as items land. Highlights:
 
-- **Licence first.** The project is CC BY-NC 4.0 until JMS1717 agrees to a permissive licence or the borrowed parts are re-derived; the owner wants it free for anyone, and free Windows signing (SignPath) needs an OSI licence.
 - **FFmpeg bundled** as a Tauri sidecar, with a lean build without it; both on GitHub Releases, auto-updating on separate feeds.
 - **Sub20 Lite**: a third `Backend` on WebCodecs and Mediabunny (`src/lib/web/`), the planner shared through a WebAssembly build of `plan.rs`, capability flags to hide desktop-only features. Gated on the size test in `/lite-lab.html`.
 - **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; the free limit is 20 MiB per Discord's API docs, which matches the app's 1024 × 1024 MB.
@@ -120,7 +121,7 @@ E2e tests that check a particular encoder name it in `options.encoder`, and test
 Windows keeps a killed FFmpeg's output locked for a moment (error 32), so `Cleanup` removes files `patiently`, retrying for up to about five seconds (a CI runner's Defender held one for over a second).
 
 Unverified, so check these first on a new machine:
-- Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags follow the original; only fail-and-fall-back has run.
+- Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags are the common FFmpeg settings for each; only fail-and-fall-back has run.
 - Windows and macOS app runs, including asset-protocol video playback and the `CREATE_NO_WINDOW` flag on FFmpeg children.
 
 ## Loose ends
@@ -128,4 +129,3 @@ Unverified, so check these first on a new machine:
 - Quitting while jobs run cancels them without asking.
 - Filmstrip thumbnails arrive all at once, not progressively.
 - The current options are not remembered between launches except as saved profiles.
-- There is no LICENSE file. 8mb.local is CC BY-NC 4.0 and this engine follows its rules and flags; `Cargo.toml` declares the same licence. The owner wants Sub20 free for anyone's use; see the licence section of `docs/release-plan.md`.

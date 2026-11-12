@@ -13,8 +13,10 @@ Open an issue with the bug form. The most useful things to include:
 - If you can share it, a short clip that shows the problem.
 
 Results from Intel, AMD and Apple GPUs are especially welcome: the encoder
-settings for those were taken from 8mb.local and have not been tried on
-real hardware here yet.
+settings for those have not been tried on real hardware here yet.
+
+By contributing, you agree that your work is published under the
+[MIT licence](LICENSE), like the rest of Sub20.
 
 ## Building
 

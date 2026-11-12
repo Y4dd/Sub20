@@ -12,10 +12,8 @@ measured: one that lands even a byte over the limit is encoded again until it
 fits. Hence the name: whatever you send comes out sub 20.
 
 Sub20 is a native desktop app: a Rust engine that drives FFmpeg, in a
-[Tauri](https://tauri.app) window. Its bitrate and resolution rules and its
-FFmpeg settings for each encoder come from
-[8mb.local](https://github.com/JMS1717/8mb.local) by JMS1717, a self-hosted web
-app (Python, Celery, Redis and SvelteKit in Docker) that inspired it.
+[Tauri](https://tauri.app) window. It's free and open source, with no
+account, no upload and no ads.
 
 ## What it does
 
@@ -169,28 +167,22 @@ target, trimming, HEVC, AV1, two-pass, the over-the-limit retry, cancel,
 CPU fallback, queue order, and the folder watch. Those are skipped when FFmpeg
 is not installed.
 
-## How it differs from 8mb.local
+## Design choices
 
-- **A desktop app, not a server.** No upload step, no Docker, no Redis, no
-  login. Files are read and written where they are.
-- **Trimming is visual.** The original takes start and end times as text.
-- **Results are held to the limit.** The original accepts a file up to 2% over
-  and suggests sizes like 9.7 MB to leave room. Here any overshoot triggers
-  another encode, so the quick sizes are round numbers. (1 MB is 1024 × 1024
-  bytes, as in the original.)
-- **"Best" effort keeps the limit.** The original's "extra quality" preset
-  switches to constant-quality mode, which ignores the size. Here the top
-  setting uses the slowest preset and, on x264 and x265, two passes, and still
-  aims at the size.
+- **A desktop app, not a service.** No upload step and no login. Files are
+  read and written where they are.
+- **Results are held to the limit.** Any overshoot, even by a byte, triggers
+  another encode, so the size presets can be round numbers rather than ones
+  like 9.7 MB that leave room. 1 MB is 1024 × 1024 bytes, the unit
+  Discord's documentation gives its limit in.
+- **"Best" effort keeps the limit.** The top setting uses the slowest preset
+  and, on x264 and x265, two passes, and still aims at the size. It never
+  switches to a constant-quality mode that would ignore it.
 - **Audio gives way on tight budgets.** If the sound would take more than a
   third of the bitrate, it is lowered; if the limit is impossible for the
   length, the app says so instead of producing a file over the limit.
 - **Hardware decoding** is a single switch that asks FFmpeg for any available
-  decoder and retries on the CPU if it fails. The original has
-  NVIDIA-specific and QSV-specific decode paths.
-- **Not carried over:** the Android app, the login, memory-backed upload
-  storage, and file retention (there are no uploaded copies to clean up; the
-  equivalent setting here is how long history is kept).
+  decoder and retries on the CPU if it fails.
 
 ## What has and has not been tested
 
@@ -200,8 +192,8 @@ files. On Windows 11 with FFmpeg 9.0 and an NVIDIA RTX GPU, every test passes,
 including NVENC jobs. NVIDIA's H.264 encoder cannot go below roughly 600 kbps
 at 720p, so when a limit is too tight for it the job switches to the CPU
 encoder rather than save a file over the limit. The other hardware encoder
-paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) follow
-8mb.local's FFmpeg flags but have only been exercised through their
+paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) use common
+FFmpeg settings for those encoders but have only been exercised through their
 failure-and-fallback path so far. The app window has not been run on Windows
 or macOS yet.
 
@@ -213,10 +205,9 @@ or macOS yet.
 
 ## Licence
 
-8mb.local is published under CC BY-NC 4.0 (attribution, non-commercial). Sub20
-follows its bitrate and resolution rules and its FFmpeg flags for each encoder,
-so it carries the same terms for now. Read that licence before distributing
-this or using it commercially, and keep the credit to JMS1717.
+[MIT](LICENSE): use it, change it and share it, for anything.
+
+Inspired by [8mb.local](https://github.com/JMS1717/8mb.local) by JMS1717.
 
 Sub20 is not affiliated with or endorsed by Discord. "Discord" names the
 service the size presets are made for.

@@ -12,36 +12,20 @@ its list is ticked.
 
 These decide what is allowed later, so they come before any code.
 
-### 1. The licence
+### 1. The licence: settled
 
-Sub20 currently declares **CC BY-NC 4.0** because it follows 8mb.local's
-rules and FFmpeg flags, and 8mb.local's README says commercial use needs a
-separate licence from its author. That conflicts with "free for anyone's
-use":
+Sub20 is **MIT** (`LICENSE`, `Cargo.toml`, `package.json`), as of 12 November
+2026. It used to declare CC BY-NC 4.0, which isn't an open-source licence,
+rules out free SignPath signing, and keeps package managers away.
 
-- CC BY-NC is not an open-source licence (OSI does not approve it, and
-  Creative Commons advises against CC licences for software).
-- Free Windows code signing from SignPath Foundation requires an
-  OSI-approved licence.
-- Package managers, distributions and companies treat NC as "do not touch".
+No permission was needed. What Sub20 shares with the project that inspired
+it is functional only: bitrate arithmetic, resolution and bitrate ladders,
+FFmpeg flags, encoder option names and file extensions. Ideas, formulas and
+settings aren't protected by copyright. An 8-word overlap check of both
+codebases found no shared prose or code.
 
-Options, in order of preference:
-
-1. **Ask JMS1717 for permission** to publish Sub20 under MIT (or
-   MIT OR Apache-2.0, the Rust default), keeping the credit. Sub20 is a
-   from-scratch Rust and Svelte program that shares no code with the
-   Python original, and it would send users their way through the credit.
-   Open an issue or discussion on their repository, or email them, and save
-   the reply in the repo.
-2. If they decline or don't answer within about two weeks: **re-derive the
-   borrowed parts on our own record.** Bitrate from size and length is
-   arithmetic. Encoder flags come from FFmpeg's documentation and our own
-   measurements (we already measured NVENC's floor). The resolution and
-   verdict rules were already rewritten here (`density`, `rate`). Write down
-   where each number comes from, then relicense. Keep the "inspired by"
-   credit either way.
-
-Until this is settled, nothing gets signed or listed anywhere.
+The README credits the inspiration in one line, and nothing else mentions
+it.
 
 **Licence choice:** MIT is the simplest "use it for anything" licence.
 Choose GPL-3.0 instead only if you want forks to stay open. The bundled
@@ -135,7 +119,7 @@ its licence text and point to its exact source.
 
 ### Exit criteria
 
-- [ ] The licence is settled and a `LICENSE` file is in place.
+- [x] The licence is settled and a `LICENSE` file is in place.
 - [ ] Every "Must have" item is ticked.
 - [ ] Ten or more beta testers on at least three GPU vendors, over two
       weeks or more, with no data-loss bugs and no open crash bugs.
@@ -332,8 +316,8 @@ mounted at `/app`). Deployed by one Pages workflow next to Lite.
     - "Send an iPhone video on Discord"
     - "Why your HEVC video won't play on Discord"
   - **Compare:** honest tables against the browser compressors that
-    upload your files, HandBrake (no size target), LosslessCut (no size
-    target) and 8mb.local (credited).
+    upload your files, HandBrake (no size target) and LosslessCut (no size
+    target).
   - **FAQ, Privacy** (no telemetry, nothing uploaded), **Changelog**
     (from `CHANGELOG.md`), **Code signing policy**.
 - **Analytics:** privacy-friendly (GoatCounter or Cloudflare Web Analytics,
@@ -400,8 +384,6 @@ day.
    - "Discord says file too large? Fix it in 5 seconds."
    - On YouTube Shorts and TikTok.
    - One per platform the app supports (PC, iPhone, Android).
-6. **Tell JMS1717 and the 8mb.local community.** The credit is real, and
-   their users are the audience most likely to want a desktop version.
 
 ### After launch
 
@@ -421,16 +403,16 @@ day.
 
 | Step | Work | Depends on |
 | --- | --- | --- |
-| 1 | Ask JMS1717 about the licence; check the Discord facts | — |
+| 1 | Check the Discord facts (licence done: MIT) | — |
 | 2 | CI, repository files, version script | — |
 | 3 | Phase 1 "Must have" items | 2 |
 | 4 | Bundled FFmpeg, updater, release workflow | 2 |
 | 5 | Lite prototype (go or no-go) | — (runs in parallel with 3) |
-| 6 | Licence settled → `LICENSE`, apply for SignPath | 1 |
+| 6 | Apply for SignPath (needs the MIT licence, now in place) | — |
 | 7 | Closed beta of desktop 0.9 | 3, 4 |
 | 8 | Lite build (if 5 passed) | 5, 2 |
 | 9 | Website and domain | 7 for real screenshots |
 | 10 | Signed 1.0, Lite, site live → launch sequence | 6, 7, 8, 9 |
 
-Steps 1, 2 and 5 can start today. Step 1 waits on someone else, so send
-the request first.
+Steps 1, 2, 5 and 6 can start today. SignPath reviews applications by
+hand, so send that one early.

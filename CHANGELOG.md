@@ -18,6 +18,10 @@ What changed in each release. The format follows
 - Sub20 Lite size test (`npm run dev`, then `/lite-lab.html`): checks how
   close the browser's own encoder lands to a size limit.
 
+### Changed
+
+- Sub20 is now open source under the MIT licence (`LICENSE`).
+
 ## [0.1.0] - not released
 
 The first version, before any public release.
