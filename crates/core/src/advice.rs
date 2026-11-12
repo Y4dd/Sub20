@@ -43,9 +43,13 @@ pub fn explain(error: &Error, at: &Situation) -> String {
         );
     }
     if not_allowed(error, &lower) {
-        // FFmpeg names the file it couldn't open. The partial result is the
-        // only thing it writes; anything else it was refused is the source.
-        let source_refused = matches!(error, Error::Encode(_) | Error::Unreadable(..)) && !lower.contains(".part.");
+        // Ask the files themselves first. FFmpeg's last line doesn't always
+        // name the file it was refused ("Error opening output files:
+        // Permission denied"), and the partial result is the only thing it
+        // writes.
+        let output_refused = lower.contains(".part.") || lower.contains("output") || !can_write(at.out_dir);
+        let source_refused = std::fs::File::open(at.input).is_err()
+            || (!output_refused && matches!(error, Error::Encode(_) | Error::Unreadable(..)));
         return if source_refused {
             format!("Sub20 isn't allowed to read {name}. Check the file's permissions, or copy it to a folder you own.")
         } else {
@@ -61,6 +65,18 @@ pub fn explain(error: &Error, at: &Situation) -> String {
         );
     }
     text
+}
+
+/// Whether a file can be made in `dir`, tried with a probe that is removed again.
+fn can_write(dir: &Path) -> bool {
+    let probe = dir.join(format!(".sub20-write-test-{}", std::process::id()));
+    match std::fs::OpenOptions::new().write(true).create_new(true).open(&probe) {
+        Ok(_) => {
+            let _ = std::fs::remove_file(&probe);
+            true
+        }
+        Err(error) => error.kind() == std::io::ErrorKind::AlreadyExists,
+    }
 }
 
 fn os_error(error: &Error) -> Option<i32> {
@@ -183,6 +199,24 @@ mod tests {
 
         let read = say(Error::Encode("clip.mp4: Permission denied".into()), &b);
         assert!(read.starts_with("Sub20 isn't allowed to read clip.mp4"), "{read}");
+
+        // FFmpeg's last line often doesn't name the file it was refused.
+        let unnamed = say(Error::Encode("Error opening output files: Permission denied".into()), &b);
+        assert!(unnamed.starts_with("Sub20 isn't allowed to save in"), "{unnamed}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_read_only_folder_is_blamed_even_when_ffmpeg_names_no_file() {
+        use std::os::unix::fs::PermissionsExt;
+        let b = bench();
+        std::fs::set_permissions(&b.out, std::fs::Permissions::from_mode(0o555)).unwrap();
+        if can_write(&b.out) {
+            return; // root writes anywhere
+        }
+        let message = say(Error::Encode("Permission denied".into()), &b);
+        std::fs::set_permissions(&b.out, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(message.starts_with("Sub20 isn't allowed to save in"), "{message}");
     }
 
     #[test]
