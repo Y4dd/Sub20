@@ -126,8 +126,9 @@ its licence text and point to its exact source.
 - [x] Remember the last options between launches.
 - [x] Load filmstrip thumbnails one at a time, so they don't all appear
       together after a wait.
-- [ ] Disk full, a read-only folder, a file that vanishes mid-job, a corrupt
-      file: each one gives a message that names the fix.
+- [x] Disk full, a read-only folder, a file that vanishes mid-job, a corrupt
+      file: each one gives a message that names the fix (`advice.rs`).
+      Disk full is covered by unit tests only.
 - [ ] Very long and very large sources (a 2-hour 4K file): the planner,
       memory use, the time estimate.
 - [x] **Copy diagnostics** in Settings: the app and FFmpeg versions, the

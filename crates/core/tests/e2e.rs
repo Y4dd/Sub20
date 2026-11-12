@@ -447,7 +447,7 @@ async fn bad_input_fails_with_a_readable_message() {
     std::fs::write(&input, b"this is not a video").unwrap();
     let (_, done) = b.engine.submit_and_wait(spec(&input, EncodeOptions::default()));
     let error = done.await.unwrap().unwrap_err();
-    assert!(error.contains("not a video FFmpeg can read"), "{error}");
+    assert!(error.starts_with("notes.mp4 couldn't be read as a video"), "{error}");
     assert!(matches!(b.events.all().last(), Some(JobEvent::Failed { .. })));
 }
 
@@ -551,4 +551,63 @@ async fn a_typed_name_is_used_and_a_result_can_be_renamed() {
     assert!(renamed.exists() && !result.output.exists());
     assert_eq!(b.engine.history().list()[0].result.output, renamed, "history follows the rename");
     no_leftovers(&b.root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_damaged_recording_says_what_to_do() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("recording.mp4");
+    make_source(&b.tools, &input, 4, "640x360").await;
+    // A recording cut off before it was finished: an MP4's index is written last.
+    let bytes = std::fs::read(&input).unwrap();
+    std::fs::write(&input, &bytes[..bytes.len() * 2 / 5]).unwrap();
+
+    let (_, done) = b.engine.submit_and_wait(spec(&input, EncodeOptions::default()));
+    let error = done.await.unwrap().unwrap_err();
+    assert!(error.starts_with("recording.mp4 couldn't be read as a video"), "{error}");
+    assert!(error.contains("still being recorded or copied"), "{error}");
+    no_leftovers(&b.root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_source_moved_away_while_waiting_in_line_is_named() {
+    let Some(b) = bench().await else { return };
+    let first = b.root.join("first.mp4");
+    let second = b.root.join("second.mp4");
+    make_source(&b.tools, &first, 8, "1280x720").await;
+    std::fs::copy(&first, &second).unwrap();
+    b.engine.settings().update(|s| s.parallel_jobs = 1).unwrap();
+
+    let options = EncodeOptions { target_mb: 2.0, encoder: Some("libx264".into()), ..EncodeOptions::default() };
+    let (_, first_done) = b.engine.submit_and_wait(spec(&first, options.clone()));
+    let (_, second_done) = b.engine.submit_and_wait(spec(&second, options));
+    // The second waits behind the first; it is gone by the time its turn comes.
+    std::fs::remove_file(&second).unwrap();
+
+    first_done.await.unwrap().expect("the first job is unaffected");
+    let error = second_done.await.unwrap().unwrap_err();
+    assert_eq!(error, "second.mp4 was moved or deleted while it was being compressed. Put it back and compress again.");
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_read_only_results_folder_says_what_to_do() {
+    use std::os::unix::fs::PermissionsExt;
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 3, "640x360").await;
+    let locked = b.root.join("locked");
+    std::fs::create_dir(&locked).unwrap();
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).unwrap();
+    if std::fs::write(locked.join("probe"), b"").is_ok() {
+        eprintln!("skipped: running as a user who can write anywhere (root)");
+        return;
+    }
+
+    let job = JobSpec { output_dir: Some(locked.clone()), ..spec(&input, EncodeOptions::default()) };
+    let (_, done) = b.engine.submit_and_wait(job);
+    let error = done.await.unwrap().unwrap_err();
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(error.starts_with("Sub20 isn't allowed to save in"), "{error}");
+    assert!(error.contains("Choose another folder for results in Settings"), "{error}");
 }

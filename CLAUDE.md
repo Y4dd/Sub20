@@ -64,6 +64,8 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Stopping FFmpeg** goes through `ffmpeg::kill_tree`. On Windows `ffmpeg.exe` may be a launcher (Chocolatey's ShimGen shims start the real FFmpeg as a child), and killing the launcher alone leaves FFmpeg running and writing; `taskkill /T /F` on the launcher's PID stops both. Timed-out helper runs do the same. Found on CI, where Chocolatey installs FFmpeg; Scoop's shims pass the kill on.
 
+**Failures name the cause and the fix.** `advice::explain` rewrites a failed job's error before the `Failed` event: the source moved or deleted (checked first, since it explains what follows), the results folder gone, a full disk (FFmpeg's words or the OS error code), a folder Sub20 may not write to versus a source it may not read (FFmpeg names the `.part.` file when it is the output), and a source that can't be read as a video, which also covers a recording still being written. Anything else keeps FFmpeg's telling line. Add a case there, with a unit test, rather than rewording errors where they are raised.
+
 **Progress** comes from `-progress pipe:1`; stderr is the log. `percent` is per attempt and restarts on `Retry`; two-pass splits it 0–50 and 50–100.
 
 **Folder watch polls** on a timer by design: it behaves the same on network shares and synced folders, and "stopped changing for N seconds" answers "has the copy finished?". Its memory (`watch.json`) is keyed by path plus size and mtime; the "already there" baseline is taken once per folder.
@@ -120,7 +122,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 78 tests pass (62 unit, 14 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 86 tests pass (68 unit, 16 e2e, 2 shell; the read-only-folder e2e test runs on Linux and macOS only), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 

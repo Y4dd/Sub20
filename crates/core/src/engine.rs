@@ -259,7 +259,14 @@ impl Engine {
                     Err("canceled".to_string())
                 }
                 Err(error) => {
-                    let message = error.to_string();
+                    let out_dir = match &spec.output_dir {
+                        Some(dir) => dir.clone(),
+                        None => spec.input.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from(".")),
+                    };
+                    let message = crate::advice::explain(
+                        &error,
+                        &crate::advice::Situation { input: &spec.input, out_dir: &out_dir },
+                    );
                     engine.inner.sink.emit(JobEvent::Failed { id: job_id, error: message.clone() });
                     Err(message)
                 }

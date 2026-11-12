@@ -29,6 +29,10 @@ What changed in each release. The format follows
 - Copy diagnostics (Settings, at the end) puts what a bug report needs on
   the clipboard, with your home folder hidden. Crashes are written to a log
   it includes.
+- A failed video says what went wrong and what to do: the source was moved
+  or deleted, the results folder is gone, the disk is full, the folder
+  can't be written to, or the source can't be read (it may be damaged or
+  still being recorded).
 - The About line names the licence, says Sub20 isn't affiliated with
   Discord, and links the bundled FFmpeg's licence.
 

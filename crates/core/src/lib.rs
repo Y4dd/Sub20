@@ -13,8 +13,10 @@
 //! * remember settings, profiles and history ([`settings`], [`history`]),
 //! * watch a folder and compress whatever appears in it ([`watch`]),
 //! * cut thumbnails for the trim timeline ([`thumbs`]),
-//! * write a bug report's diagnostics ([`diagnostics`]).
+//! * write a bug report's diagnostics ([`diagnostics`]),
+//! * say what went wrong in words that name the fix ([`advice`]).
 
+pub mod advice;
 pub mod command;
 pub mod diagnostics;
 pub mod encoders;
