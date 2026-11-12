@@ -203,7 +203,8 @@
 
   <Timeline {clip} {playhead} onseek={seek} />
 
-  <div class="under">
+  <!-- Once done, the trim is settled and the result needs the room. -->
+  <div class="under" class:done={clip.status === "done"}>
     <label class="edge">
       <span class="muted">From</span>
       <input
@@ -321,7 +322,7 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    padding: 20px 24px 14px;
+    padding: 6px 24px 14px;
     gap: 14px;
   }
 
@@ -425,6 +426,14 @@
     gap: 20px;
     padding: 0 16px;
     min-height: 44px;
+  }
+
+  .under.done {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .under.done .edge {
+    display: none;
   }
 
   .edge {
@@ -615,6 +624,7 @@
     gap: 4px;
     color: var(--muted);
     font-size: var(--step--1);
+    white-space: nowrap;
   }
 
   .file .size :global(svg),
@@ -628,6 +638,7 @@
   }
 
   .copy {
+    flex: none;
     display: flex;
     align-items: center;
     gap: 8px;
