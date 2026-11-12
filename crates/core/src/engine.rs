@@ -375,6 +375,7 @@ impl Engine {
         let mut hardware_decode = spec.options.hardware_decode;
         let mut attempts = 0u32;
         let mut size_retries = 0u32;
+        let mut previous_size: Option<u64> = None;
         let size = loop {
             attempts += 1;
             let passes: &[Pass] = if !spec.options.audio_only && command::uses_two_passes(encoder, &spec.options) {
@@ -446,20 +447,46 @@ impl Engine {
                 break size;
             }
             let over_percent = (size as f64 / target as f64 - 1.0) * 100.0;
-            if size_retries >= SIZE_RETRIES {
-                self.log(id, format!(
-                    "Still {over_percent:.1}% over the limit after {SIZE_RETRIES} extra tries. Keeping the closest result."
-                ));
-                break size;
+            let _ = std::fs::remove_file(&partial);
+            let attempt = Attempt {
+                hardware: encoder.family.is_hardware(),
+                size_retries,
+                video_kbps,
+                size,
+                previous_size,
+                target,
+                duration: plan.duration,
+            };
+            match when_over(&attempt) {
+                Over::Retry(lower) => {
+                    size_retries += 1;
+                    video_kbps = lower;
+                    previous_size = Some(size);
+                    sink.emit(JobEvent::Retry { id: id.to_string(), attempt: size_retries, over_percent, video_kbps });
+                }
+                Over::UseCpu => {
+                    // Hardware encoders have a bitrate floor (h264_nvenc will
+                    // not go much under 600 kbps at 720p30) and drift over
+                    // their target; the CPU encoders hit it.
+                    let Some(cpu) = report.cpu(encoder.codec).filter(|cpu| cpu.name != encoder.name) else {
+                        return Err(over_limit(over_percent, attempts));
+                    };
+                    let reason = format!("{} could not get under the limit ({over_percent:.1}% over)", encoder.name);
+                    self.log(id, format!("{reason}. Encoding on the CPU instead."));
+                    sink.emit(JobEvent::Fallback {
+                        id: id.to_string(),
+                        from: encoder.name.to_string(),
+                        to: cpu.name.to_string(),
+                        reason,
+                    });
+                    fell_back_from.get_or_insert_with(|| encoder.name.to_string());
+                    encoder = cpu;
+                    video_kbps = plan.video_kbps;
+                    size_retries = 0;
+                    previous_size = None;
+                }
+                Over::GiveUp => return Err(over_limit(over_percent, attempts)),
             }
-            let lower = lower_bitrate(video_kbps, size, target, plan.duration);
-            if lower >= video_kbps {
-                self.log(id, format!("{over_percent:.1}% over the limit and the bitrate cannot go lower."));
-                break size;
-            }
-            size_retries += 1;
-            video_kbps = lower;
-            sink.emit(JobEvent::Retry { id: id.to_string(), attempt: size_retries, over_percent, video_kbps });
         };
 
         // Publish under the final name.
@@ -663,6 +690,56 @@ fn choose_encoder(
     })
 }
 
+/// An encode that came out over the size limit.
+struct Attempt {
+    hardware: bool,
+    /// Lower-bitrate retries already made on this encoder.
+    size_retries: u32,
+    video_kbps: u32,
+    size: u64,
+    /// The size of the previous try on this encoder, if this was a retry.
+    previous_size: Option<u64>,
+    target: u64,
+    duration: f64,
+}
+
+#[derive(Debug, PartialEq)]
+enum Over {
+    /// Encode again at this video bitrate.
+    Retry(u32),
+    /// Start again on the CPU encoder for the same codec.
+    UseCpu,
+    /// Stop without saving anything.
+    GiveUp,
+}
+
+/// What to do when a result is over the limit. The limit is strict: an
+/// over-limit file is never saved, so this ends in a retry, a switch to
+/// the CPU, or an error.
+fn when_over(a: &Attempt) -> Over {
+    let out_of_road = if a.hardware { Over::UseCpu } else { Over::GiveUp };
+    // A lower bitrate that barely shrank the file means the encoder is at
+    // its floor; more retries would only waste time.
+    if a.hardware && a.previous_size.is_some_and(|previous| a.size as f64 >= previous as f64 * 0.95) {
+        return Over::UseCpu;
+    }
+    if a.size_retries >= SIZE_RETRIES {
+        return out_of_road;
+    }
+    let lower = lower_bitrate(a.video_kbps, a.size, a.target, a.duration);
+    if lower >= a.video_kbps {
+        return out_of_road;
+    }
+    Over::Retry(lower)
+}
+
+fn over_limit(over_percent: f64, attempts: u32) -> Error {
+    Error::OverLimit(format!(
+        "Could not get under the size limit: still {over_percent:.1}% over after {attempts} tries, so nothing was saved. \
+         Pick a larger size, keep a shorter part, or choose a lower resolution."
+    ))
+}
+
 /// A lower video bitrate after a result came out `size` bytes against a
 /// `target`: the more careful of "scale by the miss" and "subtract the miss".
 fn lower_bitrate(video_kbps: u32, size: u64, target: u64, duration: f64) -> u32 {
@@ -745,6 +822,42 @@ mod tests {
         assert!((16..=800).contains(&lower), "{lower}");
         // Never below the floor.
         assert_eq!(lower_bitrate(20, 2_000_000, 100_000, 5.0), 16);
+    }
+
+    fn over(hardware: bool, size_retries: u32, size: u64, previous_size: Option<u64>) -> Over {
+        when_over(&attempt(hardware, size_retries, size, previous_size))
+    }
+
+    #[test]
+    fn a_small_miss_is_retried_lower() {
+        assert!(matches!(over(false, 0, 10_500_000, None), Over::Retry(kbps) if kbps < 1000));
+        assert!(matches!(over(true, 0, 10_500_000, None), Over::Retry(kbps) if kbps < 1000));
+    }
+
+    #[test]
+    fn hardware_at_its_floor_moves_to_the_cpu_at_once() {
+        // The retry asked for less but the file barely shrank (h264_nvenc on
+        // a busy 720p clip at ~300 kbps).
+        assert_eq!(over(true, 1, 18_500_000, Some(18_700_000)), Over::UseCpu);
+        // A retry that did shrink the file gets another go.
+        assert!(matches!(over(true, 1, 10_400_000, Some(12_000_000)), Over::Retry(_)));
+    }
+
+    #[test]
+    fn out_of_retries_never_keeps_the_file() {
+        assert_eq!(over(true, SIZE_RETRIES, 10_100_000, Some(11_000_000)), Over::UseCpu);
+        assert_eq!(over(false, SIZE_RETRIES, 10_100_000, Some(11_000_000)), Over::GiveUp);
+    }
+
+    #[test]
+    fn a_bitrate_that_cannot_drop_ends_the_tries() {
+        let at_floor = |hardware| when_over(&Attempt { video_kbps: 16, ..attempt(hardware, 0, 10_500_000, None) });
+        assert_eq!(at_floor(false), Over::GiveUp);
+        assert_eq!(at_floor(true), Over::UseCpu);
+    }
+
+    fn attempt(hardware: bool, size_retries: u32, size: u64, previous_size: Option<u64>) -> Attempt {
+        Attempt { hardware, size_retries, video_kbps: 1000, size, previous_size, target: 10_000_000, duration: 60.0 }
     }
 
     #[test]

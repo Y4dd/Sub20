@@ -25,6 +25,11 @@ pub enum Error {
     #[error("FFmpeg stopped with an error: {0}")]
     Encode(String),
 
+    /// Every encoder and bitrate tried came out over the size limit, so
+    /// nothing was saved.
+    #[error("{0}")]
+    OverLimit(String),
+
     #[error("canceled")]
     Canceled,
 
