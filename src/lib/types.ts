@@ -142,6 +142,8 @@ export interface Settings {
   parallelJobs: number;
   ffmpegFolder: string | null;
   watch: WatchSettings;
+  checkUpdates: boolean;
+  lastOptions: EncodeOptions | null;
 }
 
 export type Family = "nvenc" | "qsv" | "amf" | "mf" | "videotoolbox" | "vaapi" | "cpu";
@@ -195,6 +197,10 @@ export interface Bootstrap {
   version: string;
   /** Videos the app was started with ("Open with Sub20"). */
   openedWith: string[];
+  /** FFmpeg ships inside this build. */
+  bundled: boolean;
+  /** The bundled FFmpeg's licence and origin, as a file. */
+  ffmpegNotice: string | null;
 }
 
 export interface Added {
@@ -225,6 +231,12 @@ export type DropEvent = { type: "over" } | { type: "leave" } | { type: "drop"; p
  */
 export type Frame = "custom" | "overlay" | "native";
 
+/** A newer release on the update feed. */
+export interface UpdateInfo {
+  version: string;
+  notes: string | null;
+}
+
 export interface Backend {
   readonly demo: boolean;
   readonly frame: Frame;
@@ -236,8 +248,8 @@ export interface Backend {
   bootstrap(): Promise<Bootstrap>;
   ffmpegStatus(): Promise<FfmpegStatus>;
   addVideos(paths: string[]): Promise<Added[]>;
-  /** Thumbnail URLs, in order. */
-  filmstrip(path: string, duration: number, count: number): Promise<string[]>;
+  /** Thumbnail URLs, in order. `onThumb` hears each one as soon as it is made. */
+  filmstrip(path: string, duration: number, count: number, onThumb: (index: number, url: string) => void): Promise<string[]>;
   /** A URL the `<video>` element can try to play, or null when there is none. */
   videoUrl(path: string): string | null;
   /** One still frame as an image URL. */
@@ -260,6 +272,12 @@ export interface Backend {
   copyFile(path: string): Promise<void>;
   /** Renames a finished video, keeping its extension; returns the new path. */
   renameResult(path: string, name: string): Promise<string>;
+  /** Asks the release feed for a newer version; null when this one is the latest. */
+  checkUpdate(): Promise<UpdateInfo | null>;
+  /** Installs the update `checkUpdate` found and restarts the app. Running jobs are stopped. */
+  installUpdate(): Promise<void>;
+  /** Puts what a bug report needs on the clipboard, as Markdown with the home folder hidden. `log` is the shown job's FFmpeg log. */
+  copyDiagnostics(log: string[]): Promise<void>;
   /** Drags a finished video out of the window, a filmstrip thumbnail under the pointer. */
   dragOut(path: string, thumb: string | null): Promise<void>;
   pickVideos(): Promise<string[]>;

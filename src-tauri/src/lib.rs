@@ -7,6 +7,7 @@ mod media;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -19,8 +20,11 @@ use sub20_core::plan::{self, Plan};
 use sub20_core::settings::{OutputMode, Settings};
 use sub20_core::watch::{self, WatchStatus, Watcher};
 use sub20_core::{thumbs, Engine, MediaInfo};
-use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
+use tauri::ipc::Channel;
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WindowEvent};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_updater::{Update, UpdaterExt};
 
 struct AppState {
     engine: Engine,
@@ -34,6 +38,15 @@ struct AppState {
     /// Files this app has written. Only these may be previewed or copied to
     /// the clipboard as results.
     results: Arc<Mutex<HashSet<PathBuf>>>,
+    /// The update `check_update` found, kept for `install_update`.
+    update: Mutex<Option<Update>>,
+    /// The user chose "Stop and quit"; let the exit through.
+    quitting: AtomicBool,
+    /// The quit dialog is showing.
+    asking: AtomicBool,
+    /// Where panics are written (`log_crashes`).
+    crash_log: PathBuf,
+    ffmpeg_notice: Option<PathBuf>,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -68,6 +81,10 @@ struct Bootstrap {
     ffmpeg: FfmpegStatus,
     version: &'static str,
     opened_with: Vec<PathBuf>,
+    /// Whether FFmpeg ships inside this build.
+    bundled: bool,
+    /// The licence and origin of the FFmpeg inside, when there is one.
+    ffmpeg_notice: Option<PathBuf>,
 }
 
 /// Everything the window needs when it opens.
@@ -78,6 +95,8 @@ async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
         ffmpeg: ffmpeg_state(&state.engine).await,
         version: env!("CARGO_PKG_VERSION"),
         opened_with: state.opened_with.clone(),
+        bundled: option_env!("SUB20_BUNDLED").is_some(),
+        ffmpeg_notice: state.ffmpeg_notice.clone(),
     })
 }
 
@@ -137,16 +156,29 @@ async fn add_videos(app: AppHandle, state: State<'_, AppState>, paths: Vec<PathB
     Ok(added)
 }
 
+#[derive(Clone, Serialize)]
+struct Thumb {
+    index: usize,
+    path: PathBuf,
+}
+
 /// Thumbnails for the trim timeline, as file paths the window may load.
+/// Each one is also sent through `on_thumb` as soon as it exists, so the
+/// strip fills in while the rest are cut.
 #[tauri::command]
 async fn filmstrip(
     state: State<'_, AppState>,
     path: PathBuf,
     duration: f64,
     count: usize,
+    on_thumb: Channel<Thumb>,
 ) -> CommandResult<Vec<PathBuf>> {
     let tools = state.engine.tools().map_err(text)?;
-    thumbs::filmstrip(&tools, &path, duration, count, 96, &state.thumbs_dir).await.map_err(text)
+    thumbs::filmstrip(&tools, &path, duration, count, 96, &state.thumbs_dir, |index, path| {
+        let _ = on_thumb.send(Thumb { index, path: path.to_path_buf() });
+    })
+    .await
+    .map_err(text)
 }
 
 /// One frame as a `data:` URL, for sources the window cannot play itself.
@@ -319,15 +351,178 @@ fn copy_file(state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
     clipboard.set_files(vec![file]).map_err(|e| format!("The clipboard refused the file: {e}"))
 }
 
+/// Which update feed this build follows. The release with FFmpeg inside is
+/// built with `SUB20_BUNDLED=1`; every other build is the lean one, so an
+/// install keeps the kind it started as.
+fn update_target() -> String {
+    let os = match std::env::consts::OS {
+        "macos" => "darwin",
+        other => other,
+    };
+    let lean = if option_env!("SUB20_BUNDLED").is_some() { "" } else { "-lean" };
+    format!("{os}-{}{lean}", std::env::consts::ARCH)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateInfo {
+    version: String,
+    notes: Option<String>,
+}
+
+/// Asks the release feed for a newer version. `None` means up to date.
+#[tauri::command]
+async fn check_update(app: AppHandle, state: State<'_, AppState>) -> CommandResult<Option<UpdateInfo>> {
+    let update = app
+        .updater_builder()
+        .target(update_target())
+        .timeout(Duration::from_secs(20))
+        .build()
+        .map_err(text)?
+        .check()
+        .await
+        .map_err(text)?;
+    let info = update.as_ref().map(|u| UpdateInfo { version: u.version.clone(), notes: u.body.clone() });
+    *state.update.lock().expect("update lock") = update;
+    Ok(info)
+}
+
+/// Downloads and installs the update `check_update` found, then restarts.
+/// Running jobs are stopped first, as on quit.
+#[tauri::command]
+async fn install_update(app: AppHandle, state: State<'_, AppState>) -> CommandResult<()> {
+    let update = state.update.lock().expect("update lock").take().ok_or("No update has been found yet.")?;
+    if state.engine.active() > 0 {
+        state.engine.cancel_all();
+        tokio::time::sleep(Duration::from_millis(600)).await;
+    }
+    update.download_and_install(|_, _| {}, || {}).await.map_err(text)?;
+    // The jobs are already stopped; do not ask about them on the way out.
+    state.quitting.store(true, Ordering::SeqCst);
+    app.restart()
+}
+
+/// Asks before quitting while videos are compressing or waiting. Returns
+/// true when the quit may go ahead now; otherwise a dialog is up, and
+/// "Stop and quit" exits the app.
+fn may_quit(app: &AppHandle) -> bool {
+    let Some(state) = app.try_state::<AppState>() else { return true };
+    let running = state.engine.active();
+    if running == 0 || state.quitting.load(Ordering::SeqCst) {
+        return true;
+    }
+    // One dialog at a time: closing the window again while it is up does nothing.
+    if state.asking.swap(true, Ordering::SeqCst) {
+        return false;
+    }
+    let message = if running == 1 {
+        "A video is still compressing. Quitting stops it and deletes the unfinished file.".to_string()
+    } else {
+        format!("{running} videos are still compressing. Quitting stops them and deletes the unfinished files.")
+    };
+    let handle = app.clone();
+    app.dialog()
+        .message(message)
+        .title("Stop compressing and quit?")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom("Stop and quit".into(), "Keep compressing".into()))
+        .show(move |stop| {
+            let state = handle.state::<AppState>();
+            state.asking.store(false, Ordering::SeqCst);
+            if stop {
+                state.quitting.store(true, Ordering::SeqCst);
+                handle.exit(0);
+            }
+        });
+    false
+}
+
+/// "FFmpeg included" or "lean", as `update_target` decides.
+fn build_kind() -> &'static str {
+    if option_env!("SUB20_BUNDLED").is_some() {
+        "FFmpeg included"
+    } else {
+        "lean"
+    }
+}
+
+/// Writes every panic to `crash.log` in the app's log folder, after the usual
+/// message. Copy diagnostics includes the end of the file.
+fn log_crashes(path: PathBuf) {
+    let usual = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        usual(info);
+        let when =
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or_default();
+        let thread = std::thread::current().name().unwrap_or("unnamed").to_string();
+        let entry =
+            format!("[{when}] Sub20 {} ({}), thread {thread}: {info}\n", env!("CARGO_PKG_VERSION"), build_kind());
+        // Start over once the file gets large; the newest crash matters most.
+        let fresh = std::fs::metadata(&path).map(|m| m.len() > 256 * 1024).unwrap_or(false);
+        let file = std::fs::OpenOptions::new().create(true).append(!fresh).write(true).truncate(fresh).open(&path);
+        if let Ok(mut file) = file {
+            use std::io::Write as _;
+            let _ = file.write_all(entry.as_bytes());
+        }
+    }));
+}
+
+/// Puts what a bug report needs on the clipboard, ready to paste. `log` is
+/// the FFmpeg log of the job the window is showing.
+#[tauri::command]
+async fn copy_diagnostics(app: AppHandle, state: State<'_, AppState>, log: Vec<String>) -> CommandResult<()> {
+    use clipboard_rs::{Clipboard, ClipboardContext};
+    let text = diagnostics(&app, &state, log).await;
+    let clipboard = ClipboardContext::new().map_err(|e| format!("The clipboard could not be opened: {e}"))?;
+    clipboard.set_text(text).map_err(|e| format!("The clipboard refused the text: {e}"))
+}
+
+async fn diagnostics(app: &AppHandle, state: &AppState, log: Vec<String>) -> String {
+    let ffmpeg = state.engine.tools().ok();
+    let version = match &ffmpeg {
+        Some(tools) => tools.version().await,
+        None => None,
+    };
+    let folder = ffmpeg.as_ref().and_then(|tools| tools.ffmpeg.parent().map(Path::to_path_buf));
+    let report = match &ffmpeg {
+        Some(_) => state.engine.hardware(false).await.ok(),
+        None => None,
+    };
+    let info = os_info::get();
+    let system = format!("{} {} ({})", info.os_type(), info.version(), std::env::consts::ARCH);
+    let crashes = sub20_core::diagnostics::tail_of(&state.crash_log, 40);
+    let home = app.path().home_dir().ok();
+    let settings = state.engine.settings().get();
+    sub20_core::diagnostics::report(&sub20_core::diagnostics::Facts {
+        app_version: env!("CARGO_PKG_VERSION"),
+        build: build_kind(),
+        system: &system,
+        ffmpeg: match (&version, &folder) {
+            (Some(version), Some(folder)) => Some((version.as_str(), folder.as_path())),
+            _ => None,
+        },
+        report: report.as_deref(),
+        settings: &settings,
+        crashes: crashes.as_deref(),
+        job_log: &log,
+        home: home.as_deref(),
+    })
+}
+
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drag::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             let cache_dir = app.path().app_cache_dir()?;
             let thumbs_dir = cache_dir.join("thumbs");
+            let log_dir = app.path().app_log_dir()?;
+            std::fs::create_dir_all(&log_dir)?;
+            let crash_log = log_dir.join("crash.log");
+            log_crashes(crash_log.clone());
             std::fs::create_dir_all(&data_dir)?;
             std::fs::create_dir_all(&thumbs_dir)?;
             thumbs::prune_cache(&thumbs_dir, Duration::from_secs(14 * 86_400));
@@ -337,6 +532,12 @@ pub fn run() {
 
             // An FFmpeg shipped inside the app wins over one on PATH.
             let mut bundled = Vec::new();
+            let ffmpeg_notice = app
+                .path()
+                .resource_dir()
+                .ok()
+                .map(|resources| resources.join("ffmpeg").join("FFMPEG.txt"))
+                .filter(|notice| notice.is_file());
             if let Ok(resources) = app.path().resource_dir() {
                 bundled.push(resources.join("ffmpeg"));
                 bundled.push(resources);
@@ -380,7 +581,19 @@ pub fn run() {
                 None
             };
 
-            app.manage(AppState { engine, watcher, thumbs_dir, opened_with, media, results });
+            app.manage(AppState {
+                engine,
+                watcher,
+                thumbs_dir,
+                opened_with,
+                media,
+                results,
+                update: Mutex::default(),
+                quitting: AtomicBool::new(false),
+                asking: AtomicBool::new(false),
+                crash_log,
+                ffmpeg_notice,
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -404,12 +617,25 @@ pub fn run() {
             result_url,
             copy_file,
             rename_result,
+            check_update,
+            install_update,
+            copy_diagnostics,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start Sub20");
 
-    app.run(|app, event| {
-        if let RunEvent::Exit = event {
+    app.run(|app, event| match event {
+        RunEvent::WindowEvent { event: WindowEvent::CloseRequested { api, .. }, .. } => {
+            if !may_quit(app) {
+                api.prevent_close();
+            }
+        }
+        RunEvent::ExitRequested { api, .. } => {
+            if !may_quit(app) {
+                api.prevent_exit();
+            }
+        }
+        RunEvent::Exit => {
             // Stop FFmpeg before the process goes away, so nothing keeps
             // encoding in the background and no partial files are left.
             if let Some(state) = app.try_state::<AppState>() {
@@ -419,5 +645,6 @@ pub fn run() {
                 }
             }
         }
+        _ => {}
     });
 }

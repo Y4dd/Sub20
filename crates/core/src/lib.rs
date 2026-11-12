@@ -12,9 +12,11 @@
 //!   when a file lands over its target ([`engine`]),
 //! * remember settings, profiles and history ([`settings`], [`history`]),
 //! * watch a folder and compress whatever appears in it ([`watch`]),
-//! * cut thumbnails for the trim timeline ([`thumbs`]).
+//! * cut thumbnails for the trim timeline ([`thumbs`]),
+//! * write a bug report's diagnostics ([`diagnostics`]).
 
 pub mod command;
+pub mod diagnostics;
 pub mod encoders;
 pub mod engine;
 pub mod error;

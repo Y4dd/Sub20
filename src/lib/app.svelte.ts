@@ -6,6 +6,7 @@ import { tauriBackend } from "./tauri";
 import { baseName, plain } from "./format";
 import type {
   Backend, EncodeOptions, FfmpegStatus, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
+  UpdateInfo,
 } from "./types";
 
 export const backend: Backend = "__TAURI_INTERNALS__" in window ? tauriBackend : mockBackend;
@@ -89,6 +90,9 @@ const FALLBACK_OPTIONS: EncodeOptions = {
 class App {
   ready = $state(false);
   version = $state("");
+  /** FFmpeg ships inside this build. */
+  bundled = $state(false);
+  ffmpegNotice = $state<string | null>(null);
   clips = $state<Clip[]>([]);
   selectedKey = $state<string | null>(null);
   options = $state<EncodeOptions>({ ...FALLBACK_OPTIONS });
@@ -105,11 +109,16 @@ class App {
   /** Dropped files are being read. */
   adding = $state(false);
   notices = $state<{ id: number; text: string }[]>([]);
+  /** A newer release, found at startup when the settings allow it. */
+  update = $state<UpdateInfo | null>(null);
+  /** The update is downloading and about to restart the app. */
+  updating = $state(false);
 
   #byJob = new Map<string, Clip>();
   #early: JobEvent[] = [];
   #planTimers = new Map<string, number>();
   #noticeId = 0;
+  #saving: Promise<void> = Promise.resolve();
 
   get selected(): Clip | null {
     return this.clips.find((clip) => clip.key === this.selectedKey) ?? this.clips[0] ?? null;
@@ -132,7 +141,11 @@ class App {
     this.settings = boot.settings;
     this.ffmpeg = boot.ffmpeg;
     this.version = boot.version;
+    this.bundled = boot.bundled;
+    this.ffmpegNotice = boot.ffmpegNotice;
     this.loadProfile(boot.settings.defaultProfile);
+    if (boot.settings.lastOptions) this.#restore(boot.settings.lastOptions);
+    this.#rememberOptions();
     await backend.onJob((event) => this.#onJob(event));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
@@ -145,6 +158,29 @@ class App {
     this.ready = true;
     if (boot.ffmpeg.found) void this.loadReport(false);
     if (boot.openedWith.length) void this.add(boot.openedWith);
+    if (boot.settings.checkUpdates) void this.checkUpdate(true);
+  }
+
+  /** Looks for a newer release. At startup (`quietly`) a failure says nothing: being offline is normal. */
+  async checkUpdate(quietly = false) {
+    try {
+      this.update = await backend.checkUpdate();
+      if (!quietly && !this.update) this.notify(`Sub20 ${this.version} is the latest version.`);
+    } catch (error) {
+      if (!quietly) this.notify(`Could not check for updates: ${error}`);
+    }
+  }
+
+  /** Downloads the update, stops any running jobs and restarts into the new version. */
+  async installUpdate() {
+    if (!this.update || this.updating) return;
+    this.updating = true;
+    try {
+      await backend.installUpdate();
+    } catch (error) {
+      this.updating = false;
+      this.notify(`The update did not install: ${error}. Try again, or download it from the Releases page.`);
+    }
   }
 
   async loadReport(refresh: boolean) {
@@ -160,6 +196,40 @@ class App {
     if (!profile) return;
     this.options = structuredClone($state.snapshot(profile.options));
     this.profile = name;
+  }
+
+  /** Starts from the options the app last closed with. */
+  #restore(options: EncodeOptions) {
+    this.options = { ...FALLBACK_OPTIONS, ...options };
+    const same = JSON.stringify($state.snapshot(this.options));
+    this.profile = this.settings?.profiles.find((p) => JSON.stringify({ ...FALLBACK_OPTIONS, ...p.options }) === same)?.name ?? null;
+  }
+
+  /** Saves the options a second after they stop changing, for the next launch. */
+  #rememberOptions() {
+    let timer = 0;
+    let first = true;
+    $effect.root(() => {
+      $effect(() => {
+        const options = $state.snapshot(this.options);
+        if (first) {
+          first = false;
+          return;
+        }
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => void this.saveSettings((s) => (s.lastOptions = options)), 1000);
+      });
+    });
+  }
+
+  /** Puts what a bug report needs on the clipboard: versions, encoders, crashes and the shown job's log. */
+  async copyDiagnostics() {
+    try {
+      await backend.copyDiagnostics($state.snapshot(this.selected?.log ?? []));
+      this.notify("Diagnostics copied. Paste them into a bug report on GitHub.");
+    } catch (error) {
+      this.notify(`Could not copy the diagnostics: ${error}`);
+    }
   }
 
   notify(text: string) {
@@ -211,8 +281,14 @@ class App {
     const ratio = clip.info.displayWidth / Math.max(1, clip.info.displayHeight);
     // Enough tiles to fill a wide timeline: fewer for landscape, more for portrait.
     const count = Math.round(Math.min(32, Math.max(10, 22 / ratio)));
+    // Empty places fill in as each thumbnail arrives.
+    clip.thumbs = Array(count).fill("");
     try {
-      clip.thumbs = await backend.filmstrip(clip.path, clip.duration, count);
+      clip.thumbs = await backend.filmstrip(clip.path, clip.duration, count, (index, url) => {
+        const next = [...clip.thumbs];
+        next[index] = url;
+        clip.thumbs = next;
+      });
     } catch {
       clip.thumbs = [];
     }
@@ -346,7 +422,7 @@ class App {
   /** Drags a finished clip out of the window, into Discord or a folder. */
   async dragOut(clip: Clip) {
     if (!clip.result) return;
-    const thumb = clip.thumbs[Math.floor(clip.thumbs.length / 2)] ?? null;
+    const thumb = clip.thumbs[Math.floor(clip.thumbs.length / 2)] || null;
     try {
       await backend.dragOut(clip.result.output, thumb);
     } catch (error) {
@@ -403,6 +479,14 @@ class App {
   }
 
   async saveSettings(change: (settings: Settings) => void) {
+    // One save at a time, each starting from what the last one stored, so
+    // two quick changes can't overwrite each other.
+    const turn = this.#saving.then(() => this.#save(change));
+    this.#saving = turn.catch(() => {});
+    return turn;
+  }
+
+  async #save(change: (settings: Settings) => void) {
     if (!this.settings) return;
     const next = structuredClone($state.snapshot(this.settings));
     change(next);

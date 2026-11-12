@@ -17,10 +17,29 @@ What changed in each release. The format follows
 - `npm run set-version -- <x.y.z>` sets the version everywhere it is written.
 - Sub20 Lite size test (`npm run dev`, then `/lite-lab.html`): checks how
   close the browser's own encoder lands to a size limit.
+- Updates from inside the app: Sub20 checks GitHub for a newer version when
+  it opens (Settings → Updates turns that off), and the title bar says when
+  one is out. Updates are signed.
+- A release workflow that builds Sub20 with FFmpeg included, and a lean
+  build without it, for Windows, macOS and Linux.
+- Sub20 asks before quitting while videos are compressing.
+- The options you last used are there again the next time Sub20 opens.
+- Filmstrip thumbnails appear one by one as they are made, not all at once
+  after a wait.
+- Copy diagnostics (Settings, at the end) puts what a bug report needs on
+  the clipboard, with your home folder hidden. Crashes are written to a log
+  it includes.
+- The About line names the licence, says Sub20 isn't affiliated with
+  Discord, and links the bundled FFmpeg's licence.
 
 ### Changed
 
 - Sub20 is now open source under the MIT licence (`LICENSE`).
+- The size presets follow Discord's limits: 20 MB (free), 50 MB (Nitro
+  Basic), 500 MB (a server boost) and 1 GB (Nitro). 100 MB is gone; a list
+  you edited yourself is kept.
+- HEVC now says Discord won't play it in the chat, where you pick it and in
+  the options summary.
 
 ## [0.1.0] - not released
 

@@ -32,6 +32,10 @@ fn cache_key(input: &Path, count: usize, height: u32) -> String {
 /// Cuts `count` evenly spaced thumbnails, `height` pixels tall, and returns
 /// their paths in order. Results are cached under `cache_dir`, keyed by the
 /// file's path, size and modification time.
+///
+/// `on_frame` hears about each thumbnail as soon as it exists (cached ones
+/// first), with its place in the strip, so the timeline can fill in as it
+/// goes. Frames are cut roughly left to right.
 pub async fn filmstrip(
     tools: &Tools,
     input: &Path,
@@ -39,6 +43,7 @@ pub async fn filmstrip(
     count: usize,
     height: u32,
     cache_dir: &Path,
+    mut on_frame: impl FnMut(usize, &Path),
 ) -> Result<Vec<PathBuf>> {
     let count = count.clamp(1, 60);
     let dir = cache_dir.join(cache_key(input, count, height));
@@ -49,6 +54,7 @@ pub async fn filmstrip(
     let mut tasks = JoinSet::new();
     for (i, path) in paths.iter().enumerate() {
         if path.is_file() {
+            on_frame(i, path);
             continue;
         }
         // Sample the middle of each slice; stay clear of the very end, where
@@ -68,9 +74,16 @@ pub async fn filmstrip(
                 .args(["-q:v", "6"])
                 .arg(&path);
             let _ = ffmpeg::run(&mut cmd, Duration::from_secs(30)).await;
+            i
         });
     }
-    while tasks.join_next().await.is_some() {}
+    while let Some(done) = tasks.join_next().await {
+        if let Ok(i) = done {
+            if paths[i].is_file() {
+                on_frame(i, &paths[i]);
+            }
+        }
+    }
 
     // A frame can be missing (broken spot in the file). Borrow a neighbor so
     // the strip has no holes.

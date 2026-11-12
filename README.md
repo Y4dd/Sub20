@@ -35,8 +35,8 @@ account, no upload and no ads.
   straight into a channel. The preview switches to the result so you can
   check it first.
 - **Sizes named after Discord's limits**: 20 MB (free, the default), 50 MB
-  (Nitro Basic), 100 MB (a level 3 server boost) and 500 MB (Nitro), or any
-  size you type.
+  (Nitro Basic), 500 MB (a server boost) and 1 GB (Nitro), or any size you
+  type.
 - **Automatic resolution.** When the limit is too tight for the source
   resolution, the picture is scaled to the size that will look best, and the
   app tells you how it will look before you compress. Trimming shorter never
@@ -55,7 +55,7 @@ account, no upload and no ads.
 
 - [FFmpeg](https://ffmpeg.org) 6 or newer, with `ffprobe`. The app looks on
   `PATH`, in the usual install folders, and in a folder you choose in
-  Settings. To ship FFmpeg inside the app, see [Bundling FFmpeg](#bundling-ffmpeg).
+  Settings. The download marked "FFmpeg included" has it built in.
 - To build: [Rust](https://rustup.rs) 1.80+, Node.js 20+, and the
   [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your system
   (WebView2 on Windows, Xcode command line tools on macOS, WebKitGTK 4.1 on
@@ -81,15 +81,28 @@ instead of the Windows one.
 
 ### Bundling FFmpeg
 
-Put `ffmpeg` and `ffprobe` (with `.exe` on Windows) in `src-tauri/ffmpeg/` and
-add this to the `bundle` section of `src-tauri/tauri.conf.json`:
+`npm run tauri build` makes the lean app, which finds FFmpeg on the system.
+To build the one with FFmpeg inside, as the releases do:
 
-```json
-"resources": ["ffmpeg/*"]
+```bash
+node scripts/fetch-ffmpeg.mjs
+npx tauri build --config src-tauri/tauri.bundled.conf.json
 ```
 
-The app prefers a bundled FFmpeg over one on `PATH`. Check the licence of the
-FFmpeg build you ship: builds with x264 and x265 are GPL.
+The script downloads the FFmpeg build pinned in `scripts/ffmpeg.json` for
+this system, checks its SHA-256, and puts `sub20-ffmpeg` and
+`sub20-ffprobe` in `src-tauri/binaries/`. The app prefers them over an
+FFmpeg on `PATH`. Those builds are GPL; the licence and where the build came
+from ship inside the app.
+
+### Releases
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It builds both
+kinds (FFmpeg included, and lean) for Windows, macOS (Apple Silicon and
+Intel) and Linux, and puts them on a draft release with the update feed
+(`latest.json`) and `SHA256SUMS.txt`. Set the version first with
+`npm run set-version -- x.y.z`. Updates are signed; the workflow needs the
+`TAURI_SIGNING_PRIVATE_KEY` secret.
 
 ## Using it
 
@@ -199,9 +212,8 @@ or macOS yet.
 
 ## Coming next
 
-- FFmpeg bundled in the app, so it works straight after install.
-- Downloads on the [Releases](../../releases) page, with and without FFmpeg
-  bundled.
+- Downloads on the [Releases](../../releases) page, with FFmpeg included
+  or without it, and updates from inside the app.
 
 ## Licence
 

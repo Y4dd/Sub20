@@ -20,7 +20,7 @@ let settings: Settings = {
     { name: "Smallest (AV1)", options: { ...DEFAULT_OPTIONS, codec: "av1", effort: "p5", container: "mkv", audio: "opus" } },
   ],
   defaultProfile: "Everyday",
-  sizes: [20, 50, 100, 500],
+  sizes: [20, 50, 500, 1024],
   disabledEncoders: ["libaom-av1"],
   outputMode: "sameFolder",
   outputFolder: null,
@@ -28,6 +28,8 @@ let settings: Settings = {
   historyKeepDays: 0,
   parallelJobs: 0,
   ffmpegFolder: null,
+  checkUpdates: true,
+  lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
     existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5,
@@ -242,6 +244,8 @@ export const mockBackend: Backend = {
     settings: structuredClone(settings),
     ffmpeg: { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" },
     version: "0.1.0",
+    bundled: false,
+    ffmpegNotice: null,
     // `?clips` opens the demo clips at startup, so a headless screenshot can
     // show the bench without clicking.
     openedWith: new URLSearchParams(location.search).has("clips")
@@ -258,11 +262,17 @@ export const mockBackend: Backend = {
       return { path, name: demo.name, info: demo.info, playUrl: null, error: null };
     });
   },
-  filmstrip: async (path, duration, count) => {
+  filmstrip: async (path, duration, count, onThumb) => {
     const demo = added.get(path)!;
     const ratio = demo.info.displayWidth / demo.info.displayHeight;
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    return Array.from({ length: count }, (_, i) => paint(demo, ((i + 0.5) / count) * duration, Math.round(96 * ratio), 96));
+    // Arrive one at a time, as the real ones do.
+    const strip: string[] = [];
+    for (let i = 0; i < count; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      strip.push(paint(demo, ((i + 0.5) / count) * duration, Math.round(96 * ratio), 96));
+      onThumb(i, strip[i]);
+    }
+    return strip;
   },
   videoUrl: () => null,
   previewFrame: async (path, at) => {
@@ -321,6 +331,20 @@ export const mockBackend: Backend = {
     if (clean.toLowerCase().endsWith(extension.toLowerCase())) clean = clean.slice(0, -extension.length);
     if (!clean) throw "That name has no letters a file name can use.";
     return path.slice(0, path.lastIndexOf("/") + 1) + clean + extension;
+  },
+  // `?update` pretends a newer release is out, to show how that looks.
+  checkUpdate: async () =>
+    new URLSearchParams(location.search).has("update") ? { version: "0.2.0", notes: "A demo update." } : null,
+  installUpdate: () => new Promise((resolve) => setTimeout(() => (location.search = "", resolve()), 1500)),
+  copyDiagnostics: async (log) => {
+    const text = [
+      "**Sub20** 0.1.0 (demo)",
+      "**System** a browser",
+      "**FFmpeg** ffmpeg version 7.1 (demo), in /usr/local/bin",
+      ...(log.length ? ["", "**FFmpeg log of the last job**", "```", ...log, "```"] : []),
+    ].join("\n");
+    // A browser refuses the clipboard without focus; the demo shows the text instead.
+    await navigator.clipboard.writeText(text).catch(() => console.info(text));
   },
   dragOut: async () => {},
   pickVideos: async () => {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app, backend } from "../app.svelte";
-  import { plain, when, BIN, CODEC_LABEL } from "../format";
+  import { plain, sizeName, when, BIN, CODEC_LABEL } from "../format";
   import type { EncoderStatus, Family, Profile, WatchStatus } from "../types";
   import Icon from "./Icon.svelte";
   import Segmented from "./Segmented.svelte";
@@ -22,7 +22,7 @@
 
   function describe(profile: Profile): string {
     const o = profile.options;
-    const parts = [`${plain(o.targetMb)} MB`, CODEC_LABEL[o.codec]];
+    const parts = [sizeName(o.targetMb), CODEC_LABEL[o.codec]];
     if (o.audioOnly) parts.push("sound only");
     else if (o.autoResolution) parts.push("auto resolution");
     else if (o.maxShortSide) parts.push(`${o.maxShortSide}p`);
@@ -61,8 +61,8 @@
     <div class="chips">
       {#each s.sizes as size (size)}
         <span class="chip">
-          {plain(size)} MB
-          <button type="button" aria-label="Remove {plain(size)} MB" disabled={s.sizes.length === 1}
+          {sizeName(size)}
+          <button type="button" aria-label="Remove {sizeName(size)}" disabled={s.sizes.length === 1}
             onclick={() => app.saveSettings((n) => (n.sizes = n.sizes.filter((x) => x !== size)))}>
             <Icon name="close" size={12} />
           </button>
@@ -307,9 +307,36 @@
     </p>
   </section>
 
+  <section>
+    <h3>Updates</h3>
+    <Toggle checked={s.checkUpdates} onchange={(on) => app.saveSettings((n) => (n.checkUpdates = on))}>
+      Check for updates when Sub20 opens
+    </Toggle>
+    <p class="note">
+      {#if app.updating}
+        Downloading Sub20 {app.update?.version}. The app restarts when it's installed.
+      {:else if app.update}
+        Sub20 {app.update.version} is out.
+        <button type="button" class="link" onclick={() => app.installUpdate()}>
+          {app.busy.length ? "Stop compressing, update and restart" : "Update and restart"}
+        </button>
+      {:else}
+        Asks GitHub for the latest version number. Nothing about you or your files is sent.
+        <button type="button" class="link quiet" onclick={() => app.checkUpdate()}>Check now</button>
+      {/if}
+    </p>
+  </section>
+
   <p class="about muted">
     <button type="button" class="link quiet" onclick={() => (app.sheet = "keys")}>Keyboard shortcuts (?)</button><br />
-    Sub20 {app.version}, free and open source under the MIT licence.
+    Sub20 {app.version}{app.bundled ? ", FFmpeg included" : ""}, free and open source under the MIT licence.
+    Not affiliated with Discord.<br />
+    {#if app.ffmpegNotice}
+      FFmpeg is free software under the GNU GPL.
+      <button type="button" class="link quiet" onclick={() => app.ffmpegNotice && backend.openFile(app.ffmpegNotice)}>Its licence and source</button><br />
+    {/if}
+    <button type="button" class="link quiet" onclick={() => app.copyDiagnostics()}>Copy diagnostics</button>
+    for a bug report. Sub20 sends nothing about you anywhere.
   </p>
 </Sheet>
 

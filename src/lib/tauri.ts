@@ -1,6 +1,6 @@
 // The real backend: Rust commands over Tauri's IPC.
 
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -41,13 +41,16 @@ export const tauriBackend: Backend = {
     for (const item of added) if (item.playUrl) playUrls.set(item.path, item.playUrl);
     return added;
   },
-  filmstrip: async (path, duration, count) => {
-    const files = await invoke<string[]>("filmstrip", { path, duration, count });
-    return files.map((file) => {
+  filmstrip: async (path, duration, count, onThumb) => {
+    const thumbUrl = (file: string) => {
       const url = convertFileSrc(file);
       thumbFiles.set(url, file);
       return url;
-    });
+    };
+    const onThumbChannel = new Channel<{ index: number; path: string }>();
+    onThumbChannel.onmessage = ({ index, path }) => onThumb(index, thumbUrl(path));
+    const files = await invoke<string[]>("filmstrip", { path, duration, count, onThumb: onThumbChannel });
+    return files.map(thumbUrl);
   },
   videoUrl: (path) => playUrls.get(path) ?? convertFileSrc(path),
   previewFrame: (path, at) => invoke("preview_frame", { path, at }),
@@ -68,6 +71,9 @@ export const tauriBackend: Backend = {
   resultUrl: async (path) => (await invoke<string | null>("result_url", { path })) ?? convertFileSrc(path),
   copyFile: (path) => invoke("copy_file", { path }),
   renameResult: (path, name) => invoke("rename_result", { path, name }),
+  checkUpdate: () => invoke("check_update"),
+  installUpdate: () => invoke("install_update"),
+  copyDiagnostics: (log) => invoke("copy_diagnostics", { log }),
   dragOut: async (path, thumb) => {
     const icon = (thumb && thumbFiles.get(thumb)) ?? thumbFiles.values().next().value;
     if (!icon) return;

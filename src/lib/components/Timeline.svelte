@@ -80,9 +80,13 @@
 <div class="timeline" class:busy={clip.busy} class:done={clip.status === "done"} class:dragging={dragging !== null}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="rail" bind:this={rail} onpointerdown={scrub} onpointermove={drag} onpointerup={release} onpointercancel={release}>
-    <div class="strip" class:loading={clip.thumbs.length === 0}>
+    <div class="strip" class:loading={clip.thumbs.length === 0 || clip.thumbs.includes("")}>
       {#each clip.thumbs as thumb, index (index)}
-        <img src={thumb} alt="" draggable="false" />
+        {#if thumb}
+          <img src={thumb} alt="" draggable="false" />
+        {:else}
+          <span class="slot"></span>
+        {/if}
       {/each}
     </div>
 
@@ -166,7 +170,8 @@
     background: var(--well);
   }
 
-  .strip img {
+  .strip img,
+  .strip .slot {
     flex: 1 1 0;
     min-width: 0;
     height: 100%;

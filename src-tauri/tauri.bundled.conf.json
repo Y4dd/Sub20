@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "externalBin": ["binaries/sub20-ffmpeg", "binaries/sub20-ffprobe"],
+    "resources": {
+      "ffmpeg-notice/FFMPEG.txt": "ffmpeg/FFMPEG.txt",
+      "../licenses/FFmpeg-GPL-3.0.txt": "ffmpeg/LICENSE-GPL-3.0.txt"
+    }
+  }
+}

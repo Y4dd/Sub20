@@ -106,6 +106,12 @@ pub struct Settings {
     /// Folder that holds `ffmpeg` and `ffprobe`, when not found automatically.
     pub ffmpeg_folder: Option<PathBuf>,
     pub watch: WatchSettings,
+    /// Ask GitHub for a newer release at startup. The only request the app
+    /// makes on its own; nothing about the user is sent.
+    pub check_updates: bool,
+    /// The options in force when the app last closed, so the next launch
+    /// starts where this one left off. `None` starts from the default profile.
+    pub last_options: Option<EncodeOptions>,
 }
 
 impl Default for Settings {
@@ -130,8 +136,7 @@ impl Default for Settings {
                 },
             ],
             default_profile: "Everyday".into(),
-            // Discord: free, Nitro Basic (or a level 2 boost), a level 3 boost, Nitro.
-            sizes: vec![20.0, 50.0, 100.0, 500.0],
+            sizes: DISCORD_SIZES.to_vec(),
             disabled_encoders: vec!["libaom-av1".into()],
             output_mode: OutputMode::SameFolder,
             output_folder: None,
@@ -140,6 +145,8 @@ impl Default for Settings {
             parallel_jobs: 0,
             ffmpeg_folder: None,
             watch: WatchSettings::default(),
+            check_updates: true,
+            last_options: None,
         }
     }
 }
@@ -147,6 +154,14 @@ impl Default for Settings {
 /// The size a fresh install aims at: Discord's free upload limit since
 /// August 2026.
 pub const DEFAULT_TARGET_MB: f64 = 20.0;
+
+/// Discord's upload limits, in MB: free, Nitro Basic, a server boost, Nitro.
+/// The size picker offers these until the user changes the list.
+pub const DISCORD_SIZES: [f64; 4] = [20.0, 50.0, 500.0, 1024.0];
+
+/// The list a fresh install had before Discord's tiers changed. A list still
+/// equal to it was never edited, so it moves to the current one.
+const OLD_DEFAULT_SIZES: [f64; 4] = [20.0, 50.0, 100.0, 500.0];
 
 /// Largest size the app accepts, in MB (50 GB).
 pub const MAX_TARGET_MB: f64 = 51_200.0;
@@ -177,8 +192,8 @@ impl Settings {
         self.sizes.retain(|s| s.is_finite() && *s > 0.0 && *s <= MAX_TARGET_MB);
         self.sizes.sort_by(|a, b| a.total_cmp(b));
         self.sizes.dedup();
-        if self.sizes.is_empty() {
-            self.sizes = Settings::default().sizes;
+        if self.sizes.is_empty() || self.sizes == OLD_DEFAULT_SIZES {
+            self.sizes = DISCORD_SIZES.to_vec();
         }
 
         let mut seen = std::collections::HashSet::new();
@@ -191,6 +206,9 @@ impl Settings {
         }
         for profile in &mut self.profiles {
             tidy_options(&mut profile.options);
+        }
+        if let Some(options) = &mut self.last_options {
+            tidy_options(options);
         }
         if !self.profiles.iter().any(|p| p.name == self.default_profile) {
             self.default_profile = self.profiles[0].name.clone();
@@ -323,6 +341,34 @@ mod tests {
     }
 
     #[test]
+    fn the_last_options_are_kept_and_repaired() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let store = SettingsStore::open(path.clone());
+        assert_eq!(store.get().last_options, None);
+
+        let options = EncodeOptions { target_mb: 50.0, codec: Codec::Hevc, ..EncodeOptions::default() };
+        store.update(|s| s.last_options = Some(options.clone())).unwrap();
+        assert_eq!(SettingsStore::open(path.clone()).get().last_options, Some(options));
+
+        std::fs::write(&path, r#"{"lastOptions":{"targetMb":-3}}"#).unwrap();
+        let last = SettingsStore::open(path).get().last_options.unwrap();
+        assert_eq!(last.target_mb, DEFAULT_TARGET_MB);
+    }
+
+    #[test]
+    fn an_untouched_size_list_follows_discords_tiers() {
+        let mut settings = Settings { sizes: OLD_DEFAULT_SIZES.to_vec(), ..Settings::default() };
+        settings.tidy();
+        assert_eq!(settings.sizes, DISCORD_SIZES.to_vec());
+
+        // A list the user edited is theirs.
+        let mut settings = Settings { sizes: vec![20.0, 50.0, 100.0], ..Settings::default() };
+        settings.tidy();
+        assert_eq!(settings.sizes, vec![20.0, 50.0, 100.0]);
+    }
+
+    #[test]
     fn round_trips_and_survives_a_damaged_file() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("settings.json");
@@ -335,6 +381,7 @@ mod tests {
         let store = SettingsStore::open(path.clone());
         assert_eq!(store.get().sizes, vec![3.0]);
         assert_eq!(store.get().profiles.len(), 3);
+        assert!(store.get().check_updates, "files from before the setting check for updates");
 
         std::fs::write(&path, "{ not json").unwrap();
         let store = SettingsStore::open(path.clone());

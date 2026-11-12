@@ -8,6 +8,26 @@ front of the people who send clips every day.
 Each phase has exit criteria. A phase is done when they all hold, not when
 its list is ticked.
 
+## Waiting on the owner
+
+Things only the maintainer can do, at their own machine or account.
+
+- [ ] **Back up the updater key.** `~/.tauri/sub20-updater.key` (made
+      12 November 2026, no password) signs every update. Keep a copy
+      somewhere safe and offline, such as a password manager. If it's lost,
+      installed copies can never update again; if it leaks, someone else
+      can sign updates.
+- [ ] **Add it to GitHub** so the release workflow can sign:
+      `gh secret set TAURI_SIGNING_PRIVATE_KEY --repo Y4dd/Sub20 < ~/.tauri/sub20-updater.key`
+- [ ] **Dry run** the release workflow (Actions → Release → Run workflow)
+      once the code is pushed, and try a Windows build with FFmpeg included.
+- [ ] **SignPath** (free Windows code signing): apply at signpath.org. They
+      need the code signing policy page (see [Signing](#signing)).
+- [ ] **Apple Developer account** ($99 a year) if macOS should be signed and
+      notarised; until then macOS is "beta, unsigned".
+- [ ] **Discord fact left:** whether AV1 plays inline on desktop, Android
+      and iOS.
+
 ## Blockers to clear first
 
 These decide what is allowed later, so they come before any code.
@@ -37,14 +57,17 @@ its licence text and point to its exact source.
 
 - **HEVC does not play inline in Discord.** Users report a frozen picture
   with sound on desktop; viewers have to download the file. Sub20 offers
-  HEVC. Keep H.264 as the default (it already is), label HEVC "smallest
-  file, but Discord won't play it in chat", and check whether AV1 plays on
-  Discord desktop, Android and iOS before recommending it.
-- **The limit in bytes.** Discord's API reference gives 20 MiB
-  (20,971,520 bytes). Sub20 counts 1 MB as 1024 × 1024 bytes, which
-  matches. Confirm by uploading one file of 20,971,000 bytes and one of
-  20,972,000 bytes from a free account. Check the Nitro figures the same
-  way, since the 500 MB one is unconfirmed.
+  HEVC. H.264 stays the default, and HEVC now says Discord won't play it in
+  the chat (done). Still to check: whether AV1 plays on Discord desktop,
+  Android and iOS before recommending it.
+- **The tiers** are 20 MB free, 50 MB Nitro Basic, 500 MB with a server
+  boost and 1 GB Nitro, per the owner (November 2026). The presets and the
+  picker's names follow them.
+- **The limit in bytes: confirmed.** Discord's API reference gives 20 MiB
+  (20,971,520 bytes), and Sub20 counts 1 MB as 1024 × 1024 bytes. On
+  12 November 2026 a free account uploaded a file of 20,971,000 bytes and
+  refused one of 20,972,000. Still to check the same way: the Nitro
+  figures, since the 500 MB one is unconfirmed.
 - **Brand.** Discord's name can describe what Sub20 is for ("for Discord"),
   but the logo and colours can't be used. Add "Not affiliated with Discord"
   to the README, the site and the About box.
@@ -81,33 +104,43 @@ its licence text and point to its exact source.
       clip folders (detected, one click to turn on).
 
 **Installing and updating**
-- [ ] FFmpeg bundled. See [Downloads](#downloads).
+- [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release
+      workflow; not yet tried on a fresh machine.
+  - [ ] Ship the GPL source for the bundled FFmpeg with each release (or a
+        written offer), not only its licence and origin.
 - [ ] When FFmpeg is missing (the lean build): a clear first-run screen that
       offers "Download FFmpeg" (pinned URL, SHA-256 checked) or shows how to
       install it.
-- [ ] Auto-update with `tauri-plugin-updater`, signed. One update feed per
-      build, so a bundled install stays bundled.
+- [x] Auto-update with `tauri-plugin-updater`, signed. One `latest.json`
+      with a key per build (`windows-x86_64`, `windows-x86_64-lean`, …), so
+      a bundled install stays bundled. Checked at startup (Settings can turn
+      it off); a link in the title bar says when one is out.
+  - [ ] Add the `TAURI_SIGNING_PRIVATE_KEY` secret and back up the key.
+  - [ ] Try an update from one real release to the next.
 - [ ] "Open with Sub20" for video files, and a "Compress with Sub20" entry
       in Explorer's context menu (NSIS installer).
 - [ ] Code signing. See [Signing](#signing).
 
 **Small gaps that look broken to a stranger**
-- [ ] Ask before quitting while jobs are running.
-- [ ] Remember the last options between launches.
-- [ ] Load filmstrip thumbnails one at a time, so they don't all appear
+- [x] Ask before quitting while jobs are running.
+- [x] Remember the last options between launches.
+- [x] Load filmstrip thumbnails one at a time, so they don't all appear
       together after a wait.
 - [ ] Disk full, a read-only folder, a file that vanishes mid-job, a corrupt
       file: each one gives a message that names the fix.
 - [ ] Very long and very large sources (a 2-hour 4K file): the planner,
       memory use, the time estimate.
-- [ ] **Copy diagnostics** in Settings: the app and FFmpeg versions, the
+- [x] **Copy diagnostics** in Settings: the app and FFmpeg versions, the
       encoder report, the operating system, and the last job's log, ready
-      to paste into a bug report. No telemetry, by design. Say so.
-- [ ] Panics and crashes are written to a log file the diagnostics include.
+      to paste into a bug report, with the home folder hidden. No
+      telemetry, by design, and the About line says so.
+- [x] Panics and crashes are written to a log file the diagnostics include.
+  - [ ] Try the quit dialog, Copy diagnostics and a crash in the real
+        window on each system.
 - [ ] Accessibility: keyboard reaches everything, controls have labels,
       reduced motion is respected, contrast holds in both themes.
-- [ ] About box: version, licence, credits, the FFmpeg licence, "not
-      affiliated with Discord".
+- [x] About box: version, licence, the FFmpeg licence, "not affiliated
+      with Discord" (the end of Settings).
 
 ### After 1.0 (only once 1.0 is stable)
 
@@ -137,10 +170,14 @@ Built during Phase 1, because every later phase uses it.
 - On Windows, macOS and Ubuntu.
 - `cargo deny` (licences and advisories) and `npm audit --omit=dev`.
 
-**Release workflow** (on a `v*` tag, using `tauri-action`)
-- Builds two variants for each of three systems. Uploads to a draft release
-  with SHA-256 checksums, the updater signatures and `latest.json` for each
-  variant. Release notes come from `CHANGELOG.md`.
+**Release workflow** (`.github/workflows/release.yml`, on a `v*` tag)
+- Done, not yet run. Builds two variants (FFmpeg included, lean) for
+  Windows x64, macOS Apple Silicon and Intel, and Linux x64. Uploads to a
+  draft release with `SHA256SUMS.txt`, the updater signatures and one
+  `latest.json`. Release notes come from `CHANGELOG.md`. Plain
+  `tauri build` and our own scripts rather than `tauri-action`, which
+  can't give two variants their own update entries.
+- Run by hand, it builds everything without releasing (a dry run).
 - One version number in `Cargo.toml`, `package.json` and `tauri.conf.json`,
   bumped by one script.
 
@@ -155,11 +192,11 @@ Built during Phase 1, because every later phase uses it.
   signed arm64 and x86-64 build for macOS). Later, build FFmpeg in CI with
   only the codecs, filters and formats Sub20 uses, which roughly quarters
   its size.
-- Ship FFmpeg as a Tauri `externalBin` sidecar rather than a plain
-  resource, so it is signed and notarised with the app on macOS. Update the
-  bundled-FFmpeg lookup in `src-tauri/src/lib.rs` to match.
-- Put `FFMPEG-LICENSE.txt` and the exact source URL and version in the
-  bundle and in the About box.
+- Done: FFmpeg 9.0.2 ships as `externalBin` sidecars named
+  `sub20-ffmpeg` and `sub20-ffprobe` (plain names would clash with the
+  distribution's FFmpeg in `/usr/bin` on Linux), pinned with SHA-256 in
+  `scripts/ffmpeg.json`. Its GPL text and origin ship in
+  `resources/ffmpeg/`, linked from the About line in Settings.
 
 ### Signing
 
@@ -403,7 +440,7 @@ day.
 
 | Step | Work | Depends on |
 | --- | --- | --- |
-| 1 | Check the Discord facts (licence done: MIT) | — |
+| 1 | Discord facts: free limit confirmed; Nitro sizes and AV1 playback left (licence done: MIT) | — |
 | 2 | CI, repository files, version script | — |
 | 3 | Phase 1 "Must have" items | 2 |
 | 4 | Bundled FFmpeg, updater, release workflow | 2 |

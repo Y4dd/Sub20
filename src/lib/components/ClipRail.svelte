@@ -48,7 +48,7 @@
           aria-current={selected ? "true" : undefined}
         >
           <span class="thumb">
-            {#if clip.thumbs.length}
+            {#if clip.thumbs[Math.floor(clip.thumbs.length / 2)]}
               <img src={clip.thumbs[Math.floor(clip.thumbs.length / 2)]} alt="" draggable="false" />
             {/if}
             {#if clip.status === "running"}

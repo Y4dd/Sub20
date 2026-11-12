@@ -18,6 +18,10 @@
   <span class="mark" aria-label="Sub20" data-tauri-drag-region>Sub<i>20</i></span>
   <span class="room" data-tauri-drag-region></span>
 
+  {#if app.update}
+    <button type="button" class="link update" onclick={() => (app.sheet = "settings")}>Sub20 {app.update.version} is out</button>
+  {/if}
+
   <div class="tools">
     <button type="button" onclick={() => (app.sheet = "history")} aria-label="History" title="History"><Icon name="history" /></button>
     <button type="button" onclick={() => (app.sheet = "settings")} aria-label="Settings" title="Settings"><Icon name="gear" /></button>
@@ -76,6 +80,11 @@
   .room {
     flex: 1;
     align-self: stretch;
+  }
+
+  .update {
+    margin-right: 10px;
+    font-size: 0.8125rem;
   }
 
   .tools {

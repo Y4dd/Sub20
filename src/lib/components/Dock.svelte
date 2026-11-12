@@ -1,7 +1,7 @@
 <script lang="ts">
   // The bottom bar: one size, one sentence of options, one action.
   import { app } from "../app.svelte";
-  import { discordTier, plain, plural, CODEC_LABEL } from "../format";
+  import { discordTier, plain, sizeParts, plural, CODEC_LABEL } from "../format";
   import Icon from "./Icon.svelte";
 
   let picking = $state(false);
@@ -35,7 +35,7 @@
   const summary = $derived.by(() => {
     const o = app.options;
     if (o.audioOnly) return `Sound only, ${o.audio === "opus" ? "Opus" : "AAC"} at ${o.audioKbps} kbps`;
-    const parts = [CODEC_LABEL[o.codec]];
+    const parts = [o.codec === "hevc" ? "HEVC (won't play in Discord's chat)" : CODEC_LABEL[o.codec]];
     if (o.autoResolution) parts.push("resolution picked for you");
     else if (o.maxShortSide) parts.push(`up to ${o.maxShortSide}p`);
     else if (o.maxWidth || o.maxHeight) parts.push("custom size limit");
@@ -70,7 +70,7 @@
       {#if app.options.videoKbps}
         <b>{plain(app.options.videoKbps, 0)}</b><span>kbps</span>
       {:else}
-        <b>{plain(app.options.targetMb)}</b><span>MB</span>
+        <b>{sizeParts(app.options.targetMb).value}</b><span>{sizeParts(app.options.targetMb).unit}</span>
         {#if discordTier(app.options.targetMb)}<small class="tier">{discordTier(app.options.targetMb)}</small>{/if}
       {/if}
       <Icon name="down" size={16} />
@@ -81,7 +81,7 @@
         <div class="choices">
           {#each sizes as size (size)}
             <button type="button" class:current={!app.options.videoKbps && size === app.options.targetMb} onclick={() => setSize(size)}>
-              <b>{plain(size)}<span>MB</span></b>
+              <b>{sizeParts(size).value}<span>{sizeParts(size).unit}</span></b>
               {#if discordTier(size)}<small>{discordTier(size)}</small>{/if}
             </button>
           {/each}

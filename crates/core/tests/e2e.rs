@@ -457,15 +457,21 @@ async fn filmstrip_and_preview_frames() {
     let input = b.root.join("clip.mp4");
     make_source(&b.tools, &input, 6, "640x360").await;
     let cache = b.root.join("cache");
-    let strip = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache).await.unwrap();
+    let mut heard = Vec::new();
+    let strip = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache, |i, path| heard.push((i, path.to_path_buf())))
+        .await
+        .unwrap();
     assert_eq!(strip.len(), 12);
+    // Each thumbnail was announced once, as it was made, at its own place.
+    heard.sort();
+    assert_eq!(heard, strip.iter().cloned().enumerate().collect::<Vec<_>>());
     for path in &strip {
         let bytes = std::fs::read(path).unwrap();
         assert_eq!(&bytes[..2], &[0xFF, 0xD8], "{} is not a JPEG", path.display());
     }
     // A second call is served from the cache.
     let started = std::time::Instant::now();
-    let again = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache).await.unwrap();
+    let again = thumbs::filmstrip(&b.tools, &input, 6.0, 12, 64, &cache, |_, _| {}).await.unwrap();
     assert_eq!(strip, again);
     assert!(started.elapsed() < Duration::from_millis(200));
 

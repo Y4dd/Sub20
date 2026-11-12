@@ -70,7 +70,7 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Settings** deserialize with `#[serde(default)]` and pass through `tidy()`, so old or hand-edited files load. A damaged file is renamed to `settings.broken.json`. There is no file retention (no uploaded copies exist); the equivalent is `history_keep_days`. Settings live in the app data folder for the identifier `io.github.y4dd.sub20`.
 
-**FFmpeg lookup order:** the folder in settings, bundled (`resources/ffmpeg`, resources, beside the executable), `PATH`, then usual install folders (GUI apps on macOS do not inherit the shell's `PATH`).
+**FFmpeg lookup order:** the folder in settings, bundled (`resources/ffmpeg`, resources, beside the executable), `PATH`, then usual install folders (GUI apps on macOS do not inherit the shell's `PATH`). In bundled folders `sub20-ffmpeg`/`sub20-ffprobe` come first: the release ships FFmpeg under those names, because a Linux package puts sidecars in `/usr/bin`, where `ffmpeg` would clash with the distribution's package.
 
 ## Shell decisions
 
@@ -78,8 +78,13 @@ Adding a capability touches, in order: a core function with a test → a command
 - The asset-protocol scope starts empty. Each added video is allowed at runtime in `add_videos`; the thumbnail cache folder is allowed at startup.
 - **Linux preview playback** goes through `media.rs`, a loopback HTTP server (127.0.0.1, random port, random token, registered files only, range requests). WebKitGTK hands media to GStreamer, which cannot read the asset protocol. Windows and macOS use the asset protocol. The CSP's `media-src` allows `http://127.0.0.1:*` for this.
 - A source the webview cannot decode fires `<video>`'s `onerror`, and the stage switches to still frames from `preview_frame`.
-- On exit the shell cancels all jobs and waits briefly so no FFmpeg child outlives the app.
+- **Quitting asks** while jobs are queued or running (`may_quit`, on `CloseRequested` and `ExitRequested`, so the custom close button, Alt+F4 and ⌘Q all ask): a native dialog, "Stop and quit" or "Keep compressing". On exit the shell cancels all jobs and waits briefly so no FFmpeg child outlives the app. Installing an update stops jobs without asking; its link says so ("Stop compressing, update and restart").
+- **Crashes** are appended to `crash.log` in the app's log folder by a panic hook (`log_crashes`, restarted past 256 KB). **Copy diagnostics** (Settings, About) puts `sub20_core::diagnostics::report` on the clipboard through `clipboard-rs`: versions, build, system (`os_info`), FFmpeg, the encoder report, the crash log's end and the shown job's FFmpeg log, with the home folder written as `~` so it can be pasted in public. There is no telemetry; the update check is the only request the app makes by itself.
+- **Filmstrips arrive one by one**: `thumbs::filmstrip` reports each frame through a callback, the `filmstrip` command forwards them over a Tauri `Channel`, and the window fills empty places (`""`) in `Clip::thumbs` as they come.
 - Paths passed on the command line open as clips ("Open with Sub20").
+- **Two builds.** The lean one (plain `tauri build`) finds FFmpeg on the system. The full one adds `tauri.bundled.conf.json`: FFmpeg as `externalBin` sidecars, fetched by `scripts/fetch-ffmpeg.mjs` from the pins in `scripts/ffmpeg.json` (BtbN for Windows and Linux, Martin Riedl's signed builds for macOS, SHA-256 checked), plus its GPL text and origin under `resources/ffmpeg/`. Never run those downloads on the owner's machine; CI fetches them.
+- **Updates** use `tauri-plugin-updater` from Rust (`check_update`, `install_update`), one `latest.json` on the latest GitHub release. Each build asks for its own key, `{os}-{arch}` or `{os}-{arch}-lean` (`update_target`; the full build is compiled with `SUB20_BUNDLED=1`), so an install stays the kind it started as. The window checks at startup when `Settings::check_updates` is on, silently on failure. Installing stops running jobs first. The public key is in `tauri.conf.json`; the private key is `~/.tauri/sub20-updater.key` on the owner's machine and the `TAURI_SIGNING_PRIVATE_KEY` secret. Losing it means existing installs can't update.
+- **Releases**: a `v*` tag runs `release.yml`: a draft release named from `CHANGELOG.md`, 8 builds (Windows x64 NSIS, macOS arm64 and x64 app/dmg, Linux AppImage/deb/rpm; each full and lean) with `tauri.release.conf.json` (updater artifacts, ad-hoc macOS signing), renamed by `scripts/collect-release.mjs` (`Sub20-Lean_*` for lean), then `latest.json` and `SHA256SUMS.txt`. Run by hand, it builds without releasing.
 - **Results** are remembered in `AppState::results` as job `Done` events pass through the sink. `result_url` (preview) and `copy_file` (clipboard, via `clipboard-rs`; CF_HDROP on Windows) refuse any other path. Drag-out is `tauri-plugin-drag` called from the window, with a filmstrip thumbnail file as the drag image (`tauri.ts` keeps thumbnail URL → file).
 - **Window frame** differs by platform: `tauri.windows.conf.json` turns decorations off and the window draws its own buttons (`Frame` "custom"); macOS keeps its traffic lights over an overlay title bar ("overlay", `titleBarStyle: Overlay`); Linux keeps the native frame ("native"). The title bar is `data-tauri-drag-region`; the window permissions it needs are listed in `capabilities/default.json`.
 - Out of scope by decision: login, the Android app, upload storage.
@@ -93,7 +98,8 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 - **One primary button.** Everything else is a text link (`.link`) where it applies; the exceptions are the finished clip's file chip (drag it out, click to play) and Copy, because getting the file into Discord is the point. Icons are limited to history, settings, close, remove, rename (pencil), copy, the drag grip and the window buttons.
 - **Size and options are global** to the list; **trim is per clip**. Editing a finished clip's trim puts it back to ready.
 - **Copy:** sentence case, plain verbs, commas between facts. The status line says what will happen, is happening, or happened. Errors name the cause and the fix. An action keeps one name everywhere.
-- **Getting it into Discord** is the end of every job: the finished state previews the result (Original/Result switch), offers Copy (Ctrl+C) and a file chip to drag out. The size picker names the Discord limit each preset matches (`discordTier` in `format.ts`; change it when Discord changes its plans). Presets live in settings as plain numbers, default 20 MB (`DEFAULT_TARGET_MB`).
+- **Getting it into Discord** is the end of every job: the finished state previews the result (Original/Result switch), offers Copy (Ctrl+C) and a file chip to drag out. The size picker names the Discord limit each preset matches (`discordTier` in `format.ts`; change it when Discord changes its plans). Presets live in settings as plain numbers: Discord's tiers, 20, 50, 500 and 1024 (`DISCORD_SIZES`), default 20 MB (`DEFAULT_TARGET_MB`). A saved list still equal to the old default (20, 50, 100, 500) moves to the new one in `tidy()`; an edited list is left alone. Whole gigabytes show as GB (`sizeParts`, `sizeName`). The picker names them Free, Nitro Basic, Server boost and Nitro (owner, November 2026). HEVC is labelled where it is picked and in the dock summary: Discord won't play it in the chat.
+- **The last options** are saved to `Settings::last_options` a second after they stop changing and restored at launch, with the matching profile name when they equal one. `saveSettings` in the window runs one save at a time so two quick changes can't overwrite each other.
 - **Tokens** live in `src/app.css`. Dark by default, light through `prefers-color-scheme`. Yellow on the light background is only 1.35:1, so marks drawn in yellow use `--trim-mark` and yellow shapes get a `--trim-edge` outline (both a deep amber in light, plain yellow / nothing in dark). Fonts are bundled (the app works offline): Bricolage Grotesque for display, condensed with `font-stretch`, and Hanken Grotesk for the interface, with tabular figures. Monospace appears only in the FFmpeg log. Corner radii differ by role.
 - **Icon source** is `public/icon.svg`. Regenerate the app icons with `npx tauri icon public/icon.svg`, then delete the `android` and `ios` folders it creates.
 - **State** lives in `src/lib/app.svelte.ts`. `Clip` is a class with `$state` fields. Job events can arrive before `compress()` returns its ids, hence the `#early` buffer.
@@ -106,15 +112,15 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 `docs/release-plan.md` is the road to a public 1.0: blockers, desktop hardening, Sub20 Lite, the website and the launch, with exit criteria per phase. Keep it current as items land. Highlights:
 
-- **FFmpeg bundled** as a Tauri sidecar, with a lean build without it; both on GitHub Releases, auto-updating on separate feeds.
+- **The first release**: the release workflow, both builds and the updater exist but have not run end to end yet.
 - **Sub20 Lite**: a third `Backend` on WebCodecs and Mediabunny (`src/lib/web/`), the planner shared through a WebAssembly build of `plan.rs`, capability flags to hide desktop-only features. Gated on the size test in `/lite-lab.html`.
-- **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; the free limit is 20 MiB per Discord's API docs, which matches the app's 1024 × 1024 MB.
+- **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
 
 ## Verified, and not
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 72 tests pass (56 unit, 14 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 78 tests pass (62 unit, 14 e2e, 2 shell), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 
@@ -126,6 +132,5 @@ Unverified, so check these first on a new machine:
 
 ## Loose ends
 
-- Quitting while jobs run cancels them without asking.
-- Filmstrip thumbnails arrive all at once, not progressively.
-- The current options are not remembered between launches except as saved profiles.
+- The bundled FFmpeg is GPL: the app ships its licence and origin, but the release doesn't carry the corresponding source yet.
+- The quit dialog, Copy diagnostics and the crash log have only been built and type-checked, not tried in the real window.

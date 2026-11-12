@@ -7,5 +7,7 @@ src-tauri/gen/
 
 # FFmpeg binaries placed here for bundling; fetched at build time, never committed.
 src-tauri/ffmpeg/
+src-tauri/binaries/
+src-tauri/ffmpeg-notice/
 .shots/
 .claude/settings.local.json

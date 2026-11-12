@@ -25,9 +25,21 @@ fn exe(name: &str) -> String {
 }
 
 fn pair_in(dir: &Path) -> Option<Tools> {
-    let ffmpeg = dir.join(exe("ffmpeg"));
-    let ffprobe = dir.join(exe("ffprobe"));
+    named_pair_in(dir, "")
+}
+
+fn named_pair_in(dir: &Path, prefix: &str) -> Option<Tools> {
+    let ffmpeg = dir.join(exe(&format!("{prefix}ffmpeg")));
+    let ffprobe = dir.join(exe(&format!("{prefix}ffprobe")));
     (ffmpeg.is_file() && ffprobe.is_file()).then_some(Tools { ffmpeg, ffprobe })
+}
+
+/// The release build ships FFmpeg as `sub20-ffmpeg` and `sub20-ffprobe`,
+/// because a Linux package puts them in `/usr/bin` beside the executable,
+/// where plain names would clash with the system's own FFmpeg package.
+/// Plain names are accepted too, for a hand-made bundle.
+fn bundled_pair_in(dir: &Path) -> Option<Tools> {
+    named_pair_in(dir, "sub20-").or_else(|| pair_in(dir))
 }
 
 impl Tools {
@@ -46,7 +58,7 @@ impl Tools {
             }
         }
         for dir in bundled {
-            if let Some(found) = pair_in(dir) {
+            if let Some(found) = bundled_pair_in(dir) {
                 return Ok(found);
             }
         }
@@ -181,4 +193,38 @@ pub fn tail(stderr: &str, lines: usize) -> String {
     let kept: Vec<&str> = stderr.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
     let start = kept.len().saturating_sub(lines);
     kept[start..].join(" | ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn touch(dir: &Path, name: &str) -> PathBuf {
+        let path = dir.join(exe(name));
+        std::fs::write(&path, b"").unwrap();
+        path
+    }
+
+    #[test]
+    fn the_bundled_copy_is_found_by_its_own_names_first() {
+        let dir = tempfile::tempdir().unwrap();
+        touch(dir.path(), "ffmpeg");
+        touch(dir.path(), "ffprobe");
+        let ffmpeg = touch(dir.path(), "sub20-ffmpeg");
+        let ffprobe = touch(dir.path(), "sub20-ffprobe");
+
+        let found = Tools::locate(None, &[dir.path().to_path_buf()]).unwrap();
+        assert_eq!(found, Tools { ffmpeg, ffprobe });
+    }
+
+    #[test]
+    fn a_hand_made_bundle_with_plain_names_still_works() {
+        let dir = tempfile::tempdir().unwrap();
+        let ffmpeg = touch(dir.path(), "ffmpeg");
+        let ffprobe = touch(dir.path(), "ffprobe");
+        touch(dir.path(), "sub20-ffmpeg"); // half a pair is not a bundle
+
+        let found = Tools::locate(None, &[dir.path().to_path_buf()]).unwrap();
+        assert_eq!(found, Tools { ffmpeg, ffprobe });
+    }
 }

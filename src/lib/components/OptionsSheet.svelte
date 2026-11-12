@@ -21,8 +21,8 @@
   );
 
   const CODEC_NOTE: Record<Codec, string> = {
-    h264: "Plays everywhere.",
-    hevc: "Sharper at the same size. Plays on phones and computers from the last several years.",
+    h264: "Plays everywhere, including in Discord's chat.",
+    hevc: "Sharper at the same size, but Discord won't play it in the chat: people have to download it to watch.",
     av1: "Sharpest at the same size. Needs a recent device to play, and is slow without a recent graphics card.",
   };
 

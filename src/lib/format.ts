@@ -59,11 +59,22 @@ export function plain(value: number, digits = 2): string {
  * these; check them when it changes its plans.
  */
 const DISCORD_TIERS: Record<number, string> = {
-  20: "Discord",
+  20: "Free",
   50: "Nitro Basic",
-  100: "Boost level 3",
-  500: "Nitro",
+  500: "Server boost",
+  1024: "Nitro",
 };
+
+/** A size limit as the picker shows it: 20 → 20 MB, 1024 → 1 GB. */
+export function sizeParts(mb: number): { value: string; unit: string } {
+  return mb >= 1024 && mb % 1024 === 0 ? { value: plain(mb / 1024), unit: "GB" } : { value: plain(mb), unit: "MB" };
+}
+
+/** A size limit in words: "20 MB", "1 GB". */
+export function sizeName(mb: number): string {
+  const { value, unit } = sizeParts(mb);
+  return `${value} ${unit}`;
+}
 
 export function discordTier(mb: number): string | null {
   return DISCORD_TIERS[mb] ?? null;

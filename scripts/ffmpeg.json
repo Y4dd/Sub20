@@ -1,0 +1,45 @@
+{
+  "version": "9.0.2",
+  "targets": {
+    "x86_64-pc-windows-msvc": {
+      "builder": "BtbN (https://github.com/BtbN/FFmpeg-Builds)",
+      "archive": {
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-12-15-40/ffmpeg-n9.0.2-57-gd838f9f9ae-win64-gpl-9.0.zip",
+        "sha256": "cf43d18e45a1b79a4d74f0e6f94206fe23d82f38de11352e5db9496058dc9c48"
+      },
+      "source": "https://github.com/FFmpeg/FFmpeg/commit/d838f9f9ae"
+    },
+    "x86_64-unknown-linux-gnu": {
+      "builder": "BtbN (https://github.com/BtbN/FFmpeg-Builds)",
+      "archive": {
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-12-15-40/ffmpeg-n9.0.2-57-gd838f9f9ae-linux64-gpl-9.0.tar.xz",
+        "sha256": "ccedeabdb6c1bbfd44647225e3a4452a1983a770847c2d7de261fcbc407250df"
+      },
+      "source": "https://github.com/FFmpeg/FFmpeg/commit/d838f9f9ae"
+    },
+    "aarch64-apple-darwin": {
+      "builder": "Martin Riedl (https://ffmpeg.martin-riedl.de), signed and notarised",
+      "ffmpeg": {
+        "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip",
+        "sha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924"
+      },
+      "ffprobe": {
+        "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip",
+        "sha256": "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6"
+      },
+      "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz"
+    },
+    "x86_64-apple-darwin": {
+      "builder": "Martin Riedl (https://ffmpeg.martin-riedl.de), signed and notarised",
+      "ffmpeg": {
+        "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffmpeg.zip",
+        "sha256": "7c6b4125b191cbf773832dc51f424cf2b6bb7da43007d1e066f95909e47cacd4"
+      },
+      "ffprobe": {
+        "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffprobe.zip",
+        "sha256": "2322438ed2f6319a691291b247d09c69dcaa3a982460d1f269a7e1af335cfdfd"
+      },
+      "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz"
+    }
+  }
+}

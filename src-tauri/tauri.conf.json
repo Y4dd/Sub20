@@ -41,5 +41,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ5RjYyOURDNjQyRUUwNUUKUldSZTRDNWszQ24yU1V6bUE4dkhCZ1EwUk5naW1ncE5WeEhjWkg1QUhsRzE0T0tiRFVvNXRCRGoK",
+      "endpoints": [
+        "https://github.com/Y4dd/Sub20/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

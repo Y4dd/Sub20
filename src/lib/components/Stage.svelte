@@ -146,7 +146,7 @@
     if (view === "result") untrack(() => video?.pause());
   });
 
-  const thumb = $derived(clip.thumbs[Math.floor(clip.thumbs.length / 2)] ?? null);
+  const thumb = $derived(clip.thumbs[Math.floor(clip.thumbs.length / 2)] || null);
   const copyKey = navigator.platform.toLowerCase().includes("mac") ? "⌘C" : "Ctrl+C";
 </script>
 
