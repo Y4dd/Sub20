@@ -89,7 +89,9 @@ async fn fits_the_target_and_reports_progress() {
     let input = b.root.join("pattern.mp4");
     make_source(&b.tools, &input, 20, "1280x720").await;
 
-    let options = EncodeOptions { target_mb: 1.0, ..EncodeOptions::default() };
+    // libx264 by name: on a machine with a GPU the automatic choice would be
+    // a hardware encoder (see `a_hardware_encoder_that_misses_hands_over_to_the_cpu`).
+    let options = EncodeOptions { target_mb: 1.0, encoder: Some("libx264".into()), ..EncodeOptions::default() };
     let (_, done) = b.engine.submit_and_wait(spec(&input, options));
     let result = done.await.unwrap().expect("the job should succeed");
 
@@ -176,6 +178,7 @@ async fn hevc_av1_and_two_pass_all_land_under_the_limit() {
         }
         let target = (options.target_mb * MB as f64) as u64;
         let two_pass = options.effort == Effort::Max;
+        let options = EncodeOptions { encoder: Some(encoder.into()), ..options };
         let (id, done) = b.engine.submit_and_wait(spec(&input, options));
         let result = done.await.unwrap().unwrap_or_else(|e| panic!("{encoder} failed: {e}"));
         assert_eq!(result.encoder, encoder);
@@ -222,11 +225,44 @@ async fn a_broken_hardware_encoder_falls_back_to_the_cpu() {
     assert!(b.events.all().iter().any(|e| matches!(e, JobEvent::Fallback { to, .. } if to == "libx264")));
 }
 
+/// A tight limit on a busy clip: h264_nvenc cannot go below about 600 kbps at
+/// 720p30 and lands ~80% over. The job must hand over to the CPU and still
+/// fit, never save an over-limit file. Other GPUs may hit the target
+/// themselves; either way the result fits.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_hardware_encoder_that_misses_hands_over_to_the_cpu() {
+    let Some(b) = bench().await else { return };
+    let report = b.engine.hardware(false).await.unwrap();
+    let Some(hardware) = report.best(Codec::H264, &Default::default()).filter(|e| e.family.is_hardware()) else {
+        eprintln!("skipped: no working H.264 hardware encoder");
+        return;
+    };
+    let input = b.root.join("pattern.mp4");
+    make_source(&b.tools, &input, 20, "1280x720").await;
+
+    let options = EncodeOptions { target_mb: 1.0, ..EncodeOptions::default() };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the job should succeed");
+
+    assert!(result.size_bytes <= MB, "{}: {} bytes is over 1 MB", result.encoder, result.size_bytes);
+    let events = b.events.all();
+    assert!(events.iter().any(|e| matches!(e, JobEvent::Started { encoder, .. } if encoder == hardware.name)));
+    if result.encoder != hardware.name {
+        assert_eq!(result.encoder, "libx264");
+        assert_eq!(result.fell_back_from.as_deref(), Some(hardware.name));
+        assert!(events.iter().any(|e| matches!(e, JobEvent::Fallback { from, to, .. }
+            if from == hardware.name && to == "libx264")));
+    }
+    no_leftovers(&b.root);
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn cancel_stops_the_encode_and_cleans_up() {
     let Some(b) = bench().await else { return };
     let input = b.root.join("slow.mp4");
     make_source(&b.tools, &input, 30, "1920x1080").await;
+    // One job at a time, so the second waits in the queue whatever the core count.
+    b.engine.settings().update(|s| s.parallel_jobs = 1).unwrap();
     // Slow on purpose, so there is time to cancel.
     let options = EncodeOptions { target_mb: 20.0, effort: Effort::P7, auto_resolution: false, ..Default::default() };
     let (first, first_done) = b.engine.submit_and_wait(spec(&input, options.clone()));
@@ -259,6 +295,10 @@ async fn cancel_stops_the_encode_and_cleans_up() {
 #[tokio::test(flavor = "multi_thread")]
 async fn jobs_run_in_the_order_they_were_submitted() {
     let Some(b) = bench().await else { return };
+    // One at a time: jobs pass the queue in order, but jobs running side by
+    // side race to their `Started` event, so only a single slot makes that
+    // event's order the queue's order.
+    b.engine.settings().update(|s| s.parallel_jobs = 1).unwrap();
     let mut waiting = Vec::new();
     let mut ids = Vec::new();
     for n in 0..6 {
