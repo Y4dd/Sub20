@@ -58,6 +58,8 @@ Adding a capability touches, in order: a core function with a test → a command
 
 **Queue.** A job takes its place in line synchronously in `Engine::start`, before its task is spawned; spawn order is not run order on a multi-thread runtime, and that was a real bug. Automatic parallelism is `cores / 8`, clamped 1–3.
 
+**Stopping FFmpeg** goes through `ffmpeg::kill_tree`. On Windows `ffmpeg.exe` may be a launcher (Chocolatey's ShimGen shims start the real FFmpeg as a child), and killing the launcher alone leaves FFmpeg running and writing; `taskkill /T /F` on the launcher's PID stops both. Timed-out helper runs do the same. Found on CI, where Chocolatey installs FFmpeg; Scoop's shims pass the kill on.
+
 **Progress** comes from `-progress pipe:1`; stderr is the log. `percent` is per attempt and restarts on `Retry`; two-pass splits it 0–50 and 50–100.
 
 **Folder watch polls** on a timer by design: it behaves the same on network shares and synced folders, and "stopped changing for N seconds" answers "has the copy finished?". Its memory (`watch.json`) is keyed by path plus size and mtime; the "already there" baseline is taken once per folder.

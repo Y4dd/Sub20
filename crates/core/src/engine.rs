@@ -596,7 +596,7 @@ impl Engine {
                     None => break,
                 },
                 _ = canceled(cancel) => {
-                    let _ = child.kill().await;
+                    crate::ffmpeg::kill_tree(&mut child).await;
                     return Err(Error::Canceled);
                 }
             }
@@ -604,7 +604,7 @@ impl Engine {
         let status = tokio::select! {
             status = child.wait() => status.map_err(|e| Error::io("FFmpeg did not finish", e))?,
             _ = canceled(cancel) => {
-                let _ = child.kill().await;
+                crate::ffmpeg::kill_tree(&mut child).await;
                 return Err(Error::Canceled);
             }
         };

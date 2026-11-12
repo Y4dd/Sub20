@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
-use tokio::process::Command;
+use tokio::process::{Child, Command};
 
 use crate::error::{Error, Result};
 
@@ -94,6 +94,34 @@ impl Tools {
     }
 }
 
+/// Stops a running FFmpeg and anything it started.
+///
+/// On Windows `ffmpeg.exe` is often a launcher: Chocolatey's ShimGen shims
+/// start the real FFmpeg as a child, and killing the shim leaves that child
+/// running, still writing its output. So the whole tree goes first, while the
+/// shim is alive and still the real FFmpeg's parent.
+pub async fn kill_tree(child: &mut Child) {
+    end_tree(child.id()).await;
+    let _ = child.kill().await;
+}
+
+#[cfg(windows)]
+async fn end_tree(pid: Option<u32>) {
+    let Some(pid) = pid else { return };
+    // By full path, so a `taskkill` earlier on PATH is never the one run.
+    let taskkill = std::env::var_os("SystemRoot")
+        .map(|root| PathBuf::from(root).join("System32").join("taskkill.exe"))
+        .unwrap_or_else(|| PathBuf::from("taskkill.exe"));
+    let mut cmd = quiet(taskkill);
+    cmd.args(["/T", "/F", "/PID", &pid.to_string()]).stdout(Stdio::null()).stderr(Stdio::null());
+    let _ = tokio::time::timeout(Duration::from_secs(5), cmd.status()).await;
+}
+
+/// On macOS and Linux, package managers link FFmpeg directly or `exec` it
+/// from a wrapper, so the process killed is FFmpeg itself.
+#[cfg(not(windows))]
+async fn end_tree(_pid: Option<u32>) {}
+
 fn quiet(program: impl AsRef<OsStr>) -> Command {
     let mut cmd = Command::new(program);
     cmd.stdin(Stdio::null()).kill_on_drop(true);
@@ -116,6 +144,7 @@ pub struct Output {
 pub async fn run(cmd: &mut Command, limit: Duration) -> Result<Output> {
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
     let child = cmd.spawn().map_err(|e| Error::io("could not start FFmpeg", e))?;
+    let pid = child.id();
     match tokio::time::timeout(limit, child.wait_with_output()).await {
         Ok(Ok(out)) => Ok(Output {
             ok: out.status.success(),
@@ -123,8 +152,12 @@ pub async fn run(cmd: &mut Command, limit: Duration) -> Result<Output> {
             stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
         }),
         Ok(Err(e)) => Err(Error::io("FFmpeg did not finish", e)),
-        // `kill_on_drop` stops the process when the future is dropped here.
-        Err(_) => Err(Error::Encode(format!("timed out after {}s", limit.as_secs()))),
+        // `kill_on_drop` stops the process itself when the future is dropped
+        // here; `end_tree` stops whatever a launcher started.
+        Err(_) => {
+            end_tree(pid).await;
+            Err(Error::Encode(format!("timed out after {}s", limit.as_secs())))
+        }
     }
 }
 
@@ -132,10 +165,14 @@ pub async fn run(cmd: &mut Command, limit: Duration) -> Result<Output> {
 pub async fn run_bytes(cmd: &mut Command, limit: Duration) -> Result<(bool, Vec<u8>, String)> {
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
     let child = cmd.spawn().map_err(|e| Error::io("could not start FFmpeg", e))?;
+    let pid = child.id();
     match tokio::time::timeout(limit, child.wait_with_output()).await {
         Ok(Ok(out)) => Ok((out.status.success(), out.stdout, String::from_utf8_lossy(&out.stderr).into_owned())),
         Ok(Err(e)) => Err(Error::io("FFmpeg did not finish", e)),
-        Err(_) => Err(Error::Encode(format!("timed out after {}s", limit.as_secs()))),
+        Err(_) => {
+            end_tree(pid).await;
+            Err(Error::Encode(format!("timed out after {}s", limit.as_secs())))
+        }
     }
 }
 
