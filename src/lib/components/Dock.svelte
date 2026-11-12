@@ -14,6 +14,15 @@
   const busy = $derived(app.busy.length);
   const finished = $derived(app.finished.length);
 
+  // The whole batch as one number: finished clips count in full, running
+  // ones by their own percent, waiting ones as nothing yet.
+  const overall = $derived.by(() => {
+    const total = finished + busy;
+    if (total === 0) return 0;
+    const running = app.busy.reduce((sum, clip) => sum + (clip.status === "running" ? clip.percent : 0), 0);
+    return Math.min(100, (finished * 100 + running) / total);
+  });
+
   function setSize(mb: number) {
     if (!Number.isFinite(mb) || mb <= 0) return;
     app.options.targetMb = Math.min(51200, mb);
@@ -107,7 +116,13 @@
 
   <div class="actions">
     {#if busy > 0}
-      <span class="muted">{finished} of {finished + busy + pending} done</span>
+      <div class="batch" role="progressbar" aria-label="All videos" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(overall)}>
+        <span class="words">
+          <b>{Math.floor(overall)}%</b>
+          <span class="muted">{finished} of {finished + busy} done</span>
+        </span>
+        <span class="bar"><span style:width="{overall}%"></span></span>
+      </div>
       <button type="button" class="quiet" onclick={() => app.cancelAll()}>Cancel all</button>
     {:else if pending > 0}
       <button type="button" class="primary" onclick={() => app.compress()} title="Compress ({shortcut})">
@@ -313,6 +328,41 @@
     align-items: center;
     gap: 16px;
     min-height: 44px;
+  }
+
+  /* Batch progress: sits where the Compress button was, the same width. */
+  .batch {
+    display: grid;
+    gap: 6px;
+    width: 220px;
+  }
+
+  .batch .words {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .batch b {
+    font-family: var(--display);
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-stretch: 85%;
+  }
+
+  .bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--raised);
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--trim);
+    transition: width 300ms linear;
   }
 
   .primary,

@@ -106,10 +106,10 @@
   });
 
   const LOOK = {
-    sharp: "Should look sharp.",
-    good: "Should look good.",
-    soft: "Will look a little soft.",
-    rough: "Will look rough. Trim it shorter or raise the size.",
+    sharp: "Should look sharp",
+    good: "Should look good",
+    soft: "A little soft",
+    rough: "Rough: trim it shorter or raise the size",
   } as const;
 
   // A finished clip opens on its result: that is what is about to be sent.
@@ -279,16 +279,20 @@
       {:else if clip.planError}
         <span class="bad">{clip.planError}</span>
       {:else if clip.plan}
-        {#if clip.status === "canceled"}Canceled.{/if}
-        {#if app.options.audioOnly}
-          Keeps {span(clip.kept)} of sound, about {megabytes(clip.plan.expectedBytes)}.
-        {:else}
-          {#if clip.trimmed}Keeps {span(clip.kept)} of {span(clip.duration)}.{/if}
-          Comes out as {CODEC_LABEL[app.options.codec]} at {resolution(clip.plan.width, clip.plan.height)}, about {bitrate(clip.plan.videoKbps)}.
-          <span class={clip.plan.quality === "rough" ? "bad" : "muted"}>{LOOK[clip.plan.quality]}</span>
-        {/if}
+        <!-- What will come out, as facts rather than a sentence. -->
+        <ul class="plan" aria-label="What will come out">
+          {#if clip.status === "canceled"}<li class="muted">Canceled</li>{/if}
+          <li><b>{span(clip.kept)}</b>{#if clip.trimmed}<span class="muted"> of {span(clip.duration)}</span>{/if}</li>
+          {#if app.options.audioOnly}
+            <li>Sound only, about <b>{megabytes(clip.plan.expectedBytes)}</b></li>
+          {:else}
+            <li><b>{resolution(clip.plan.width, clip.plan.height)}</b></li>
+            <li class="muted">{CODEC_LABEL[app.options.codec]}, {bitrate(clip.plan.videoKbps)}</li>
+            <li class="verdict {clip.plan.quality}"><i aria-hidden="true"></i>{LOOK[clip.plan.quality]}</li>
+          {/if}
+        </ul>
         {#if clip.trimmed}
-          <button type="button" class="link quiet" onclick={() => app.setTrim(clip, 0, clip.duration)}>Keep all of it</button>
+          <p class="after"><button type="button" class="link quiet" onclick={() => app.setTrim(clip, 0, clip.duration)}>Keep all of it</button></p>
         {/if}
       {:else}
         &nbsp;
@@ -469,6 +473,51 @@
 
   .bad {
     color: var(--bad);
+  }
+
+  /* The plan: facts in a row, divided by hairlines. */
+  .plan {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .plan li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 12px;
+    white-space: nowrap;
+  }
+
+  .plan li + li {
+    border-left: 1px solid var(--line);
+  }
+
+  .plan b {
+    font-weight: 650;
+  }
+
+  .verdict i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+
+  .verdict.soft i {
+    background: var(--trim-mark);
+  }
+
+  .verdict.rough {
+    color: var(--bad);
+  }
+
+  .verdict.rough i {
+    background: var(--bad);
   }
 
   /* Original / Result, over the preview. */
