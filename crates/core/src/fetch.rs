@@ -232,17 +232,15 @@ mod tests {
         let linux = offer_for(PINS, "x86_64-unknown-linux-gnu").expect("linux is pinned");
         assert!(linux.files[0].name.ends_with("-x86_64-unknown-linux-gnu.tar.xz"));
 
-        for mac in ["aarch64-apple-darwin"] {
-            let offer = offer_for(PINS, mac).expect("mac is pinned");
-            let names: Vec<_> = offer.files.iter().map(|f| f.name.as_str()).collect();
-            assert_eq!(
-                names,
-                [
-                    format!("FFmpeg-{}-{mac}-ffmpeg.zip", offer.version),
-                    format!("FFmpeg-{}-{mac}-ffprobe.zip", offer.version)
-                ]
-            );
-        }
+        let mac = offer_for(PINS, "aarch64-apple-darwin").expect("mac is pinned");
+        let names: Vec<_> = mac.files.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                format!("FFmpeg-{}-aarch64-apple-darwin-ffmpeg.zip", mac.version),
+                format!("FFmpeg-{}-aarch64-apple-darwin-ffprobe.zip", mac.version)
+            ]
+        );
 
         assert_eq!(offer_for(PINS, "riscv64gc-unknown-linux-gnu"), None);
         assert_eq!(offer_for(PINS, "x86_64-apple-darwin"), None, "Intel Macs aren't supported");
