@@ -178,25 +178,18 @@ its licence text and point to its exact source.
     watching, Quit) and watched encodes at below-normal priority so they
     don't cost frames in a game. Windows and macOS first; Linux trays
     are patchy.
-- [ ] **Leave a clip out without removing it** (owner, November 2026; most
-      wanted for watched clips). Today "Compress" takes every clip that is
-      ready, failed or canceled (`Clip::pending`), and the only way to
-      leave one out is to remove it, which loses its trim and name. To
-      settle by looking, in both schemes:
-  - A per-clip "Leave out" / "Include" switch: a text link on the stage
-    beside the plan, and a key (`s`, free today; `Space` plays and `x`
-    removes), kept in step with `KeysSheet`, the README table and `vim()`.
-  - A left-out clip stays on the bench, dimmed, with its trim, name and
-    plan kept; the list says "Left out" and the status line counts only
-    what will run ("Compress 3 of 5 clips"). "Compress" skips it,
-    "Clear finished" leaves it alone, and including it again is one click.
-  - Watched clips: whatever reaches the bench from the watch (opened from
-    a notification or the watch view, or the pile-up asked about at
-    launch) can be left out the same way, so a long backlog can be cut to
-    the clips worth sending without clearing the rest.
-  - No checkboxes on every row: the brief asks for fewer controls, so the
-    switch lives on the selected clip and the key, and the list only
-    shows the state.
+- [x] **Leave a clip out without removing it** (owner, November 2026; most
+      wanted for watched clips). "Leave out" under the stage's plan (and
+      under a failed clip's error), or `s`; "Include" puts it back. The
+      clip stays on the bench with its trim and name, its thumbnail fades
+      and the list says "Left out"; Compress skips it, the dock counts
+      "Compress 1 of 3 videos" (or "2 videos left out" when nothing is
+      left to run), and Clear finished leaves it alone. No checkboxes on
+      the rows, to keep the controls few. Checked on the mock backend in
+      both schemes, including a Compress that ran only the included clip.
+  - [ ] Watched clips that reach the bench (from a notification, the watch
+        view, or the pile-up asked about at launch) use the same switch,
+        once the folder watch is made visible (above).
 
 **Installing and updating**
 - [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release

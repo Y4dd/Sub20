@@ -139,6 +139,9 @@
         // Removing a clip that is being compressed is a deliberate click.
         if (!clip.busy) app.remove(clip);
         return true;
+      case "s":
+        app.toggleLeftOut(clip);
+        return true;
       case "y":
       case "yy":
         if (clip.result) void app.copy(clip);

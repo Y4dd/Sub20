@@ -17,6 +17,7 @@
         return "Did not work";
       default:
         if (clip.planError) return "Too long for this size";
+        if (clip.leftOut) return "Left out";
         return clip.trimmed ? `${span(clip.kept)} of ${span(clip.duration)}` : span(clip.duration);
     }
   }
@@ -39,7 +40,7 @@
   <ul>
     {#each app.clips as clip (clip.key)}
       {@const selected = app.selected === clip}
-      <li class:selected class={clip.status}>
+      <li class:selected class:left-out={clip.leftOut && clip.compressible} class={clip.status}>
         <button
           type="button"
           class="pick"
@@ -206,6 +207,15 @@
 
   .done .line {
     color: var(--ok);
+  }
+
+  /* Left out of Compress: the picture fades, the words stay readable. */
+  .left-out .thumb {
+    opacity: 0.4;
+  }
+
+  .left-out .name {
+    color: var(--muted);
   }
 
   .line.warn {

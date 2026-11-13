@@ -34,6 +34,7 @@
   const shortcut = navigator.platform.toLowerCase().includes("mac") ? "⌘ Return" : "Ctrl+Enter";
   const sizes = $derived(app.settings?.sizes ?? []);
   const pending = $derived(app.pending.length);
+  const leftOut = $derived(app.leftOut.length);
   const busy = $derived(app.busy.length);
   const finished = $derived(app.finished.length);
 
@@ -150,10 +151,16 @@
       <button type="button" class="quiet" onclick={() => app.cancelAll()}>Cancel all</button>
     {:else if pending > 0}
       <button type="button" class="primary" onclick={() => app.compress()} title="Compress ({shortcut})">
-        Compress {pending === 1 && app.clips.length === 1 ? "" : plural(pending, "video")}
+        {#if leftOut > 0}
+          Compress {pending} of {plural(pending + leftOut, "video")}
+        {:else}
+          Compress {pending === 1 && app.clips.length === 1 ? "" : plural(pending, "video")}
+        {/if}
       </button>
     {:else if finished > 0}
       <button type="button" class="quiet" onclick={() => app.clearFinished()}>Clear finished</button>
+    {:else if leftOut > 0}
+      <span class="muted">{plural(leftOut, "video")} left out</span>
     {/if}
   </div>
 </footer>

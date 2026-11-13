@@ -8,6 +8,9 @@ What changed in each release. The format follows
 
 ### Added
 
+- Leave a video out of Compress without removing it: "Leave out" under its
+  plan, or the `s` key. It stays in the list with its trim and name, and
+  "Include" puts it back.
 - Every sound track is mixed into one, so a microphone that OBS or the
   NVIDIA app recorded on its own track is no longer lost. "Mix all sound
   tracks" in Options → More turns it off.

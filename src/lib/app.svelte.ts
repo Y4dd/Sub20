@@ -44,6 +44,8 @@ export class Clip {
   log = $state.raw<string[]>([]);
   plan = $state.raw<Plan | null>(null);
   planError = $state<string | null>(null);
+  /** Kept on the bench but skipped by "Compress". */
+  leftOut = $state(false);
 
   constructor(path: string, name: string, info: MediaInfo) {
     this.path = path;
@@ -73,9 +75,14 @@ export class Clip {
     return this.status === "queued" || this.status === "running";
   }
 
+  /** Could go in the next "Compress": not running, not finished, and it fits. */
+  get compressible(): boolean {
+    return (this.status === "ready" || this.status === "failed" || this.status === "canceled") && !this.planError;
+  }
+
   /** Will be included the next time "Compress" is pressed. */
   get pending(): boolean {
-    return (this.status === "ready" || this.status === "failed" || this.status === "canceled") && !this.planError;
+    return this.compressible && !this.leftOut;
   }
 }
 
@@ -132,6 +139,11 @@ class App {
 
   get pending(): Clip[] {
     return this.clips.filter((clip) => clip.pending);
+  }
+
+  /** Clips that could be compressed but were left out. */
+  get leftOut(): Clip[] {
+    return this.clips.filter((clip) => clip.compressible && clip.leftOut);
   }
 
   get busy(): Clip[] {
@@ -339,6 +351,12 @@ class App {
     if (this.selectedKey === clip.key) {
       this.selectedKey = (this.clips[index] ?? this.clips[index - 1])?.key ?? null;
     }
+  }
+
+  /** Leaves a clip out of "Compress", or puts it back in; its trim and name stay. */
+  toggleLeftOut(clip: Clip) {
+    if (clip.busy || clip.status === "done") return;
+    clip.leftOut = !clip.leftOut;
   }
 
   clearFinished() {

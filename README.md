@@ -169,6 +169,7 @@ repeats one (`5l`, `3j`, `2G`). Press `?` in the app for this list.
 | `i` `o` (or `[` `]`) | Set the start or end at the playhead |
 | Space | Play or pause the kept part |
 | `r`, `cw`, F2 | Rename the result |
+| `s` | Leave the video out of Compress, or include it again |
 | `x`, `dd`, Delete | Remove the video from the list |
 | `y`, Ctrl/⌘ + C | Copy the finished video, ready to paste into Discord |
 | Ctrl/⌘ + Enter | Compress |

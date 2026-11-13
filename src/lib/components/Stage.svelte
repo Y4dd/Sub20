@@ -154,6 +154,16 @@
   const copyKey = navigator.platform.toLowerCase().includes("mac") ? "⌘C" : "Ctrl+C";
 </script>
 
+<!-- Keeps the clip on the bench but out of the next Compress, or back in. -->
+{#snippet leaveOut()}
+  {#if clip.leftOut}
+    <span class="muted">Left out of Compress.</span>
+    <button type="button" class="link" onclick={() => app.toggleLeftOut(clip)} title="Include (S)">Include</button>
+  {:else}
+    <button type="button" class="link quiet" onclick={() => app.toggleLeftOut(clip)} title="Leave out of Compress (S)">Leave out</button>
+  {/if}
+{/snippet}
+
 <section class="stage" aria-label={clip.name}>
   <header>
     <div class="title">
@@ -289,6 +299,7 @@
       {:else if clip.status === "failed"}
         <span class="bad">{clip.error}</span>
         <button type="button" class="link" onclick={() => { app.reset(clip); app.replan(clip, 0); }}>Try again</button>
+        <p class="after">{@render leaveOut()}</p>
       {:else if clip.planError}
         <span class="bad">{clip.planError}</span>
       {:else if clip.plan}
@@ -304,9 +315,12 @@
             <li class="verdict {clip.plan.quality}"><i aria-hidden="true"></i>{LOOK[clip.plan.quality]}</li>
           {/if}
         </ul>
-        {#if clip.trimmed}
-          <p class="after"><button type="button" class="link quiet" onclick={() => app.setTrim(clip, 0, clip.duration)}>Keep all of it</button></p>
-        {/if}
+        <p class="after">
+          {#if clip.trimmed}
+            <button type="button" class="link quiet" onclick={() => app.setTrim(clip, 0, clip.duration)}>Keep all of it</button>
+          {/if}
+          {@render leaveOut()}
+        </p>
       {:else}
         &nbsp;
       {/if}

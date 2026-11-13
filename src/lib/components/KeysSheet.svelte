@@ -14,6 +14,7 @@
         [["k", "↑"], "Previous video"],
         [["gg", "G"], "First or last video (5G: the fifth)"],
         [["r", "cw", "F2"], "Rename the result"],
+        [["s"], "Leave out of Compress, or include again"],
         [["x", "dd", "Delete"], "Remove from the list"],
       ],
     },
