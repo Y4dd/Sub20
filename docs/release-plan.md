@@ -22,14 +22,15 @@ Things only the maintainer can do, at their own machine or account.
 - [x] **Dry run** the release workflow: passed on 13 November 2026, all 8
       downloads, a signed update entry for each and the checksums, in
       about 12 minutes.
-- [ ] **Try a Windows build with FFmpeg included** from a dry run's
-      artifacts: install it, compress a clip, check Settings says FFmpeg is
-      included.
+- [x] **Try a Windows build with FFmpeg included** from a dry run's
+      artifacts: installed, compressed, and "Open with" worked for one
+      video (owner, 13 November 2026). The screen reader pass is still
+      open (under Hands-on testing).
 - [ ] **Ask a friend to try the lean build** on their machine, ideally one
       without FFmpeg: install `Sub20-Lean`, check the first screen offers
-      "Download FFmpeg", let it download, and compress a clip. The download
-      only works from a tagged release (it fetches from that version's
-      release page), so do this with the first release, not a dry run.
+      "Download FFmpeg", let it download, and compress a clip. A dry run's
+      build will do: the download comes from Sub20's FFmpeg release
+      (`ffmpeg-9.0.2-1`), not from a Sub20 release.
 - Set aside by the owner (November 2026): **SignPath** (it asks for a
   website and proof of reputation) and an **Apple Developer account**.
   Releases are unsigned for now; see [Signing](#signing).
@@ -207,7 +208,54 @@ its licence text and point to its exact source.
       while Sub20 is running joins the open window (single instance).
   - [ ] Try them on each system from an installed build: Open with, the
         Explorer entry with several videos selected, Finder, and a video
-        opened while Sub20 is running.
+        opened while Sub20 is running. Windows, one video through Open
+        with: works (owner, 13 November 2026, from a dry run).
+- [ ] **Open several selected videos at once.** Asked by the owner after
+      trying Open with (November 2026). What Windows does, to check first:
+      - Explorer's "Open with" submenu is for one file; it isn't offered
+        when several are selected. That can't be changed from the
+        installer.
+      - "Compress with Sub20" (`src-tauri/windows/hooks.nsh`) is the way
+        in for a selection. It already sets `MultiSelectModel=Player`
+        (Explorer hides a plain verb past 15 items) and passes `"%1"`, so
+        Explorer starts Sub20 once per file and the single-instance
+        plugin hands the others to the first. Not tried yet: whether
+        every file of a 20-file selection arrives, in order, when the
+        launches race the first window's startup (`OPENED`, then
+        `opened` events).
+      - If they don't, the fixes are batching on our side (collect what
+        arrives in the first moment, then add them as one) or a "Send to"
+        shortcut, which gets the whole selection on one command line.
+      - On Windows 11 both sit under "Show more options". A top-level
+        entry needs a packaged `IExplorerCommand` handler; not for 1.0.
+      - macOS (Finder's Open With, several files are sent together) and
+        Linux (`%F` in the `.desktop` file) need a check too.
+- [ ] **Find out why Linux is so much bigger** (289 MB for its job against
+      76 MB on macOS). Likely, not yet measured file by file:
+      - It makes six files where the others make two: AppImage, deb and
+        rpm, each with and without FFmpeg.
+      - The AppImage carries its own WebKitGTK, GTK and their libraries
+        (the deb and rpm use the system's), so each AppImage is probably
+        most of the total. Windows uses the system's WebView2 and macOS
+        its WebKit, so neither carries a browser engine.
+      - FFmpeg (25 MB) is in three of the six.
+      Measure each file on the next dry run, then decide: perhaps fewer
+      files (the AppImage only with FFmpeg, since deb and rpm users can
+      install their distribution's FFmpeg), or a slimmer AppImage. What a
+      person downloads matters more than the job's total; write both here.
+- [ ] **Downloads people can tell apart.** "Lean" says nothing to someone
+      choosing a file. Before the first release:
+      - A name that says what to expect, for example "Sub20" and "Sub20
+        without FFmpeg (downloads it on first run, or uses yours)". Owner
+        to pick. Change `scripts/collect-release.mjs` (`Sub20-Lean_*`),
+        the README, the plan's table below and the changelog. The updater
+        keys (`…-lean`) are internal and can stay, so existing installs
+        aren't affected.
+      - A "Which file do I need?" table in the release notes and the
+        README, per system with sizes: most people want the first row.
+      - Split the workflow's artifacts by build, not one zip per system,
+        so a tester downloads only the file they need (`windows-x64`,
+        `windows-x64-without-ffmpeg`, …).
 - [x] Code signing: set aside for 1.0 (owner, November 2026). Windows and
       macOS builds ship unsigned. See [Signing](#signing).
   - [x] First-launch steps for unsigned builds in the README (SmartScreen,
