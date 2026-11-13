@@ -233,8 +233,11 @@ Built during Phase 1, because every later phase uses it.
   Measured from an empty cache (13 November 2026): eight jobs took 12
   minutes and 58 runner-minutes; four jobs with the lighter release profile
   took 13 minutes and 35 runner-minutes. Windows sets the pace: 7 minutes to
-  compile from scratch and 3 to compress FFmpeg into the installer. A warm
-  cache (saved from `main`) should cut the compile to a minute or two.
+  compile from scratch and 3 to compress FFmpeg into the installer. With the
+  cache saved from `main`, the same build took 6 minutes and 15
+  runner-minutes: compiling fell to 20–80 seconds per system, and packaging
+  is now most of it (Windows compressing FFmpeg, 2.5 minutes; Linux making
+  the AppImage, deb and rpm twice, 3 minutes).
 - One version number in `Cargo.toml`, `package.json` and `tauri.conf.json`,
   bumped by one script.
 
