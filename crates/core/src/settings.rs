@@ -67,6 +67,9 @@ pub struct WatchSettings {
     pub stable_seconds: u32,
     /// How often the folder is scanned.
     pub poll_seconds: u32,
+    /// Say so with a system notification when a watched clip is ready
+    /// (held while a game or other full-screen app has the focus).
+    pub notify: bool,
 }
 
 impl Default for WatchSettings {
@@ -82,6 +85,7 @@ impl Default for WatchSettings {
             recursive: false,
             stable_seconds: 5,
             poll_seconds: 5,
+            notify: true,
         }
     }
 }

@@ -130,6 +130,8 @@ export interface WatchSettings {
   recursive: boolean;
   stableSeconds: number;
   pollSeconds: number;
+  /** A system notification when a watched clip is ready (held during games). */
+  notify: boolean;
 }
 
 export interface Settings {
@@ -187,6 +189,8 @@ export interface WatchStatus {
   done: number;
   failed: number;
   problem: string | null;
+  /** Clips that arrived while Sub20 was closed, held for a question; 0 when none. */
+  waiting: number;
 }
 
 /** A recording app's clip folder, offered as a one-click watch. */
@@ -303,6 +307,8 @@ export interface Backend {
   historyRemove(id: string): Promise<void>;
   historyClear(): Promise<void>;
   watchStatus(): Promise<WatchStatus>;
+  /** Compress the clips that arrived while Sub20 was closed, or skip them. */
+  watchDecide(compress: boolean): Promise<WatchStatus>;
   /** Recording apps' clip folders found on this machine (Windows only). */
   clipFolders(): Promise<ClipFolder[]>;
   reveal(path: string): Promise<void>;

@@ -29,9 +29,14 @@ tauri-plugin-drag = "2"
 tauri-plugin-updater = "2"
 os_info = { version = "3", default-features = false }
 tauri-plugin-single-instance = "2"
+tauri-plugin-notification = "2"
 # The HTTP client and TLS the updater already uses, for downloading FFmpeg.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
+
+[target.'cfg(windows)'.dependencies]
+# Whether the user is in a game before showing a notification (notify.rs).
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 
 [dev-dependencies]
 tempfile = "3"

@@ -270,6 +270,9 @@
       <Toggle checked={s.watch.recursive} onchange={(on) => app.saveSettings((n) => (n.watch.recursive = on))}>
         Look inside subfolders too
       </Toggle>
+      <Toggle checked={s.watch.notify} onchange={(on) => app.saveSettings((n) => (n.watch.notify = on))}>
+        Tell me when a watched clip is ready, never during a game
+      </Toggle>
       {#if watch}
         <p class="note" class:bad={!!watch.problem}>
           {#if watch.problem}

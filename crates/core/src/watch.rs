@@ -7,6 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, UNIX_EPOCH};
 
@@ -118,7 +119,14 @@ pub struct WatchStatus {
     pub failed: u32,
     /// Why the watch cannot run, when it cannot.
     pub problem: Option<String>,
+    /// Clips that arrived while Sub20 was closed, held until the user says
+    /// whether to compress them ([`Watcher::decide`]). Zero when none are held.
+    pub waiting: u32,
 }
+
+/// More clips than this arriving while Sub20 was closed are held for a
+/// question at launch rather than all compressed at once.
+pub const PILE: usize = 5;
 
 struct Shared {
     engine: Engine,
@@ -126,6 +134,8 @@ struct Shared {
     memory: Mutex<Memory>,
     status: Mutex<WatchStatus>,
     in_flight: Mutex<HashSet<String>>,
+    /// The pile held at launch (keys), while the question is open.
+    held: Mutex<Option<HashSet<String>>>,
 }
 
 /// Owns the background scan. Call [`Watcher::reload`] whenever the watch
@@ -133,6 +143,9 @@ struct Shared {
 pub struct Watcher {
     shared: Arc<Shared>,
     stop: Mutex<Option<watch::Sender<bool>>>,
+    /// No scan has run since Sub20 started, so what is new arrived while it
+    /// was closed.
+    launched: AtomicBool,
 }
 
 impl Watcher {
@@ -149,8 +162,10 @@ impl Watcher {
                 memory: Mutex::new(memory),
                 status: Mutex::new(WatchStatus::default()),
                 in_flight: Mutex::new(HashSet::new()),
+                held: Mutex::new(None),
             }),
             stop: Mutex::new(None),
+            launched: AtomicBool::new(true),
         }
     }
 
@@ -165,8 +180,16 @@ impl Watcher {
             let _ = stop.send(true);
         }
         let config = self.shared.engine.settings().get().watch;
+        let ask = self.launched.swap(false, Ordering::SeqCst);
         let mut status = self.shared.status.lock().expect("status lock");
-        *status = WatchStatus { done: status.done, failed: status.failed, ..WatchStatus::default() };
+        // A question about a pile stays open while the folder stays the same.
+        let mut held = self.shared.held.lock().expect("held lock");
+        if !config.enabled || config.folder != status.folder {
+            *held = None;
+        }
+        let waiting = held.as_ref().map_or(0, |keys| keys.len() as u32);
+        drop(held);
+        *status = WatchStatus { done: status.done, failed: status.failed, waiting, ..WatchStatus::default() };
         if !config.enabled {
             return;
         }
@@ -192,8 +215,37 @@ impl Watcher {
 
         let (stop_tx, stop_rx) = watch::channel(false);
         *self.stop.lock().expect("stop lock") = Some(stop_tx);
-        tokio::spawn(scan_loop(self.shared.clone(), config, folder, stop_rx));
+        tokio::spawn(scan_loop(self.shared.clone(), config, folder, stop_rx, ask));
     }
+
+    /// Answers the question about clips that arrived while Sub20 was closed:
+    /// compress them, or skip them for good.
+    pub fn decide(&self, compress: bool) {
+        let Some(held) = self.shared.held.lock().expect("held lock").take() else { return };
+        if !compress {
+            let mut memory = self.shared.memory.lock().expect("memory lock");
+            for k in held {
+                if let Some(print) = fingerprint(Path::new(&k)) {
+                    memory.files.insert(k, Seen { print, outcome: Outcome::Skipped });
+                }
+            }
+            save(&self.shared, &memory);
+        }
+        self.shared.status.lock().expect("status lock").waiting = 0;
+    }
+}
+
+/// Files that are new or changed since the watch last handled them.
+fn arrivals(files: &[PathBuf], memory: &Memory, in_flight: &HashSet<String>) -> Vec<String> {
+    files
+        .iter()
+        .filter_map(|path| {
+            let k = key(path);
+            let print = fingerprint(path)?;
+            let handled = memory.files.get(&k).is_some_and(|seen| seen.print == print);
+            (!handled && !in_flight.contains(&k)).then_some(k)
+        })
+        .collect()
 }
 
 fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<PathBuf> {
@@ -224,10 +276,17 @@ fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<PathBuf>
     found
 }
 
-async fn scan_loop(shared: Arc<Shared>, config: WatchSettings, folder: PathBuf, mut stop: watch::Receiver<bool>) {
+async fn scan_loop(
+    shared: Arc<Shared>,
+    config: WatchSettings,
+    folder: PathBuf,
+    mut stop: watch::Receiver<bool>,
+    mut ask: bool,
+) {
     let mut settling: HashMap<String, (Fingerprint, Instant)> = HashMap::new();
     loop {
-        scan(&shared, &config, &folder, &mut settling);
+        scan(&shared, &config, &folder, &mut settling, ask);
+        ask = false;
         tokio::select! {
             _ = tokio::time::sleep(Duration::from_secs(u64::from(config.poll_seconds))) => {}
             _ = stop.changed() => return,
@@ -240,6 +299,7 @@ fn scan(
     config: &WatchSettings,
     folder: &Path,
     settling: &mut HashMap<String, (Fingerprint, Instant)>,
+    ask: bool,
 ) {
     let skip = match config.output_mode {
         OutputMode::Folder => config.output_folder.as_deref(),
@@ -261,9 +321,23 @@ fn scan(
         save(shared, &memory);
     }
 
+    // Many clips that arrived while Sub20 was closed wait for a question,
+    // rather than all starting at once on a computer that may be busy.
+    if ask {
+        let new = arrivals(&files, &memory, &shared.in_flight.lock().expect("flight lock"));
+        if new.len() > PILE {
+            shared.status.lock().expect("status lock").waiting = new.len() as u32;
+            *shared.held.lock().expect("held lock") = Some(new.into_iter().collect());
+        }
+    }
+    let held = shared.held.lock().expect("held lock").clone().unwrap_or_default();
+
     let mut ready = Vec::new();
     for path in files {
         let k = key(&path);
+        if held.contains(&k) {
+            continue;
+        }
         let Some(print) = fingerprint(&path) else { continue };
         if memory.files.get(&k).is_some_and(|seen| seen.print == print) {
             continue; // Already handled in this exact state.
@@ -425,6 +499,71 @@ mod tests {
         };
         assert_eq!(names(false), ["a.mp4", "b.MOV"]);
         assert_eq!(names(true), ["a.mp4", "b.MOV", "sub/c.mkv"]);
+    }
+
+    /// A watcher as Sub20 makes one at launch, over `inbox`, new files only.
+    fn launch(root: &Path, inbox: &Path) -> Watcher {
+        let engine = Engine::new(&root.join("data"), &root.join("work"), Vec::new(), Arc::new(|_| {}));
+        engine
+            .settings()
+            .update(|s| {
+                s.watch.enabled = true;
+                s.watch.folder = Some(inbox.to_path_buf());
+                s.watch.stable_seconds = 2;
+                s.watch.poll_seconds = 2;
+            })
+            .unwrap();
+        let watcher = Watcher::new(engine, &root.join("data"));
+        watcher.reload();
+        watcher
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_pile_that_arrived_while_closed_waits_for_an_answer() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        std::fs::create_dir_all(&inbox).unwrap();
+
+        // The first run only notes what is already there.
+        let first = launch(dir.path(), &inbox);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert_eq!(first.status().waiting, 0);
+        drop(first);
+
+        // Seven clips land while Sub20 is closed.
+        for n in 1..=7 {
+            std::fs::write(inbox.join(format!("clip{n}.mp4")), b"not really a video").unwrap();
+        }
+        let again = launch(dir.path(), &inbox);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert_eq!(again.status().waiting, 7, "{:?}", again.status());
+
+        // Skipped: they are never sent, even once they have settled.
+        again.decide(false);
+        assert_eq!(again.status().waiting, 0);
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        let status = again.status();
+        assert_eq!((status.in_progress, status.done, status.failed), (0, 0, 0), "{status:?}");
+
+        // A third launch doesn't ask about them again.
+        let third = launch(dir.path(), &inbox);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert_eq!(third.status().waiting, 0);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_few_clips_that_arrived_while_closed_are_not_asked_about() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        std::fs::create_dir_all(&inbox).unwrap();
+        drop(launch(dir.path(), &inbox));
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        for n in 1..=PILE {
+            std::fs::write(inbox.join(format!("clip{n}.mp4")), b"x").unwrap();
+        }
+        let again = launch(dir.path(), &inbox);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert_eq!(again.status().waiting, 0);
     }
 
     #[test]

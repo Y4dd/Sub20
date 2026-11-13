@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { app } from "./lib/app.svelte";
+  import { baseName, plural } from "./lib/format";
   import ClipRail from "./lib/components/ClipRail.svelte";
   import Dock from "./lib/components/Dock.svelte";
   import DropStage from "./lib/components/DropStage.svelte";
@@ -192,6 +193,19 @@
     <KeysSheet />
   {/if}
 
+  {#if app.watch?.waiting}
+    <section class="pile" aria-label="Clips that arrived while Sub20 was closed">
+      <p>
+        {plural(app.watch.waiting, "clip")} arrived in <strong title={app.watch.folder ?? ""}>{baseName(app.watch.folder ?? "the watched folder")}</strong>
+        while Sub20 was closed.
+      </p>
+      <p class="links">
+        <button type="button" class="link" onclick={() => app.decidePile(true)}>Compress them</button>
+        <button type="button" class="link quiet" onclick={() => app.decidePile(false)}>Skip them</button>
+      </p>
+    </section>
+  {/if}
+
   {#if app.notices.length}
     <div class="notices" role="status">
       {#each app.notices as notice (notice.id)}
@@ -232,6 +246,28 @@
   main:not(.empty) > :global(.stage) {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  /* The watch's one question, under the title bar until it's answered. */
+  .pile {
+    position: fixed;
+    top: 52px;
+    right: 16px;
+    z-index: 25;
+    display: grid;
+    gap: 8px;
+    max-width: 44ch;
+    padding: 14px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--raised);
+    box-shadow: 0 12px 32px -10px rgb(0 0 0 / 0.5);
+    animation: rise 180ms var(--ease);
+  }
+
+  .pile .links {
+    display: flex;
+    gap: 18px;
   }
 
   .notices {

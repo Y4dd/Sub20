@@ -6,7 +6,7 @@ import { tauriBackend } from "./tauri";
 import { baseName, plain } from "./format";
 import type {
   Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
-  UpdateInfo,
+  UpdateInfo, WatchStatus,
 } from "./types";
 
 export const backend: Backend = "__TAURI_INTERNALS__" in window ? tauriBackend : mockBackend;
@@ -88,6 +88,22 @@ export class Clip {
 
 export type Sheet = "options" | "settings" | "history" | "keys" | null;
 
+/** A clip the folder watch is compressing or has compressed, this session. */
+export interface WatchedJob {
+  id: string;
+  input: string;
+  name: string;
+  status: "queued" | "running" | "done" | "failed" | "canceled";
+  percent: number;
+  result: JobResult | null;
+  error: string | null;
+  /** Just copied; the row's Copy says so for a moment. */
+  copied: boolean;
+}
+
+/** How often the watch's state is asked for while one is on. */
+const WATCH_POLL_MS = 4000;
+
 const FALLBACK_OPTIONS: EncodeOptions = {
   targetMb: 10, videoKbps: null, codec: "h264", encoder: null, audio: "opus", audioKbps: 128, effort: "p4",
   tune: "hq", container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null,
@@ -126,6 +142,12 @@ class App {
   /** How many `add` calls are reading files; drops and opened videos can overlap. */
   #adding = $state(0);
   notices = $state<{ id: number; text: string }[]>([]);
+  /** The folder watch's state, while one is set up. */
+  watch = $state.raw<WatchStatus | null>(null);
+  /** What the watch did this session, newest first. */
+  watched = $state<WatchedJob[]>([]);
+  /** Watched clips that finished since History was last opened. */
+  unseen = $state(0);
   /** A newer release, found at startup when the settings allow it. */
   update = $state<UpdateInfo | null>(null);
   /** The update is downloading and about to restart the app. */
@@ -183,6 +205,109 @@ class App {
     if (boot.ffmpeg.found) void this.loadReport(false);
     if (boot.openedWith.length) void this.add(boot.openedWith);
     if (boot.settings.checkUpdates) void this.checkUpdate(true);
+    void this.#followWatch();
+  }
+
+  /** A watch is set up and running. */
+  get watching(): boolean {
+    return !!this.settings?.watch.enabled && !!this.watch?.running;
+  }
+
+  /** Asks for the watch's state now and then while one is set up. */
+  async #followWatch() {
+    for (;;) {
+      if (this.settings?.watch.enabled) await this.refreshWatch();
+      else this.watch = null;
+      await new Promise((resolve) => window.setTimeout(resolve, WATCH_POLL_MS));
+    }
+  }
+
+  async refreshWatch() {
+    try {
+      this.watch = await backend.watchStatus();
+    } catch {
+      // The next poll tries again.
+    }
+  }
+
+  /** Compress the clips that arrived while Sub20 was closed, or skip them. */
+  async decidePile(compress: boolean) {
+    try {
+      this.watch = await backend.watchDecide(compress);
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
+  /** Puts a watched clip on the bench, finished, so the stage can preview,
+   *  copy, rename and trim it like any other. */
+  async openWatched(job: WatchedJob) {
+    if (!job.result) return;
+    let clip = this.clips.find((c) => c.path === job.input);
+    if (!clip) {
+      const [item] = await backend.addVideos([job.input]).catch(() => []);
+      if (!item?.info) {
+        this.notify(`${job.name} isn't where it was any more, so it can't be opened here. Copy still works.`);
+        return;
+      }
+      clip = new Clip(item.path, item.name, item.info);
+      this.clips.push(clip);
+      this.replan(clip, 0);
+      void this.#loadThumbs(clip);
+    }
+    clip.status = "done";
+    clip.result = job.result;
+    clip.jobId = null;
+    clip.percent = 100;
+    clip.error = null;
+    this.selectedKey = clip.key;
+    this.sheet = null;
+  }
+
+  async copyWatched(job: WatchedJob) {
+    if (!job.result) return;
+    try {
+      await backend.copyFile(job.result.output);
+      job.copied = true;
+      window.setTimeout(() => (job.copied = false), 2400);
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
+  /** Follows the folder watch's jobs; true when the event was one of them. */
+  #onWatched(event: JobEvent): boolean {
+    if (event.type === "queued" && event.origin === "watch") {
+      const name = event.input.split(/[\\/]/).pop() ?? event.input;
+      const job: WatchedJob = { id: event.id, input: event.input, name, status: "queued", percent: 0, result: null, error: null, copied: false };
+      this.watched = [job, ...this.watched].slice(0, 50);
+      return true;
+    }
+    const job = this.watched.find((j) => j.id === event.id);
+    if (!job) return false;
+    switch (event.type) {
+      case "started":
+        job.status = "running";
+        break;
+      case "progress":
+        job.status = "running";
+        job.percent = event.percent;
+        break;
+      case "done":
+        job.status = "done";
+        job.result = event.result;
+        if (this.sheet !== "history") this.unseen++;
+        break;
+      case "failed":
+        job.status = "failed";
+        job.error = event.error;
+        if (this.sheet !== "history") this.unseen++;
+        break;
+      case "canceled":
+        job.status = "canceled";
+        break;
+    }
+    return true;
   }
 
   /** Looks for a newer release. At startup (`quietly`) a failure says nothing: being offline is normal. */
@@ -551,10 +676,11 @@ class App {
   }
 
   #onJob(event: JobEvent) {
+    if (this.#onWatched(event)) return;
     const clip = this.#byJob.get(event.id);
     if (!clip) {
-      // Either a folder-watch job, or an event that beat the reply to
-      // `compress`. Keep the latter until the ids are known.
+      // An event that beat the reply to `compress` (the watch's own jobs were
+      // taken above). Keep it until the ids are known.
       if (this.clips.some((c) => c.status === "queued" && !c.jobId)) this.#early.push(event);
       return;
     }

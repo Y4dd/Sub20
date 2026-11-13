@@ -4,6 +4,7 @@
 //! it to the window as commands and forwards job events back.
 
 mod media;
+mod notify;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -401,6 +402,13 @@ async fn watch_status(state: State<'_, AppState>) -> CommandResult<WatchStatus> 
     Ok(state.watcher.status())
 }
 
+/// Compress the clips that arrived while Sub20 was closed, or skip them.
+#[tauri::command]
+async fn watch_decide(state: State<'_, AppState>, compress: bool) -> CommandResult<WatchStatus> {
+    state.watcher.decide(compress);
+    Ok(state.watcher.status())
+}
+
 /// Recording apps' clip folders found on this machine, for the watch shortcuts.
 #[tauri::command]
 fn clip_folders(app: AppHandle) -> Vec<watch::ClipFolder> {
@@ -763,6 +771,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             hand_over(app, opened_paths(argv.into_iter().skip(1), Path::new(&cwd)));
         }))
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drag::init())
@@ -805,10 +814,14 @@ pub fn run() {
             let results: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
             let produced = results.clone();
             let window = app.handle().clone();
+            let notices = Arc::new(notify::Notices::default());
             let sink = Arc::new(move |event: JobEvent| {
                 if let JobEvent::Done { result, .. } = &event {
                     produced.lock().expect("results lock").insert(result.output.clone());
                 }
+                notices.see(&window, &event, || {
+                    window.try_state::<AppState>().is_some_and(|state| state.engine.settings().get().watch.notify)
+                });
                 let _ = window.emit("job", event);
             });
             let engine = Engine::new(&data_dir, &cache_dir.join("work"), bundled, sink);
@@ -866,6 +879,7 @@ pub fn run() {
             history_remove,
             history_clear,
             watch_status,
+            watch_decide,
             clip_folders,
             reveal,
             open_file,

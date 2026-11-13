@@ -7,6 +7,19 @@
 
   let maximized = $state(false);
 
+  // The folder watch, in a few words: only while one is set up.
+  const watchLine = $derived.by(() => {
+    if (!app.settings?.watch.enabled) return null;
+    if (app.watch?.problem) return { text: "Watch stopped", warn: true };
+    if (!app.watching) return null;
+    const running = app.watched.find((job) => job.status === "running");
+    if (running) return { text: `Watching, compressing ${Math.floor(running.percent)}%`, warn: false };
+    const waiting = app.watched.filter((job) => job.status === "queued").length;
+    if (waiting) return { text: `Watching, ${waiting} waiting`, warn: false };
+    if (app.unseen) return { text: `Watching, ${app.unseen} new`, warn: false };
+    return { text: "Watching", warn: false };
+  });
+
   $effect(() => {
     if (backend.frame !== "custom") return;
     const stop = backend.onMaximized((value) => (maximized = value));
@@ -20,6 +33,18 @@
 
   {#if app.update}
     <button type="button" class="link update" onclick={() => (app.sheet = "settings")}>Sub20 {app.update.version} is out</button>
+  {/if}
+
+  {#if watchLine}
+    <button
+      type="button"
+      class="watching"
+      class:warn={watchLine.warn}
+      onclick={() => (app.sheet = watchLine.warn ? "settings" : "history")}
+      title={watchLine.warn ? app.watch?.problem : `Watching ${app.watch?.folder ?? "a folder"}. Opens History.`}
+    >
+      <i aria-hidden="true"></i>{watchLine.text}
+    </button>
   {/if}
 
   <div class="tools">
@@ -85,6 +110,39 @@
   .update {
     margin-right: 10px;
     font-size: 0.8125rem;
+  }
+
+  /* The watch, said quietly: a dot and a few words. */
+  .watching {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-right: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .watching:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .watching i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+
+  .watching.warn {
+    color: var(--bad);
+  }
+
+  .watching.warn i {
+    background: var(--bad);
   }
 
   .tools {

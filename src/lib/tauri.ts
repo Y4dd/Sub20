@@ -71,6 +71,7 @@ export const tauriBackend: Backend = {
   historyRemove: (id) => invoke("history_remove", { id }),
   historyClear: () => invoke("history_clear"),
   watchStatus: () => invoke("watch_status"),
+  watchDecide: (compress) => invoke("watch_decide", { compress }),
   clipFolders: () => invoke("clip_folders"),
   reveal: (path) => invoke("reveal", { path }),
   openFile: (path) => invoke("open_file", { path }),

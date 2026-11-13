@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app, backend } from "../app.svelte";
-  import { baseName, megabytes, when, CODEC_LABEL, engineOf } from "../format";
+  import { baseName, megabytes, when, plural, CODEC_LABEL, engineOf } from "../format";
   import type { HistoryEntry } from "../types";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
@@ -14,6 +14,29 @@
   $effect(() => {
     void load();
   });
+
+  // Opening History is seeing what the watch did.
+  $effect(() => {
+    app.unseen = 0;
+  });
+
+  // A finished watched clip is new history: read it again.
+  const finished = $derived(app.watched.filter((job) => job.status === "done").length);
+  $effect(() => {
+    if (finished) void load();
+  });
+
+  function watchLine(): string {
+    const w = app.watch;
+    if (!w) return "Starting…";
+    if (w.problem) return w.problem;
+    if (!w.running) return "Not running.";
+    const parts = [];
+    if (w.inProgress) parts.push(`${w.inProgress} compressing or waiting`);
+    if (w.done) parts.push(`${plural(w.done, "clip")} done`);
+    if (w.failed) parts.push(`${w.failed} failed`);
+    return parts.length ? `${parts.join(", ")}.` : "Waiting for new clips.";
+  }
 
   const codecOf = (encoder: string) =>
     encoder.includes("265") || encoder.includes("hevc") ? "hevc" : encoder.includes("av1") ? "av1" : encoder.includes("264") ? "h264" : null;
@@ -30,6 +53,46 @@
 </script>
 
 <Sheet title="History" onclose={() => (app.sheet = null)}>
+  {#if app.settings?.watch.enabled}
+    <section class="watch" aria-label="Watched folder">
+      <h3>Watched folder</h3>
+      <p class="where" title={app.watch?.folder ?? app.settings.watch.folder ?? ""}>
+        {app.watch?.folder ?? app.settings.watch.folder ?? "No folder chosen"}
+      </p>
+      <p class="muted" class:bad={!!app.watch?.problem}>{watchLine()}</p>
+      {#if app.watched.length}
+        <ul class="watched">
+          {#each app.watched as job (job.id)}
+            <li>
+              <div class="words">
+                <p class="name" title={job.result?.output ?? job.input}>{job.result ? baseName(job.result.output) : job.name}</p>
+                <p class="muted detail" class:bad={job.status === "failed"}>
+                  {#if job.status === "queued"}
+                    Waiting its turn
+                  {:else if job.status === "running"}
+                    Compressing, {Math.floor(job.percent)}%
+                  {:else if job.status === "done" && job.result}
+                    {megabytes(job.result.originalBytes)} to <strong>{megabytes(job.result.sizeBytes)}</strong>
+                  {:else if job.status === "failed"}
+                    {job.error ?? "Couldn't be compressed."}
+                  {:else}
+                    Stopped
+                  {/if}
+                </p>
+              </div>
+              {#if job.status === "done"}
+                <div class="links">
+                  <button type="button" class="link" onclick={() => app.openWatched(job)}>Open</button>
+                  <button type="button" class="link" onclick={() => app.copyWatched(job)}>{job.copied ? "Copied" : "Copy"}</button>
+                </div>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+    <h3>Everything compressed</h3>
+  {/if}
   {#if entries === null}
     <p class="muted">Loading…</p>
   {:else if entries.length === 0}
@@ -120,6 +183,42 @@
 
   .empty {
     max-width: 32em;
+  }
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .watch {
+    margin-bottom: 26px;
+  }
+
+  .where {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .watch > .muted {
+    font-size: var(--step--1);
+  }
+
+  .bad {
+    color: var(--bad);
+  }
+
+  .watched {
+    margin-top: 8px;
+  }
+
+  .links {
+    display: flex;
+    gap: 14px;
+    font-size: var(--step--1);
   }
 
   .foot {

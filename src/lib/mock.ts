@@ -32,9 +32,17 @@ let settings: Settings = {
   lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
-    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5,
+    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true,
   },
 };
+
+// `?watch` sets up a watch on a demo clip folder that finds a clip now and
+// then; `?watch=pile` adds a pile that arrived while the app was closed.
+const WATCH = new URLSearchParams(location.search).get("watch");
+const watching = { inProgress: 0, done: 0, failed: 0, waiting: WATCH === "pile" ? 12 : 0 };
+if (WATCH !== null) {
+  settings.watch = { ...settings.watch, enabled: true, folder: "/Users/demo/Videos/NVIDIA", recursive: true };
+}
 
 interface Demo {
   name: string;
@@ -196,7 +204,7 @@ function emit(event: JobEvent) {
   for (const listener of listeners) listener(event);
 }
 
-function simulate(id: string, job: CompressRequest) {
+function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" = "manual") {
   const demo = added.get(job.path)!;
   let plan: Plan;
   try {
@@ -208,7 +216,8 @@ function simulate(id: string, job: CompressRequest) {
   const encoder = job.options.codec === "av1" ? "libsvtav1" : `${job.options.codec}_nvenc`;
   const seconds = Math.min(14, 3 + plan.duration / 8);
   const begun = performance.now() + 500;
-  emit({ type: "queued", id, input: job.path, origin: "manual" });
+  emit({ type: "queued", id, input: job.path, origin });
+  if (origin === "watch") watching.inProgress++;
   window.setTimeout(() => {
     emit({ type: "started", id, encoder, hardware: encoder.endsWith("nvenc"), videoKbps: plan.videoKbps, width: plan.width, height: plan.height });
     emit({ type: "log", id, line: `ffmpeg -y -i "${demo.name}" -c:v ${encoder} -b:v ${plan.videoKbps}k …` });
@@ -229,7 +238,11 @@ function simulate(id: string, job: CompressRequest) {
         hardware: encoder.endsWith("nvenc"), fellBackFrom: null, attempts: 1, elapsedSeconds: seconds,
         targetMb: job.options.targetMb, replacedOriginal: replace,
       };
-      history = [{ id, finishedAt: Date.now() / 1000, input: job.path, trimmed: plan.trimmed, origin: "manual", result }, ...history];
+      history = [{ id, finishedAt: Date.now() / 1000, input: job.path, trimmed: plan.trimmed, origin, result }, ...history];
+      if (origin === "watch") {
+        watching.inProgress--;
+        watching.done++;
+      }
       emit({ type: "done", id, result });
       return;
     }
@@ -240,6 +253,24 @@ function simulate(id: string, job: CompressRequest) {
   }, 160);
   timers.set(id, timer);
 }
+
+/** The demo watch finds a clip a few seconds in, then one every 20 seconds. */
+function findClips() {
+  let next = 0;
+  const find = () => {
+    if (settings.watch.enabled && settings.watch.folder && !watching.waiting) {
+      const demo = DEMOS[next++ % DEMOS.length];
+      const path = `${settings.watch.folder}/${demo.name}`;
+      added.set(path, demo);
+      const profile = settings.profiles.find((p) => p.name === settings.watch.profile);
+      const options = profile?.options ?? settings.lastOptions ?? DEFAULT_OPTIONS;
+      simulate(`demo-${nextId++}`, { path, trim: null, options, outputName: null }, "watch");
+    }
+    window.setTimeout(find, 20000);
+  };
+  window.setTimeout(find, 4000);
+}
+if (WATCH !== null) findClips();
 
 const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" };
 let noFfmpeg = new URLSearchParams(location.search).has("noffmpeg");
@@ -367,9 +398,23 @@ export const mockBackend: Backend = {
   },
   watchStatus: async () => ({
     running: settings.watch.enabled && !!settings.watch.folder, folder: settings.watch.folder,
-    lastScan: Date.now() / 1000, inProgress: 0, done: 0, failed: 0,
+    lastScan: Date.now() / 1000, ...watching,
     problem: settings.watch.enabled && !settings.watch.folder ? "Choose a folder that exists." : null,
   }),
+  watchDecide: async (compress) => {
+    const pile = watching.waiting;
+    watching.waiting = 0;
+    if (compress) {
+      for (let i = 0; i < Math.min(pile, 3); i++) {
+        const demo = DEMOS[i % DEMOS.length];
+        const path = `${settings.watch.folder}/${demo.name}`;
+        added.set(path, demo);
+        const id = `demo-${nextId++}`;
+        window.setTimeout(() => simulate(id, { path, trim: null, options: settings.lastOptions ?? DEFAULT_OPTIONS, outputName: null }, "watch"), i * 900);
+      }
+    }
+    return mockBackend.watchStatus();
+  },
   clipFolders: async () => [
     { app: "NVIDIA app", path: "/Users/demo/Videos/NVIDIA", recursive: true },
     { app: "Xbox Game Bar", path: "/Users/demo/Videos/Captures", recursive: false },

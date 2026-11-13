@@ -140,16 +140,28 @@ its licence text and point to its exact source.
       (`Videos\Captures`) when those folders exist, new clips only. Steam
       isn't offered: it keeps recordings as stream segments, not video
       files, and saves an exported clip wherever the player chooses.
-- [ ] **Make the folder watch visible** (proposed November 2026, not
-      settled). Today the watch runs only while Sub20 is open, catches up
-      at the next launch on what arrived while it was closed, and shows
-      its jobs only in History and Settings. The direction discussed:
+- [x] **Make the folder watch visible** (November 2026). The watch still
+      runs only while Sub20 is open and catches up at the next launch. Built
+      as below, except where a line says otherwise; checked on the mock
+      backend (`?watch`, `?watch=pile`) in both schemes, with Open putting
+      a watched result on the bench as a finished clip. The notification
+      and the game check have only been built and unit-tested (the wording);
+      they need trying in the real app, in a game, on Windows:
   - A title-bar indicator, only while a watch is on, with a count while
     it works; it opens History focused on the watch (folder, status, the
     job in progress, recent results with Copy and the drag-out chip).
+    Built: "Watching", "Watching, compressing 62%", "Watching, 2 waiting",
+    "Watching, 1 new", or "Watch stopped" (opens Settings). History's
+    "Watched folder" section lists this session's watched clips with Open
+    and Copy; the drag-out chip is left to the bench, which Open reaches.
   - A system notification when a watched clip is ready ("clip.mp4 is
     ready, 18.4 MB"); clicking it opens that result with Copy ready. No
-    prompt per file.
+    prompt per file. Built (`src-tauri/src/notify.rs`, Settings → "Tell me
+    when a watched clip is ready", on by default), not shown while Sub20's
+    window has the focus. Clicking it doesn't open the result yet: the
+    notification plugin reports no clicks on desktop.
+    - [ ] Open the result from a click on the notice (needs a toast
+          activation handler of Sub20's own on Windows).
   - Watched clips stay off the bench until the user reaches for one
     (owner agreed, November 2026). The bench is the user's working set,
     under the dock's size and options; clips arriving on their own would
@@ -170,7 +182,11 @@ its licence text and point to its exact source.
     the desktop. Never flash the taskbar or take the focus. macOS:
     respect Focus and Game Mode the same way.
   - At launch, when several clips (more than five, say) piled up while
-    Sub20 was closed, ask once: compress them, or skip them.
+    Sub20 was closed, ask once: compress them, or skip them. Built: more
+    than `watch::PILE` (5) new clips on the first scan after launch are
+    held, and a card under the title bar asks "12 clips arrived in NVIDIA
+    while Sub20 was closed. Compress them, Skip them". Skipped clips are
+    remembered and not asked about again.
   - Later, only after the memory and performance profile below: "Keep
     watching when the window is closed" (off by default, offered only
     when a watch is set up), closing the window rather than hiding it so
@@ -187,9 +203,10 @@ its licence text and point to its exact source.
       left to run), and Clear finished leaves it alone. No checkboxes on
       the rows, to keep the controls few. Checked on the mock backend in
       both schemes, including a Compress that ran only the included clip.
-  - [ ] Watched clips that reach the bench (from a notification, the watch
-        view, or the pile-up asked about at launch) use the same switch,
-        once the folder watch is made visible (above).
+  - [x] Watched clips that reach the bench (History's Open) arrive
+        finished, like any finished clip; editing the trim puts one back
+        to ready, where Leave out works as usual. The pile asked about at
+        launch is answered as a whole and never reaches the bench.
 
 **Installing and updating**
 - [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release
