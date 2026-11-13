@@ -60,7 +60,8 @@ Download from the [Releases](https://github.com/Y4dd/Sub20/releases) page.
 `Sub20` has FFmpeg built in; `Sub20-Lean` is smaller and uses the FFmpeg
 already on your system. If there is none, it offers to download the same
 FFmpeg the full build carries, checked against a pinned SHA-256. Sub20
-updates itself, and every update is signed.
+updates itself, and every update is signed. On a Mac, Sub20 needs Apple
+Silicon (M1 or newer); Intel Macs aren't supported.
 
 The Windows and macOS builds aren't code-signed yet, so the system warns
 the first time you open one:
@@ -123,8 +124,8 @@ from ship inside the app.
 ### Releases
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It builds both
-kinds (FFmpeg included, and lean) for Windows, macOS (Apple Silicon and
-Intel) and Linux, and puts them on a draft release with the update feed
+kinds (FFmpeg included, and lean) for Windows, macOS (Apple Silicon) and
+Linux, and puts them on a draft release with the update feed
 (`latest.json`) and `SHA256SUMS.txt`. Set the version first with
 `npm run set-version -- x.y.z`. Updates are signed; the workflow needs the
 `TAURI_SIGNING_PRIVATE_KEY` secret.

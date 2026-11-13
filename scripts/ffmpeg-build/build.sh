@@ -11,8 +11,7 @@
 # TARGET is a Rust target triple:
 #   x86_64-pc-windows-msvc    cross-compiled on Linux with mingw-w64
 #   x86_64-unknown-linux-gnu  on Linux (third-party libraries static, glibc shared)
-#   aarch64-apple-darwin      on an Apple Silicon Mac
-#   x86_64-apple-darwin       on an Intel Mac
+#   aarch64-apple-darwin      on an Apple Silicon Mac (Intel Macs aren't supported)
 #
 # OUT receives sub20-ffmpeg-<version>-<revision>-<target>.zip (Windows) or
 # .tar.xz: ffmpeg, ffprobe, the GPL and BUILD.txt. WORK (default
@@ -55,7 +54,7 @@ case "$TARGET" in
     OS=linux
     EXE=
     ;;
-  aarch64-apple-darwin | x86_64-apple-darwin)
+  aarch64-apple-darwin)
     OS=mac
     EXE=
     ARCH=${TARGET%%-*}
@@ -252,7 +251,9 @@ CONFIGURE=(--prefix="$PREFIX/ffmpeg" --pkg-config-flags=--static
   "--extra-cflags=-I$PREFIX/include" "--extra-ldflags=-L$PREFIX/lib")
 case "$OS" in
   windows)
-    CONFIGURE+=(--target-os=mingw32 --arch=x86_64 --cross-prefix=$HOST-
+    # Plain pkg-config: the cross prefix would make it look for
+    # x86_64-w64-mingw32-pkg-config, which isn't there.
+    CONFIGURE+=(--target-os=mingw32 --arch=x86_64 --cross-prefix=$HOST- --pkg-config=pkg-config
       --enable-ffnvcodec --enable-cuda --enable-nvenc --enable-nvdec --enable-amf --enable-libvpl
       --enable-mediafoundation --enable-d3d11va --enable-dxva2
       --extra-ldflags=-static "--extra-libs=-lstdc++")

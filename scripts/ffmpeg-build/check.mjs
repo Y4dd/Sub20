@@ -36,7 +36,6 @@ const extra = {
     hwaccels: ["cuda", "vaapi", "qsv"],
   },
   "aarch64-apple-darwin": { encoders: ["h264_videotoolbox", "hevc_videotoolbox"], hwaccels: ["videotoolbox"] },
-  "x86_64-apple-darwin": { encoders: ["h264_videotoolbox", "hevc_videotoolbox"], hwaccels: ["videotoolbox"] },
 }[target];
 if (!extra) {
   console.error(`Unknown target ${target}`);

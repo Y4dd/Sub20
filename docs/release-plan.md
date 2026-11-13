@@ -233,7 +233,10 @@ Built during Phase 1, because every later phase uses it.
 
 **Release workflow** (`.github/workflows/release.yml`, on a `v*` tag)
 - Done; a dry run passed (13 November 2026). Builds two variants (FFmpeg included, lean) for
-  Windows x64, macOS Apple Silicon and Intel, and Linux x64. Uploads to a
+  Windows x64, macOS Apple Silicon and Linux x64. Intel Macs were dropped
+  in November 2026 (owner's decision): Apple stopped selling them in 2023,
+  macOS 26 is the last version for them, and they cost a release job and
+  an FFmpeg build of their own. Uploads to a
   draft release with `SHA256SUMS.txt`, the updater signatures and one
   `latest.json`. Release notes come from `CHANGELOG.md`. Plain
   `tauri build` and our own scripts rather than `tauri-action`, which

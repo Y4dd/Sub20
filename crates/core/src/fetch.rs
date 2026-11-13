@@ -67,8 +67,6 @@ fn this_target() -> Option<&'static str> {
         Some("x86_64-unknown-linux-gnu")
     } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
         Some("aarch64-apple-darwin")
-    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        Some("x86_64-apple-darwin")
     } else {
         None
     }
@@ -234,7 +232,7 @@ mod tests {
         let linux = offer_for(PINS, "x86_64-unknown-linux-gnu").expect("linux is pinned");
         assert!(linux.files[0].name.ends_with("-x86_64-unknown-linux-gnu.tar.xz"));
 
-        for mac in ["aarch64-apple-darwin", "x86_64-apple-darwin"] {
+        for mac in ["aarch64-apple-darwin"] {
             let offer = offer_for(PINS, mac).expect("mac is pinned");
             let names: Vec<_> = offer.files.iter().map(|f| f.name.as_str()).collect();
             assert_eq!(
@@ -247,6 +245,7 @@ mod tests {
         }
 
         assert_eq!(offer_for(PINS, "riscv64gc-unknown-linux-gnu"), None);
+        assert_eq!(offer_for(PINS, "x86_64-apple-darwin"), None, "Intel Macs aren't supported");
         assert_eq!(
             windows.url("1.2.3", &windows.files[0]),
             format!("https://github.com/Y4dd/Sub20/releases/download/v1.2.3/{}", windows.files[0].name)
