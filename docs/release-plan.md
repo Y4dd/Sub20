@@ -328,8 +328,8 @@ Built during Phase 1, because every later phase uses it.
   from about 97 MB to 32 MB; everything one system's job makes (both
   downloads) went from 130 to 76 MB on macOS and from 590 to 289 MB on
   Linux (AppImage, deb and rpm, twice). With a warm cache the whole
-  release now takes about 5 minutes; Windows packaging fell from 2.5
-  minutes to seconds.
+  release now takes about 5 minutes, and the Windows job fell from 5.5
+  minutes to 2.
 - Done: FFmpeg 9.0.2 ships as `externalBin` sidecars named
   `sub20-ffmpeg` and `sub20-ffprobe` (plain names would clash with the
   distribution's FFmpeg in `/usr/bin` on Linux), pinned with SHA-256 in
