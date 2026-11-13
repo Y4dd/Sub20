@@ -17,7 +17,6 @@
   const percent = (time: number) => (clip.duration > 0 ? (time / clip.duration) * 100 : 0);
   const startAt = $derived(percent(clip.start));
   const endAt = $derived(percent(clip.end));
-  const progressAt = $derived(startAt + ((endAt - startAt) * clip.percent) / 100);
 
   function timeAt(clientX: number): number {
     const box = rail.getBoundingClientRect();
@@ -97,8 +96,11 @@
     <div class="cut" style:left="0" style:width="{startAt}%"></div>
     <div class="cut" style:left="{endAt}%" style:right="0"></div>
     {#if clip.busy}
-      <div class="veil" style:left="{progressAt}%" style:width="{Math.max(0, endAt - progressAt)}%"></div>
-      <div class="front" style:left="{progressAt}%"></div>
+      <!-- The part not encoded yet slides off to the right, led by a bright
+           edge. It moves by transform alone, so progress costs no layout. -->
+      <div class="run" style:left="{startAt}%" style:width="{endAt - startAt}%">
+        <div class="veil" style:transform="translateX({clip.percent}%)"></div>
+      </div>
     {/if}
 
     <div class="bracket" style:left="{startAt}%" style:width="{endAt - startAt}%">
@@ -198,29 +200,35 @@
     pointer-events: none;
   }
 
+  /* The kept part while it is encoded; clipped at its ends only, so the
+     edge's glow still shows above and below. */
+  .run {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    clip-path: inset(-16px 0);
+    pointer-events: none;
+  }
+
   /* Not encoded yet. */
   .veil {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    inset: 0;
     background: color-mix(in srgb, var(--well) 62%, transparent);
-    pointer-events: none;
+    transition: transform 300ms linear;
+    will-change: transform;
   }
 
-  .front {
+  /* The front of the encode. */
+  .veil::before {
+    content: "";
     position: absolute;
     top: 0;
     bottom: 0;
+    left: -1px;
     width: 2px;
-    margin-left: -1px;
     background: var(--trim);
     box-shadow: 0 0 12px 1px var(--trim);
-    pointer-events: none;
-    transition: left 300ms linear;
-  }
-
-  .veil {
-    transition: left 300ms linear, width 300ms linear;
   }
 
   .bracket {

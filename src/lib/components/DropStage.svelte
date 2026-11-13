@@ -54,7 +54,7 @@
                 {#if fetching.stage === "downloading"}<span class="muted">{megabytes(fetching.received)} MB</span>{/if}
               </span>
               <span class="bar" class:waiting={fetching.fraction === null || fetching.stage !== "downloading"}>
-                <span style:width="{fetching.stage === 'downloading' ? (fetching.fraction ?? 0) * 100 : 100}%"></span>
+                <span style:transform="scaleX({fetching.stage === 'downloading' ? (fetching.fraction ?? 0) : 1})"></span>
               </span>
             </div>
           {:else}
@@ -315,9 +315,9 @@
   .bar span {
     display: block;
     height: 100%;
-    border-radius: inherit;
     background: var(--trim);
-    transition: width 300ms linear;
+    transform-origin: left;
+    transition: transform 300ms linear;
   }
 
   /* Checking and installing take a moment with nothing to count. */

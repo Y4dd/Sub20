@@ -76,10 +76,25 @@ struct Fingerprint {
     modified: u64,
 }
 
+/// The file's own size and date, asked of the file itself: exact even while
+/// another program is still writing it.
 fn fingerprint(path: &Path) -> Option<Fingerprint> {
-    let meta = std::fs::metadata(path).ok()?;
+    print_of(&std::fs::metadata(path).ok()?)
+}
+
+fn print_of(meta: &std::fs::Metadata) -> Option<Fingerprint> {
     let modified = meta.modified().ok()?.duration_since(UNIX_EPOCH).ok()?.as_secs();
     Some(Fingerprint { size: meta.len(), modified })
+}
+
+/// A video found in the folder, with the size and date its directory listing
+/// gave. Those come free with the listing on Windows, where asking the file
+/// itself means opening it; but NTFS may not update them while a file is
+/// still open for writing, so they only tell "unchanged since handled" and
+/// anything else is asked of the file (`fingerprint`).
+struct Found {
+    path: PathBuf,
+    listed: Option<Fingerprint>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -151,7 +166,7 @@ pub struct Watcher {
 impl Watcher {
     pub fn new(engine: Engine, data_dir: &Path) -> Watcher {
         let memory_path = data_dir.join("watch.json");
-        let memory = std::fs::read_to_string(&memory_path)
+        let memory = crate::settings::read_json(&memory_path)
             .ok()
             .and_then(|text| serde_json::from_str(&text).ok())
             .unwrap_or_default();
@@ -236,19 +251,19 @@ impl Watcher {
 }
 
 /// Files that are new or changed since the watch last handled them.
-fn arrivals(files: &[PathBuf], memory: &Memory, in_flight: &HashSet<String>) -> Vec<String> {
+fn arrivals(files: &[Found], memory: &Memory, in_flight: &HashSet<String>) -> Vec<String> {
     files
         .iter()
-        .filter_map(|path| {
-            let k = key(path);
-            let print = fingerprint(path)?;
+        .filter_map(|found| {
+            let k = key(&found.path);
+            let print = fingerprint(&found.path)?;
             let handled = memory.files.get(&k).is_some_and(|seen| seen.print == print);
             (!handled && !in_flight.contains(&k)).then_some(k)
         })
         .collect()
 }
 
-fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<PathBuf> {
+fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<Found> {
     let mut found = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
@@ -259,7 +274,10 @@ fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<PathBuf>
             if name.starts_with('.') {
                 continue;
             }
-            if path.is_dir() {
+            let Ok(kind) = entry.file_type() else { continue };
+            // A link is followed, as before: to a folder, or to a video.
+            let linked = kind.is_symlink();
+            if kind.is_dir() || (linked && path.is_dir()) {
                 // Never descend into our own output or "processed" folders.
                 if recursive && name != "processed" && Some(path.as_path()) != skip {
                     pending.push(path);
@@ -268,11 +286,13 @@ fn candidates(root: &Path, recursive: bool, skip: Option<&Path>) -> Vec<PathBuf>
             }
             let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
             if is_video(&path) && !looks_generated(&stem) {
-                found.push(path);
+                let listed =
+                    if linked { fingerprint(&path) } else { entry.metadata().ok().as_ref().and_then(print_of) };
+                found.push(Found { path, listed });
             }
         }
     }
-    found.sort();
+    found.sort_by(|a, b| a.path.cmp(&b.path));
     found
 }
 
@@ -311,9 +331,9 @@ fn scan(
     let mut memory = shared.memory.lock().expect("memory lock");
     if !memory.baselined {
         if config.existing == Existing::NewOnly {
-            for path in &files {
-                if let Some(print) = fingerprint(path) {
-                    memory.files.insert(key(path), Seen { print, outcome: Outcome::Skipped });
+            for found in &files {
+                if let Some(print) = fingerprint(&found.path) {
+                    memory.files.insert(key(&found.path), Seen { print, outcome: Outcome::Skipped });
                 }
             }
         }
@@ -333,9 +353,15 @@ fn scan(
     let held = shared.held.lock().expect("held lock").clone().unwrap_or_default();
 
     let mut ready = Vec::new();
-    for path in files {
+    for Found { path, listed } in files {
         let k = key(&path);
         if held.contains(&k) {
+            continue;
+        }
+        // Most files are ones handled long ago, and the listing says so
+        // without opening them (thousands, in a busy clip folder).
+        let seen = memory.files.get(&k).map(|seen| seen.print);
+        if listed.is_some() && listed == seen {
             continue;
         }
         let Some(print) = fingerprint(&path) else { continue };
@@ -494,10 +520,16 @@ mod tests {
         let names = |recursive| -> Vec<String> {
             candidates(root, recursive, None)
                 .iter()
-                .map(|p| p.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/"))
+                .map(|found| found.path.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/"))
                 .collect()
         };
         assert_eq!(names(false), ["a.mp4", "b.MOV"]);
+        // A closed file's listing agrees with the file itself, so a handled
+        // file is skipped without being opened.
+        for found in candidates(root, true, None) {
+            assert!(found.listed.is_some());
+            assert_eq!(found.listed, fingerprint(&found.path), "{}", found.path.display());
+        }
         assert_eq!(names(true), ["a.mp4", "b.MOV", "sub/c.mkv"]);
     }
 

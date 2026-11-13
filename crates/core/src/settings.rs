@@ -249,6 +249,17 @@ impl Settings {
     }
 }
 
+/// Reads a JSON file Sub20 keeps, ignoring a byte-order mark: Windows
+/// PowerShell 5 and older Notepad put one at the start of a file they save,
+/// and a hand-edited settings file must not read as damaged.
+pub(crate) fn read_json(path: &Path) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(match text.strip_prefix('﻿') {
+        Some(rest) => rest.to_string(),
+        None => text,
+    })
+}
+
 /// Writes `text` to `path` so that a crash never leaves half a file.
 pub(crate) fn write_atomic(path: &Path, text: &str) -> Result<()> {
     if let Some(dir) = path.parent() {
@@ -269,7 +280,7 @@ impl SettingsStore {
     /// Loads settings, falling back to defaults when the file is missing or
     /// damaged. A damaged file is kept beside it as `settings.broken.json`.
     pub fn open(path: PathBuf) -> SettingsStore {
-        let mut settings = match std::fs::read_to_string(&path) {
+        let mut settings = match read_json(&path) {
             Ok(text) => match serde_json::from_str::<Settings>(&text) {
                 Ok(settings) => settings,
                 Err(e) => {
@@ -370,6 +381,18 @@ mod tests {
         let mut settings = Settings { sizes: vec![20.0, 50.0, 100.0], ..Settings::default() };
         settings.tidy();
         assert_eq!(settings.sizes, vec![20.0, 50.0, 100.0]);
+    }
+
+    #[test]
+    fn a_file_saved_with_a_byte_order_mark_still_loads() {
+        // Windows PowerShell 5's Set-Content -Encoding utf8 writes one.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, "\u{feff}{\"sizes\":[8],\"checkUpdates\":false}").unwrap();
+        let store = SettingsStore::open(path.clone());
+        assert_eq!(store.get().sizes, vec![8.0]);
+        assert!(!store.get().check_updates);
+        assert!(path.exists() && !dir.path().join("settings.broken.json").exists());
     }
 
     #[test]

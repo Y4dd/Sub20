@@ -53,7 +53,7 @@
               <img src={clip.thumbs[Math.floor(clip.thumbs.length / 2)]} alt="" draggable="false" />
             {/if}
             {#if clip.status === "running"}
-              <span class="meter" style:width="{clip.percent}%"></span>
+              <span class="meter" style:transform="scaleX({clip.percent / 100})"></span>
             {/if}
           </span>
           <span class="words">
@@ -179,9 +179,12 @@
     position: absolute;
     left: 0;
     bottom: 0;
+    width: 100%;
     height: 3px;
     background: var(--trim);
-    transition: width 300ms linear;
+    /* Scaled, not resized: progress costs no layout. */
+    transform-origin: left;
+    transition: transform 300ms linear;
   }
 
   .words {

@@ -37,7 +37,7 @@ pub struct History {
 
 impl History {
     pub fn open(path: PathBuf) -> History {
-        let entries = std::fs::read_to_string(&path)
+        let entries = crate::settings::read_json(&path)
             .ok()
             .and_then(|text| serde_json::from_str::<Vec<Entry>>(&text).ok())
             .unwrap_or_default();

@@ -146,7 +146,7 @@
           <b>{Math.floor(overall)}%</b>
           <span class="muted">{finished} of {finished + busy} done</span>
         </span>
-        <span class="bar"><span style:width="{overall}%"></span></span>
+        <span class="bar"><span style:transform="scaleX({overall / 100})"></span></span>
       </div>
       <button type="button" class="quiet" onclick={() => app.cancelAll()}>Cancel all</button>
     {:else if pending > 0}
@@ -388,12 +388,14 @@
     background: var(--raised);
   }
 
+  /* Scaled, not resized: progress costs no layout. The bar's own rounded
+     ends clip it. */
   .bar span {
     display: block;
     height: 100%;
-    border-radius: inherit;
     background: var(--trim);
-    transition: width 300ms linear;
+    transform-origin: left;
+    transition: transform 300ms linear;
   }
 
   .primary,
