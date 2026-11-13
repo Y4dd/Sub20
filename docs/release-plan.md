@@ -242,19 +242,28 @@ its licence text and point to its exact source.
         entry needs a packaged `IExplorerCommand` handler; not for 1.0.
       - macOS (Finder's Open With, several files are sent together) and
         Linux (`%F` in the `.desktop` file) need a check too.
-- [ ] **Find out why Linux is so much bigger** (289 MB for its job against
-      76 MB on macOS). Likely, not yet measured file by file:
-      - It makes six files where the others make two: AppImage, deb and
-        rpm, each with and without FFmpeg.
-      - The AppImage carries its own WebKitGTK, GTK and their libraries
-        (the deb and rpm use the system's), so each AppImage is probably
-        most of the total. Windows uses the system's WebView2 and macOS
-        its WebKit, so neither carries a browser engine.
-      - FFmpeg (25 MB) is in three of the six.
-      Measure each file on the next dry run, then decide: perhaps fewer
-      files (the AppImage only with FFmpeg, since deb and rpm users can
-      install their distribution's FFmpeg), or a slimmer AppImage. What a
-      person downloads matters more than the job's total; write both here.
+- [x] **Find out why Linux is so much bigger** (289 MB for its job against
+      76 MB on macOS). Measured file by file on a dry run (13 November
+      2026), with FFmpeg / without:
+
+      | File | Sub20 | Without FFmpeg |
+      | --- | --- | --- |
+      | Windows installer | 31 MB | 2.8 MB |
+      | macOS disk image | 32 MB | 3.7 MB |
+      | Linux deb | 39 MB | 4.9 MB |
+      | Linux rpm | 39 MB | 4.9 MB |
+      | Linux AppImage | 110 MB | 79 MB |
+
+      - What one person downloads on Linux is in line with the others:
+        the deb and rpm are 39 MB. The job's total is big because it makes
+        six files where the others make two.
+      - The AppImage is the outlier: 79 MB even without FFmpeg, because it
+        carries its own WebKitGTK, GTK and their libraries. The deb and rpm
+        use the system's; Windows uses WebView2 and macOS its own WebKit.
+  - [ ] Decide whether to trim it: perhaps the AppImage only with FFmpeg
+        (people without FFmpeg are mostly on distributions with a deb or
+        rpm), which saves 79 MB a release, or leave it, since nobody
+        downloads more than one file.
 - [x] **Downloads people can tell apart.** "Lean" said nothing to someone
       choosing a file. The owner picked "Sub20 without FFmpeg" (November
       2026):
@@ -268,7 +277,9 @@ its licence text and point to its exact source.
         section has the same table without sizes.
       - The workflow uploads one artifact per download
         (`windows-x64`, `windows-x64-without-ffmpeg`, …).
-      Checked with the script on stand-in files; not yet on a dry run.
+      Checked on a dry run (13 November 2026): six artifacts, the table
+      right on every system, all six updater keys in `latest.json`. The
+      notes rewrite only runs on a tag, so it is first seen on a release.
 - [x] Code signing: set aside for 1.0 (owner, November 2026). Windows and
       macOS builds ship unsigned. See [Signing](#signing).
   - [x] First-launch steps for unsigned builds in the README (SmartScreen,
