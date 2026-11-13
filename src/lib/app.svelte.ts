@@ -3,13 +3,18 @@
 
 import { mockBackend } from "./mock";
 import { tauriBackend } from "./tauri";
+import { webBackend } from "./web/backend";
 import { baseName, plain } from "./format";
 import type {
   Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
   UpdateInfo, WatchStatus,
 } from "./types";
 
-export const backend: Backend = "__TAURI_INTERNALS__" in window ? tauriBackend : mockBackend;
+/** Sub20 Lite: the web build, or `?lite` under `npm run dev`. Both are
+ *  decided when the bundle is built, so the desktop build leaves Lite out. */
+const LITE = import.meta.env.VITE_TARGET === "web" || (import.meta.env.DEV && new URLSearchParams(location.search).has("lite"));
+
+export const backend: Backend = LITE ? webBackend : "__TAURI_INTERNALS__" in window ? tauriBackend : mockBackend;
 
 export type ClipStatus = "ready" | "queued" | "running" | "done" | "failed" | "canceled";
 
@@ -580,11 +585,20 @@ class App {
     await backend.cancelAll();
   }
 
-  /** Puts a finished clip on the clipboard, for pasting into Discord. */
+  /** How a finished clip gets to Discord here: the clipboard on the desktop,
+   *  the share sheet on a phone, a download in other browsers. */
+  get handOff(): "copy" | "share" | "download" {
+    return backend.can.copyFile ? "copy" : backend.can.share ? "share" : "download";
+  }
+
+  /** Puts a finished clip on the clipboard for pasting into Discord, or
+   *  shares or downloads it where there is no clipboard for files. */
   async copy(clip: Clip) {
     if (!clip.result) return;
     try {
-      await backend.copyFile(clip.result.output);
+      const output = clip.result.output;
+      if (this.handOff === "share") return await backend.share!(output);
+      await (this.handOff === "download" ? backend.download!(output) : backend.copyFile(output));
       clip.copied = true;
       window.setTimeout(() => (clip.copied = false), 2400);
     } catch (error) {

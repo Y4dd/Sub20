@@ -30,8 +30,19 @@ export interface Fitted {
   blob: Blob;
   under: boolean;
   audio: AudioCodec | null;
+  /** The browser's GPU encoder did the work, not its CPU one. */
+  hardware: boolean;
   /** What was changed from the plan, or why it missed, in words. */
   notes: string[];
+}
+
+export interface FitEvents {
+  /** Each attempt's progress, 0 to 1; attempts count from 0. */
+  onProgress?: (attempt: number, fraction: number) => void;
+  /** An attempt came out over and the next one starts at `videoKbps`. */
+  onRetry?: (attempt: number, overPercent: number, videoKbps: number) => void;
+  /** Stops the encode; `fit` then throws an `AbortError`. */
+  signal?: AbortSignal;
 }
 
 const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
@@ -125,8 +136,9 @@ export async function fit(
   source: MediaInfo,
   plan: Plan,
   settings: FitSettings,
-  onProgress?: (attempt: number, fraction: number) => void,
+  events: FitEvents = {},
 ): Promise<Fitted> {
+  const { onProgress, onRetry, signal } = events;
   const planner = await loadPlanner();
   const target = plan.targetBytes ?? Infinity;
   const audio = source.hasAudio && plan.audio ? await audioCodec(plan.audioKbps) : null;
@@ -149,7 +161,7 @@ export async function fit(
   let blob: Blob | null = null;
   for (let n = 0; n <= planner.sizeRetries; n++) {
     const began = performance.now();
-    blob = await encode(file, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f));
+    blob = await encode(file, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f), signal);
     attempts.push({ videoKbps, bytes: blob.size, seconds: (performance.now() - began) / 1000 });
     if (blob.size <= target) break;
     const previous = attempts[attempts.length - 2];
@@ -157,10 +169,13 @@ export async function fit(
       notes.push(`The encoder won't go below ${Math.round((blob.size * 8) / 1000 / plan.duration)} kbps here.`);
       break;
     }
+    if (n === planner.sizeRetries) break;
     videoKbps = planner.lowerBitrate(videoKbps, blob.size, target, plan.duration);
+    onRetry?.(n + 1, (blob.size / target - 1) * 100, videoKbps);
   }
 
-  return { plan, fps, attempts, blob: blob!, under: blob!.size <= target, audio, notes };
+  const gpu = hardware === "prefer-hardware";
+  return { plan, fps, attempts, blob: blob!, under: blob!.size <= target, audio, hardware: gpu, notes };
 }
 
 async function encode(
@@ -171,7 +186,9 @@ async function encode(
   audio: AudioCodec | null,
   settings: FitSettings,
   onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
 ): Promise<Blob> {
+  signal?.throwIfAborted();
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
   const output = new Output({ format: new Mp4OutputFormat({ fastStart: "in-memory" }), target: new BufferTarget() });
   try {
@@ -200,7 +217,14 @@ async function encode(
       throw new Error(`This browser can't convert this file (${reasons}).`);
     }
     conversion.onProgress = onProgress;
-    await conversion.execute();
+    const stop = () => void conversion.cancel();
+    signal?.addEventListener("abort", stop, { once: true });
+    try {
+      await conversion.execute();
+    } finally {
+      signal?.removeEventListener("abort", stop);
+    }
+    signal?.throwIfAborted();
     return new Blob([output.target.buffer!], { type: "video/mp4" });
   } finally {
     input.dispose();

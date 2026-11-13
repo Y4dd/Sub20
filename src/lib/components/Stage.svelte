@@ -152,6 +152,14 @@
 
   const thumb = $derived(clip.thumbs[Math.floor(clip.thumbs.length / 2)] || null);
   const copyKey = navigator.platform.toLowerCase().includes("mac") ? "⌘C" : "Ctrl+C";
+  // Where there is no clipboard for files (Sub20 Lite), the same button
+  // shares (phones) or downloads.
+  const handOff = {
+    copy: { icon: "copy", label: "Copy", done: "Copied" },
+    share: { icon: "share", label: "Share", done: "Shared" },
+    download: { icon: "download", label: "Download", done: "Downloaded" },
+  } as const;
+  const hand = $derived(handOff[app.handOff]);
 </script>
 
 <!-- Keeps the clip on the bench but out of the next Compress, or back in. -->
@@ -264,29 +272,33 @@
           <button
             type="button"
             class="file"
-            draggable="true"
+            draggable={backend.can.dragOut}
             ondragstart={(event) => {
               event.preventDefault();
               void app.dragOut(clip);
             }}
             onclick={() => backend.openFile(result.output).catch((e) => app.notify(String(e)))}
-            title="Drag into Discord or a folder, or click to play"
+            title={backend.can.dragOut ? "Drag into Discord or a folder, or click to play" : "Click to play"}
           >
             <span class="thumb">{#if thumb}<img src={thumb} alt="" draggable="false" />{/if}</span>
             <span class="words">
               <span class="name">{baseName(result.output)}</span>
               <span class="size"><Icon name="check" size={14} /><span><strong>{megabytes(result.sizeBytes)}</strong>, down from {megabytes(result.originalBytes)}</span></span>
             </span>
-            <span class="grip" aria-hidden="true"><Icon name="grip" size={16} /></span>
+            {#if backend.can.dragOut}
+              <span class="grip" aria-hidden="true"><Icon name="grip" size={16} /></span>
+            {/if}
           </button>
           <button type="button" class="copy" class:copied={clip.copied} onclick={() => app.copy(clip)}>
-            <Icon name={clip.copied ? "check" : "copy"} size={16} />
-            {clip.copied ? "Copied" : "Copy"}
-            <kbd>{copyKey}</kbd>
+            <Icon name={clip.copied ? "check" : hand.icon} size={16} />
+            {clip.copied ? hand.done : hand.label}
+            {#if app.handOff === "copy"}<kbd>{copyKey}</kbd>{/if}
           </button>
         </div>
         <p class="after">
-          <button type="button" class="link" onclick={() => backend.reveal(result.output).catch((e) => app.notify(String(e)))}>Show in folder</button>
+          {#if backend.can.files}
+            <button type="button" class="link" onclick={() => backend.reveal(result.output).catch((e) => app.notify(String(e)))}>Show in folder</button>
+          {/if}
           {#if result.replacedOriginal}
             <span class="muted">The original is in the {BIN}.</span>
           {:else}
@@ -704,5 +716,50 @@
 
   .after .link:first-child {
     margin-left: 0;
+  }
+
+  /* Narrow: less margin, the two times on one row and the words under them. */
+  @media (max-width: 720px) {
+    /* Clipped: the trim handles' grab areas reach past the screen's edge,
+       and a phone would widen the whole page to show them. */
+    .stage {
+      padding: 4px 0 10px;
+      gap: 10px;
+      overflow: clip;
+    }
+
+    .under {
+      grid-template-columns: auto auto;
+      justify-content: space-between;
+      gap: 10px 12px;
+    }
+
+    .edge.end {
+      justify-self: end;
+    }
+
+    .status {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .result {
+      flex-wrap: wrap;
+    }
+
+    .file {
+      flex: 1 1 100%;
+      max-width: none;
+    }
+
+    .copy {
+      flex: 1;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    kbd {
+      display: none;
+    }
   }
 </style>

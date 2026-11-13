@@ -113,10 +113,12 @@
             <p class="muted detail">{detail(entry)}</p>
           </div>
           <div class="actions">
-            <button type="button" aria-label="Show {baseName(entry.result.output)} in its folder" title="Show in folder"
-              onclick={() => backend.reveal(entry.result.output).catch((e) => app.notify(String(e)))}>
-              <Icon name="folder" />
-            </button>
+            {#if backend.can.files}
+              <button type="button" aria-label="Show {baseName(entry.result.output)} in its folder" title="Show in folder"
+                onclick={() => backend.reveal(entry.result.output).catch((e) => app.notify(String(e)))}>
+                <Icon name="folder" />
+              </button>
+            {/if}
             <button type="button" aria-label="Remove from history" title="Remove from history"
               onclick={async () => { await backend.historyRemove(entry.id); await load(); }}>
               <Icon name="close" size={16} />

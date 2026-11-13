@@ -278,9 +278,47 @@ export interface UpdateInfo {
   notes: string | null;
 }
 
+/** What a backend can do; the window hides what it can't. The desktop app
+ *  can do everything except `share`; Sub20 Lite in a browser can't reach
+ *  files, folders or FFmpeg. */
+export interface Capabilities {
+  /** Watch a folder and compress what lands in it. */
+  watch: boolean;
+  /** Move the original to the bin and take its name. */
+  replace: boolean;
+  /** Rename a finished file, show it in its folder, choose where results go. */
+  files: boolean;
+  /** Choose and test encoders. */
+  encoders: boolean;
+  /** FFmpeg: find, choose or download it, and show its log. */
+  ffmpeg: boolean;
+  /** Put a finished file on the clipboard. */
+  copyFile: boolean;
+  /** Drag a finished file out of the window. */
+  dragOut: boolean;
+  /** Updates from inside the app. */
+  updates: boolean;
+  /** Save a result through the browser's download. */
+  download: boolean;
+  /** Hand a result to another app (phones), through the system's share sheet. */
+  share: boolean;
+  /** Keep history between sessions. */
+  history: boolean;
+}
+
+export const DESKTOP: Capabilities = {
+  watch: true, replace: true, files: true, encoders: true, ffmpeg: true, copyFile: true, dragOut: true, updates: true,
+  download: false, share: false, history: true,
+};
+
 export interface Backend {
   readonly demo: boolean;
   readonly frame: Frame;
+  readonly can: Capabilities;
+  /** Saves a finished result as a download (`can.download`). */
+  download?(path: string): Promise<void>;
+  /** Hands a finished result to the share sheet (`can.share`). */
+  share?(path: string): Promise<void>;
   minimize(): Promise<void>;
   toggleMaximize(): Promise<void>;
   closeWindow(): Promise<void>;

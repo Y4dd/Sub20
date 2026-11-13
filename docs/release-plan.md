@@ -602,31 +602,45 @@ Still to run before go:
 
 ### Build
 
-- **Shared planner:** put tokio, uuid, trash and the engine behind a
-  default `engine` feature in `sub20-core`. Compile `plan.rs` and its types
-  to WebAssembly with a small `crates/plan-wasm` (wasm-bindgen). The web
-  version uses the same rule and the same tests; `mock.ts` keeps its copy
-  only for design work, or switches to the WASM build too.
-- **`src/lib/web/`**: a `Backend` built on WebCodecs and Mediabunny.
-  - Probe the file and draw the filmstrip.
-  - Trim, scale and encode H.264 (fall back to VP9 or AV1 in WebM where
-    H.264 isn't available).
-  - Audio: AAC where the browser can encode it, else Opus.
-  - Measure the result and retry at a lower bitrate if it's over, as on the
-    desktop.
-  - Write large results to the origin private file system, not memory.
-- **Capability flags on `Backend`** (`watch`, `replace`, `renameOnDisk`,
-  `encoders`, `ffmpeg`, `windowFrame`, `copyFile`, `dragOut`, `share`). The
-  interface hides what's missing and swaps Copy for Download, or for
-  **Share** on phones.
-- **Phones are the point.** `navigator.share({ files })` hands the result
-  straight to the Discord app on Android and iOS. Add a web app manifest and
-  a service worker (it works offline and can be installed), and on Android
-  a share target, so "Share → Sub20" from the gallery opens the clip. An
-  iPhone video over 20 MB is the most common case this version solves.
-- **Browser check** at startup with `VideoEncoder.isConfigSupported`. Where
-  it fails, say which browser to use, and point to the desktop app.
-- **Build:** `npm run build:web` (`VITE_TARGET=web`) writes `dist-web/`.
+Built in November 2026: `npm run build:web` writes `dist-web/`, and
+`npm run dev` shows Lite at `?lite`.
+
+- [x] **Shared planner.** The engine sits behind a default `engine` feature
+      in `sub20-core`; `crates/plan-wasm` exports `plan`, `lower_bitrate`
+      and `size_retries` as plain functions over memory (no binding
+      generator), about 170 kB. Lite, the size test and `fit.ts`'s retry use
+      it. `mock.ts` keeps its copy for design work; all 972 compared plans
+      agree.
+- [x] **`src/lib/web/backend.ts`**: a `Backend` on WebCodecs and
+      Mediabunny. It probes, draws filmstrips and still frames, trims,
+      scales and encodes H.264 at a constant bitrate, measures the result and
+      retries lower when it's over, one job at a time, with Cancel. A 105 MB
+      1080p60 clip came out at 19.4 MB in about 11 s on the GPU. Mediabunny
+      and the planner load with the first video: the page itself is 155 kB.
+- [x] **Capability flags** on `Backend` (`can`: watch, replace, files,
+      encoders, ffmpeg, copyFile, dragOut, updates, download, share,
+      history). Settings shows only Sizes and Profiles, Options only what
+      the browser can do, and Copy becomes **Download** on a computer or
+      **Share** on a phone or tablet.
+- [x] **Installable**: a web app manifest and a service worker
+      (`scripts/vite-lite.mjs`) that keeps every built file for offline use,
+      an Android share target ("Share → Sub20" from the gallery, checked
+      with a simulated share), and "Open with" for an installed Lite.
+- [x] **Browser check** at startup with `VideoEncoder.isConfigSupported`;
+      where it fails, the first screen says why and points to the desktop
+      app.
+- [x] **Phone layout**: under 720 px the clip list becomes a strip over the
+      stage and the dock wraps under it, with a full-width button; Options
+      stacks its labels; touch screens say "Choose videos" instead of
+      "Drop". Checked at 375×812 in both schemes.
+- [ ] **Large results to the origin private file system**, not memory.
+      Results are held as blobs today, which is fine for Discord sizes but
+      not for 500 MB or 1 GB targets on a phone.
+- [ ] **HDR**: Lite has no tone mapping, so an iPhone HDR clip comes out
+      flat. The stage doesn't claim it is converted.
+- [ ] **Several sound tracks**: Lite keeps the first one only.
+- [ ] **Fallbacks**: VP9 or AV1 in WebM where H.264 can't be encoded; Opus
+      where AAC can't. Today such a browser gets the "can't do it" screen.
 
 ### Exit criteria
 

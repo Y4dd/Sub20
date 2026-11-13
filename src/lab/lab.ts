@@ -136,7 +136,7 @@ async function runAll(list: File[]) {
       row.source = await probe(file);
       row.plan = (await loadPlanner()).plan(row.source, null, options);
       render();
-      const done = await fit(file, row.source, row.plan, settings, () => {});
+      const done = await fit(file, row.source, row.plan, settings);
       row.attempts = done.attempts;
       row.under = done.under;
       row.plan = done.plan;

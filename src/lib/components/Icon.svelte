@@ -23,6 +23,9 @@
     maximize: "M5.5 5.5h9v9h-9z",
     restore: "M7.5 5.5h7v7M5.5 7.5h7v7h-7z",
     pencil: "M12.5 4.5l3 3L7 16H4v-3zM11 6l3 3",
+    // Sub20 Lite's hand-off, where there is no clipboard for files.
+    download: "M10 3.5v9M6 9l4 4 4-4M4 16.5h12",
+    share: "M10 12.5V3.5M6.5 7L10 3.5 13.5 7M5 10v6.5h10V10",
   } as const;
 
   let { name, size = 18 }: { name: keyof typeof PATHS; size?: number } = $props();

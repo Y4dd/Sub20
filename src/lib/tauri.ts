@@ -6,7 +6,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
-import type { Added, Backend, Fetching, Frame, JobEvent } from "./types";
+import { DESKTOP, type Added, type Backend, type Fetching, type Frame, type JobEvent } from "./types";
 
 /** File types offered in the "choose files" dialog. */
 const VIDEO_EXTENSIONS = [
@@ -24,6 +24,7 @@ const agent = navigator.userAgent;
 const frame: Frame = agent.includes("Windows") ? "custom" : agent.includes("Mac") ? "overlay" : "native";
 
 export const tauriBackend: Backend = {
+  can: DESKTOP,
   demo: false,
   frame,
   minimize: () => getCurrentWindow().minimize(),

@@ -78,9 +78,10 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
-  # The planner without the engine, as Sub20 Lite runs it in the browser.
+  # The planner without the engine, as Sub20 Lite runs it in the browser,
+  # and Lite itself.
   planner:
-    name: Planner (WebAssembly)
+    name: Planner and Lite (WebAssembly)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -93,8 +94,14 @@ jobs:
         run: cargo clippy -p sub20-core -p sub20-plan-wasm --no-default-features --all-targets -- -D warnings
       - name: Tests without the engine
         run: cargo test -p sub20-core -p sub20-plan-wasm --no-default-features
-      - name: Build for WebAssembly
-        run: cargo build -p sub20-plan-wasm --release --target wasm32-unknown-unknown
+      # Sub20 Lite: builds the WebAssembly itself, then the web interface.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build Sub20 Lite
+        run: npm run build:web
 
   advisories:
     name: Rust advisories

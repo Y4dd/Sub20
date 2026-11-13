@@ -312,4 +312,35 @@
       opacity: 0;
     }
   }
+
+  /* A phone, or a narrow window: the list becomes a strip over the stage. */
+  @media (max-width: 720px) {
+    main {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    main:not(.empty) > :global(aside) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    main:not(.empty) > :global(.stage) {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .pile {
+      left: 16px;
+      right: 16px;
+      max-width: none;
+    }
+
+    .notices {
+      left: 16px;
+      right: 16px;
+      bottom: 150px;
+      transform: none;
+    }
+  }
 </style>

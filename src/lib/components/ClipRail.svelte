@@ -102,7 +102,7 @@
   </ul>
   <button type="button" class="add" onclick={() => app.choose()}>
     <Icon name="plus" size={16} />
-    Add videos
+    <span>Add videos</span>
   </button>
 </aside>
 
@@ -309,5 +309,71 @@
   .add:hover {
     background: var(--surface);
     color: var(--text);
+  }
+
+  /* Narrow: one row of clips that scrolls sideways, Add at its end. */
+  @media (max-width: 720px) {
+    aside {
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 12px 6px;
+    }
+
+    ul {
+      display: flex;
+      gap: 6px;
+      padding: 0 0 4px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
+    }
+
+    li {
+      flex: none;
+      width: 210px;
+      scroll-snap-align: start;
+    }
+
+    .pick {
+      padding: 6px;
+      gap: 8px;
+    }
+
+    .thumb {
+      width: 48px;
+      height: 32px;
+    }
+
+    /* The marker moves under the selected clip. */
+    li.selected::before {
+      left: 12px;
+      right: 12px;
+      top: auto;
+      bottom: -4px;
+      width: auto;
+      height: 3px;
+    }
+
+    .rename {
+      left: 60px;
+    }
+
+    .add {
+      flex: none;
+      margin: 0 0 4px;
+      padding: 10px;
+    }
+
+    .add span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
   }
 </style>

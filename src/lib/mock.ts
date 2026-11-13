@@ -6,6 +6,7 @@ import type {
   Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, FfmpegOffer, FfmpegStatus, Frame, HistoryEntry, JobEvent,
   JobResult, MediaInfo, Plan, Quality, Report, Settings, Trim,
 } from "./types";
+import { DESKTOP } from "./types";
 
 export const DEFAULT_OPTIONS: EncodeOptions = {
   targetMb: 20, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4",
@@ -292,6 +293,7 @@ const DEMO_OFFER: FfmpegOffer = {
 };
 
 export const mockBackend: Backend = {
+  can: DESKTOP,
   demo: true,
   // The Windows frame by default; `?frame=overlay` or `?frame=native` shows the others.
   frame: ((): Frame => {

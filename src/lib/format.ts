@@ -135,6 +135,8 @@ const ENCODER_NAMES: Record<string, string> = {
   mf: "GPU (Media Foundation)",
   videotoolbox: "Apple GPU",
   vaapi: "GPU (VAAPI)",
+  // Sub20 Lite: the browser's own encoder on the graphics card.
+  browser: "GPU",
 };
 
 /** "hevc_nvenc" → "NVIDIA GPU"; software encoders → "CPU". */

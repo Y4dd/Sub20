@@ -5,6 +5,8 @@
 
   const mac = navigator.platform.toLowerCase().includes("mac");
   const windows = navigator.platform.toLowerCase().includes("win");
+  // A phone or tablet has nothing to drop from: there you tap to choose.
+  const touch = matchMedia("(pointer: coarse)").matches;
 
   const offer = $derived(app.ffmpegOffer);
   const fetching = $derived(app.fetching);
@@ -33,7 +35,16 @@
 </script>
 
 <section class="empty" class:over={app.dragging}>
-  {#if !app.ffmpeg.found}
+  {#if !app.ffmpeg.found && !backend.can.ffmpeg}
+    <!-- Sub20 Lite in a browser that can't encode: say which can. -->
+    <div class="notice">
+      <h1>This browser can't do it</h1>
+      <p>{app.ffmpeg.version}</p>
+      <p class="choices">
+        <a class="link" href="https://github.com/Y4dd/Sub20/releases/latest">Get the desktop app</a>
+      </p>
+    </div>
+  {:else if !app.ffmpeg.found}
     <div class="notice">
       <h1>FFmpeg is needed first</h1>
       <p>Sub20 uses FFmpeg to read and write video, and could not find it on this computer.</p>
@@ -96,8 +107,13 @@
         {:else if app.dragging}
           <strong>Let go to add them</strong>
         {:else}
-          <strong>Drop videos here</strong>
-          <span>or click to choose them. Trim each one, pick a size, and they come out under it.</span>
+          {#if touch}
+            <strong>Choose videos</strong>
+            <span>Trim each one, pick a size, and they come out under it.</span>
+          {:else}
+            <strong>Drop videos here</strong>
+            <span>or click to choose them. Trim each one, pick a size, and they come out under it.</span>
+          {/if}
         {/if}
       </span>
       <span class="grip right" aria-hidden="true"></span>

@@ -1,6 +1,6 @@
 <script lang="ts">
   // How the videos are compressed. Everything here applies to the whole list.
-  import { app } from "../app.svelte";
+  import { app, backend } from "../app.svelte";
   import { engineOf, CODEC_LABEL } from "../format";
   import type { Codec, Effort, EncoderStatus } from "../types";
   import Segmented from "./Segmented.svelte";
@@ -168,6 +168,7 @@
       </div>
     </div>
 
+    {#if backend.can.ffmpeg}
     <div class="row">
       <label for="opt-effort">Effort</label>
       <div>
@@ -184,7 +185,9 @@
         <p class="note">{EFFORT_NOTE[effortIndex]}</p>
       </div>
     </div>
+    {/if}
 
+    {#if backend.can.ffmpeg}
     <div class="row">
       <span class="label">File type</span>
       <div>
@@ -202,6 +205,7 @@
         {/if}
       </div>
     </div>
+    {/if}
 
     <!-- Profiles come last: they are for coming back to, not for each video. -->
     <div class="row profile">
@@ -231,6 +235,7 @@
   <details>
     <summary>More</summary>
     <div class="rows">
+      {#if backend.can.encoders}
       <div class="row">
         <label for="opt-encoder">Encoder</label>
         <div>
@@ -242,6 +247,7 @@
           </select>
         </div>
       </div>
+      {/if}
 
       {#if chosen?.family === "nvenc"}
         <div class="row">
@@ -299,6 +305,7 @@
       {/if}
     </div>
 
+    {#if backend.can.ffmpeg}
     <div class="toggles">
       <Toggle checked={o.mixAudio} disabled={o.audio === "none" && !o.audioOnly} onchange={(on) => (o.mixAudio = on)}>
         Mix all sound tracks
@@ -317,6 +324,7 @@
         <small>Long videos save sooner. A few older players cannot open the result.</small>
       </Toggle>
     </div>
+    {/if}
   </details>
 </Sheet>
 
@@ -419,5 +427,18 @@
     display: block;
     color: var(--muted);
     font-size: var(--step--1);
+  }
+
+  /* A phone: each label above its control, so the choices get the width. */
+  @media (max-width: 480px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
+
+    .row > label,
+    .row > .label {
+      padding-top: 0;
+    }
   }
 </style>

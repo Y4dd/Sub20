@@ -17,15 +17,16 @@ Dependencies point one way: `crates/core` ← `src-tauri` ← `src`.
 - **`crates/core` (the engine, crate `sub20-core`)** has no GUI code and holds all behaviour. It speaks to the outside through one trait, `EventSink`. Put logic here and test it here. Everything that runs FFmpeg or touches the system sits behind the default `engine` feature (tokio, uuid, trash, sha2); without it the crate is the planner and its types (`plan`, `job`, `probe::MediaInfo`, `settings`, `encoders`, `command`), which build for WebAssembly. Keep new pure logic out of the gated modules so Lite can share it.
 - **`crates/plan-wasm` (crate `sub20-plan-wasm`)** exports the planner to the browser as plain functions over memory, JSON in and out (`alloc`, `dealloc`, `plan`, `lower_bitrate`, `size_retries`), so no binding generator is needed. `node scripts/build-plan-wasm.mjs` builds it into `src/lib/web/plan.wasm` (not committed; needs `rustup target add wasm32-unknown-unknown`), and `src/lib/web/planner.ts` loads it. CI tests the core without the engine and builds the WebAssembly.
 - **`src-tauri` (the shell, crate `sub20`, lib `sub20_lib`)** is thin: Tauri commands, event forwarding, file access. One command per `Backend` method.
-- **`src` (the window)** is Svelte 5 with runes. It reaches the app only through the `Backend` interface in `src/lib/types.ts`, which has two implementations: `tauri.ts` (real) and `mock.ts` (invented clips and simulated encodes for browser work).
+- **`src` (the window)** is Svelte 5 with runes. It reaches the app only through the `Backend` interface in `src/lib/types.ts`, which has three implementations: `tauri.ts` (the desktop app), `web/backend.ts` (Sub20 Lite, in the browser) and `mock.ts` (invented clips and simulated encodes for design work). `Backend::can` says what an implementation offers, and the window hides the rest.
 
-Adding a capability touches, in order: a core function with a test → a command in `src-tauri/src/lib.rs`, registered in `generate_handler!` → a `Backend` method in `types.ts` → both `tauri.ts` and `mock.ts` → the UI.
+Adding a capability touches, in order: a core function with a test → a command in `src-tauri/src/lib.rs`, registered in `generate_handler!` → a `Backend` method in `types.ts` → `tauri.ts` and `mock.ts`, and `web/backend.ts` or a `can` flag that hides it there → the UI.
 
 `types.ts` mirrors the Rust serde output by hand (camelCase fields, lowercase or camelCase enum variants, `JobEvent` tagged by `type`). Change the Rust type and its mirror in the same edit.
 
 ## Commands worth knowing
 
-- `npm run dev` runs the window in a browser on the mock backend. Use it for design work.
+- `npm run dev` runs the window in a browser on the mock backend. Use it for design work. `?lite` runs Lite instead (it needs `plan.wasm` built).
+- `npm run build:web` builds the planner's WebAssembly and Sub20 Lite into `dist-web/` (relative paths, so it can be served from any folder). `npx vite preview --mode web` serves it.
 - `npm run tauri dev` runs the real app. A plain `cargo build` debug binary also loads `http://localhost:1420`, so it needs the Vite server.
 - `npx tauri build --debug --no-bundle` builds the way a release does (UI embedded, CSP enforced). Run this after touching `tauri.conf.json`, the CSP, or anything loaded by URL.
 - `cargo test --workspace`: `crates/core/tests/e2e.rs` runs real FFmpeg encodes and skips itself when FFmpeg is missing.
@@ -101,6 +102,19 @@ Adding a capability touches, in order: a core function with a test → a command
 - **Window frame** differs by platform: `tauri.windows.conf.json` turns decorations off and the window draws its own buttons (`Frame` "custom"); macOS keeps its traffic lights over an overlay title bar ("overlay", `titleBarStyle: Overlay`); Linux keeps the native frame ("native"). The title bar is `data-tauri-drag-region`; the window permissions it needs are listed in `capabilities/default.json`.
 - Out of scope by decision: login, the Android app, upload storage.
 
+## Lite decisions
+
+Sub20 Lite is the same window on a third backend, `src/lib/web/backend.ts`: WebCodecs encodes on the browser's own GPU encoder, Mediabunny reads and writes the files, and the planner is `plan.rs` through WebAssembly. Nothing is uploaded.
+
+- **Which backend**: `app.svelte.ts` picks Lite when `VITE_TARGET=web` (`.env.web`, read by `--mode web`) or `?lite` under `npm run dev`. In each build a Vite alias swaps the backend it never uses for `src/lib/absent.ts`, so the desktop bundle carries no Lite code or planner and the web bundle no mock or Tauri code. Check both after touching the imports: `grep` the built assets for `webBackend` and `mockBackend`.
+- **Capability flags** (`Capabilities` in `types.ts`; `DESKTOP` for the other two) hide what a browser can't do: Settings keeps Sizes and Profiles, Options drops effort, file type, encoders and the FFmpeg toggles, History and Show in folder go. Copy becomes `app.handOff`: **Download** on a computer, **Share** (`navigator.share` with the file) on a phone or tablet (`pointer: coarse`), which hands it straight to the Discord app.
+- **Files** have made-up paths (`lite-N/name`, `result-ID/name.mp4`) mapped to `File`s and result blobs held in memory; the window treats them as paths as before.
+- **Jobs** run one at a time (one GPU encoder to share), each with an `AbortController` for Cancel. Constant bitrate: 6 of 6 test clips landed under on the first try, against 2 of 6 with variable. Encoder names are `h264_browser` (GPU) and `h264_browsercpu`.
+- **Mediabunny loads with the first video** (`web/media.ts`, a dynamic import, about 570 kB); the page itself is about 155 kB.
+- **Installable**: `scripts/vite-lite.mjs` writes the manifest (share target, file handlers), the icons and `sw.js`, which precaches every built file under a cache named by their hash and keeps shared videos in `sub20-shared` until the page takes them (`?shared`). The worker registers in production builds only. The built-in browser pane can't register service workers; test them in headless Edge over the DevTools protocol.
+- **Phone layout** is CSS only: under 720 px the clip list is a strip, the dock wraps, Options stacks its labels at 480 px. The stage clips its overflow there, because the trim handles' grab areas reach past the screen and a phone widens the page to show them.
+- **Not in Lite yet**: HDR tone mapping (`info.hdr` is set to null so the stage doesn't claim it), mixing several sound tracks, results in the origin private file system, VP9/AV1 fallbacks.
+
 ## Interface decisions
 
 The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was answered so far:
@@ -119,7 +133,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 - **Accessibility.** Text is at least 4.5:1 against its background in both schemes, so `--faint` is for marks and struck-through choices, not for words that carry meaning (a disabled toggle keeps `--muted` text and dims its switch). Sheets are modal: Tab stays inside, Escape closes, focus returns to the opener. `Segmented` is a radio group with one tab stop and arrow keys. Icon-only buttons carry `aria-label`.
 - **Keyboard** handling is in `App.svelte`: arrow keys and vim motions in one interpreter (`vim()`), with counts and two-key commands (`gg`, `dd`, `cw`) that wait a second for their second key. Plain letters are safe because the handler ignores keys typed into fields and keys while a sheet is open. `?` opens `KeysSheet`; keep it, the README table and `vim()` in step.
 - **Renaming** happens in the clip list (double-click, F2, `r`, or the pencil). Before compressing it sets `Clip::outputName`; afterwards it renames the file on disk through `rename_result`. A renamed clip shows its new name in the list; the stage keeps the source name.
-- Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes. `?clips` opens the demo clips at startup and `?frame=overlay|native` shows the other frames, so a headless browser can capture a state without clicking. The built-in browser pane's screenshots crop on a display scaled to 150%; a headless Edge or Chrome at a fixed size works. If a component's styles stop updating in `npm run dev`, restart it: Vite's per-component CSS can go stale.
+- Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes. `?clips` opens the demo clips at startup and `?frame=overlay|native` shows the other frames, so a headless browser can capture a state without clicking. The built-in browser pane's screenshots crop on a display scaled to 150%; a headless Edge or Chrome at a fixed size works. If a component's styles stop updating in `npm run dev`, restart it: Vite's per-component CSS can go stale. For a phone size, use the DevTools protocol with device emulation (`Emulation.setDeviceMetricsOverride` with `mobile: true`, then `Page.captureScreenshot`): Edge's `--screenshot` lays a 375-pixel window out wider than it crops, so it shows overflow that isn't there.
 - The mock planner in `mock.ts` copies the Rust rule for resolution, audio and verdict, for design work without a Rust build; change them together. Lite and the size test use the real planner through WebAssembly (`planner.ts`), and so does `fit.ts`'s retry (`lower_bitrate`, `SIZE_RETRIES`, now in `plan.rs`). To check the mock still agrees, import both in the browser under `npm run dev` and compare plans over a grid of sources, sizes, codecs and trims (972 cases agreed in November 2026, after fixing the mock's AAC floor and trim clamp).
 
 ## Planned next
@@ -127,7 +141,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 `docs/release-plan.md` is the road to a public 1.0: blockers, desktop hardening, Sub20 Lite, the website and the launch, with exit criteria per phase. Keep it current as items land. Highlights:
 
 - **The first release**: the release workflow, both builds and the updater exist but have not run end to end yet.
-- **Sub20 Lite**: a third `Backend` on WebCodecs and Mediabunny (`src/lib/web/`), the planner shared through a WebAssembly build of `plan.rs`, capability flags to hide desktop-only features. Gated on the size test in `/lite-lab.html`.
+- **Sub20 Lite**: built (see Lite decisions); still gated on the size test across real clips, browsers and GPUs before it ships.
 - **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; AV1 does play inline (owner's test, November 2026), but H.264 stays the default because it plays on every device; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
 
 ## Verified, and not

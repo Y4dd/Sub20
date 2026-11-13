@@ -8,6 +8,12 @@ What changed in each release. The format follows
 
 ### Added
 
+- Sub20 Lite, the same app in a browser: trim and fit videos with the
+  browser's own GPU encoder, nothing uploaded. It can be installed, works
+  offline, takes videos shared from Android's gallery, and on a phone hands
+  the result straight to Discord with Share. Not published yet.
+- A phone-sized layout: under 720 pixels the video list becomes a strip
+  above the preview.
 - The folder watch shows itself: the title bar says "Watching" and what it
   is doing, History lists this session's watched clips with Open and Copy,
   and Windows tells you when one is ready, never during a game (Settings

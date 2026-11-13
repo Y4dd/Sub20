@@ -437,4 +437,39 @@
       opacity: 0;
     }
   }
+
+  /* Narrow: the size and the options share a row, the action takes the next. */
+  @media (max-width: 720px) {
+    footer {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px 12px;
+      padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .lead {
+      display: none;
+    }
+
+    .options {
+      justify-self: end;
+    }
+
+    .actions {
+      grid-column: 1 / -1;
+      justify-content: stretch;
+    }
+
+    .actions > * {
+      flex: 1;
+    }
+
+    .primary,
+    .quiet {
+      justify-content: center;
+    }
+
+    .picker {
+      width: min(320px, calc(100vw - 32px));
+    }
+  }
 </style>

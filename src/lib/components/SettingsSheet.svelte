@@ -117,6 +117,7 @@
     </ul>
   </section>
 
+  {#if backend.can.files}
   <section>
     <h3>Where results go</h3>
     <Segmented
@@ -143,7 +144,9 @@
       <p class="muted note">A video called clip.mov is saved beside it as clip-{plain(app.options.targetMb)}mb.{app.options.container}. Originals are never changed.</p>
     {/if}
   </section>
+  {/if}
 
+  {#if backend.can.encoders}
   <section>
     <h3>Encoders</h3>
     <p class="muted lede">
@@ -182,7 +185,9 @@
       <p class="muted">FFmpeg has to be found before encoders can be tested.</p>
     {/if}
   </section>
+  {/if}
 
+  {#if backend.can.watch}
   <section>
     <h3>Watch a folder</h3>
     <Toggle checked={s.watch.enabled} onchange={(on) => {
@@ -286,7 +291,9 @@
       {/if}
     {/if}
   </section>
+  {/if}
 
+  {#if backend.can.ffmpeg}
   <section>
     <h3>Working</h3>
     <div class="rows">
@@ -314,7 +321,9 @@
       </div>
     </div>
   </section>
+  {/if}
 
+  {#if backend.can.ffmpeg}
   <section>
     <h3>FFmpeg</h3>
     {#if app.ffmpeg.found}
@@ -331,7 +340,9 @@
       {/if}
     </p>
   </section>
+  {/if}
 
+  {#if backend.can.updates}
   <section>
     <h3>Updates</h3>
     <Toggle checked={s.checkUpdates} onchange={(on) => app.saveSettings((n) => (n.checkUpdates = on))}>
@@ -351,17 +362,18 @@
       {/if}
     </p>
   </section>
+  {/if}
 
   <p class="about muted">
     <button type="button" class="link quiet" onclick={() => (app.sheet = "keys")}>Keyboard shortcuts (?)</button><br />
-    Sub20 {app.version}{app.bundled ? ", FFmpeg included" : ""}, free and open source under the MIT licence.
+    Sub20{backend.can.ffmpeg ? "" : " Lite"} {app.version}{app.bundled ? ", FFmpeg included" : ""}, free and open source under the MIT licence.
     Not affiliated with Discord.<br />
     {#if app.ffmpegNotice}
       FFmpeg is free software under the GNU GPL.
       <button type="button" class="link quiet" onclick={() => app.ffmpegNotice && backend.openFile(app.ffmpegNotice)}>Its licence and source</button><br />
     {/if}
     <button type="button" class="link quiet" onclick={() => app.copyDiagnostics()}>Copy diagnostics</button>
-    for a bug report. Sub20 sends nothing about you anywhere.
+    for a bug report. Sub20 sends nothing about you anywhere{backend.can.ffmpeg ? "" : ", and your videos never leave this device"}.
   </p>
 </Sheet>
 
