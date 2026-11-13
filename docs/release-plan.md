@@ -25,6 +25,11 @@ Things only the maintainer can do, at their own machine or account.
 - [ ] **Try a Windows build with FFmpeg included** from a dry run's
       artifacts: install it, compress a clip, check Settings says FFmpeg is
       included.
+- [ ] **Ask a friend to try the lean build** on their machine, ideally one
+      without FFmpeg: install `Sub20-Lean`, check the first screen offers
+      "Download FFmpeg", let it download, and compress a clip. The download
+      only works from a tagged release (it fetches from that version's
+      release page), so do this with the first release, not a dry run.
 - Set aside by the owner (November 2026): **SignPath** (it asks for a
   website and proof of reputation) and an **Apple Developer account**.
   Releases are unsigned for now; see [Signing](#signing).
