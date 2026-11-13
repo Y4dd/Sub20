@@ -11,3 +11,7 @@ src-tauri/binaries/
 src-tauri/ffmpeg-notice/
 .shots/
 .claude/settings.local.json
+
+# Built by scripts/build-plan-wasm.mjs.
+src/lib/web/plan.wasm
+dist-web/

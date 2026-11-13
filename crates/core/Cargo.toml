@@ -11,10 +11,25 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 log = "0.4"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync", "time", "io-util", "fs"] }
-uuid = { version = "1", features = ["v4"] }
-trash = "5"
-sha2 = "0.10"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync", "time", "io-util", "fs"], optional = true }
+uuid = { version = "1", features = ["v4"], optional = true }
+trash = { version = "5", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+[features]
+# Everything that runs FFmpeg, queues jobs and touches the system. Without it
+# the crate is the planner and its types, which also build for WebAssembly
+# (`crates/plan-wasm`, for Sub20 Lite).
+default = ["engine"]
+engine = ["dep:tokio", "dep:uuid", "dep:trash", "dep:sha2"]
 
 [dev-dependencies]
 tempfile = "3"
+
+[[test]]
+name = "e2e"
+required-features = ["engine"]
+
+[[example]]
+name = "compress"
+required-features = ["engine"]

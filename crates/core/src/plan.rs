@@ -18,6 +18,9 @@ const KBIT_PER_MB: f64 = 8192.0;
 /// Below this the picture falls apart no matter the encoder.
 pub const MIN_VIDEO_KBPS: f64 = 24.0;
 
+/// How many times a too-large result is encoded again.
+pub const SIZE_RETRIES: u32 = 2;
+
 /// Short-side heights the automatic resolution steps through.
 const LADDER: [u32; 7] = [2160, 1440, 1080, 720, 480, 360, 240];
 
@@ -367,6 +370,19 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
         expected_bytes,
         notes,
     })
+}
+
+/// A lower video bitrate after a result came out `size` bytes against a
+/// `target`: the more careful of "scale by the miss" and "subtract the miss".
+pub fn lower_bitrate(video_kbps: u32, size: u64, target: u64, duration: f64) -> u32 {
+    let ratio = target as f64 / size as f64;
+    let proportional = f64::from(video_kbps) * ratio * 0.97;
+    let over_kbps = (size - target) as f64 * 8.0 / 1000.0 / duration.max(0.1);
+    let subtractive = f64::from(video_kbps) - over_kbps * 1.25;
+    // When the overshoot dwarfs the video bitrate the subtraction is
+    // meaningless; scale instead.
+    let lower = if subtractive > proportional * 0.5 { proportional.min(subtractive) } else { proportional };
+    (lower.floor().max(16.0)) as u32
 }
 
 /// `9.7` → "9.7", `10.0` → "10".

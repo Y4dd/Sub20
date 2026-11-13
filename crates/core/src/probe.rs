@@ -1,12 +1,14 @@
 //! Reading a file's facts with FFprobe.
 
-use std::path::Path;
-use std::time::Duration;
+#[cfg(feature = "engine")]
+use std::{path::Path, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[cfg(feature = "engine")]
 use crate::error::{Error, Result};
+#[cfg(feature = "engine")]
 use crate::ffmpeg::{self, Tools};
 
 /// What the planner and the UI need to know about a source file.
@@ -70,6 +72,7 @@ impl MediaInfo {
 }
 
 /// Runs FFprobe on `path`.
+#[cfg(feature = "engine")]
 pub async fn probe(tools: &Tools, path: &Path) -> Result<MediaInfo> {
     let mut cmd = tools.ffprobe();
     cmd.args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"]).arg(path);

@@ -121,13 +121,17 @@ function spoken(seconds: number): string {
 
 export function planFor(source: MediaInfo, trim: Trim | null, options: EncodeOptions): Plan {
   const start = trim?.start ?? 0;
-  const duration = (trim?.end ?? source.duration) - start;
-  const trimmed = !!trim && !(start < 0.02 && source.duration - trim.end < 0.02);
+  const end = Math.min(trim?.end ?? source.duration, source.duration);
+  const duration = end - start;
+  const trimmed = !!trim && !(start < 0.02 && source.duration - end < 0.02);
   const total = (options.targetMb * 8192) / duration;
   let audioKbps = options.audio === "none" ? 0 : options.audioKbps;
   const notes: string[] = [];
   if (audioKbps > total * 0.34) {
-    audioKbps = [256, 192, 160, 128, 96, 64, 48, 32, 24].find((s) => s <= total * 0.34) ?? 48;
+    // Opus in MP4 becomes AAC, whose floor is higher.
+    const floor = options.audio === "opus" && options.container !== "mp4" ? 24 : 48;
+    const step = [256, 192, 160, 128, 96, 64, 48, 32, 24].find((s) => s <= total * 0.34 && s < audioKbps) ?? 0;
+    audioKbps = Math.min(audioKbps, Math.max(floor, step));
   }
   const video = options.videoKbps ?? total - audioKbps;
   if (video < 24) {

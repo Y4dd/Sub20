@@ -17,26 +17,40 @@
 //! * say what went wrong in words that name the fix ([`advice`]),
 //! * download FFmpeg for the lean build ([`fetch`]).
 
-pub mod advice;
+// The planner and its types: no FFmpeg, no runtime, builds for WebAssembly.
 pub mod command;
-pub mod diagnostics;
 pub mod encoders;
-pub mod engine;
 pub mod error;
-pub mod fetch;
-pub mod ffmpeg;
-pub mod hardware;
 pub mod history;
 pub mod job;
-pub mod output;
 pub mod plan;
 pub mod probe;
 pub mod progress;
 pub mod settings;
-pub mod thumbs;
 pub mod timecode;
+
+// The engine: runs FFmpeg and touches the system (the default `engine`
+// feature).
+#[cfg(feature = "engine")]
+pub mod advice;
+#[cfg(feature = "engine")]
+pub mod diagnostics;
+#[cfg(feature = "engine")]
+pub mod engine;
+#[cfg(feature = "engine")]
+pub mod fetch;
+#[cfg(feature = "engine")]
+pub mod ffmpeg;
+#[cfg(feature = "engine")]
+pub mod hardware;
+#[cfg(feature = "engine")]
+pub mod output;
+#[cfg(feature = "engine")]
+pub mod thumbs;
+#[cfg(feature = "engine")]
 pub mod watch;
 
+#[cfg(feature = "engine")]
 pub use engine::{Engine, EventSink};
 pub use error::{Error, Result};
 pub use job::{EncodeOptions, JobEvent, JobId, JobResult, JobSpec, Trim};

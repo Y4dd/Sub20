@@ -78,6 +78,24 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
+  # The planner without the engine, as Sub20 Lite runs it in the browser.
+  planner:
+    name: Planner (WebAssembly)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy without the engine
+        run: cargo clippy -p sub20-core -p sub20-plan-wasm --no-default-features --all-targets -- -D warnings
+      - name: Tests without the engine
+        run: cargo test -p sub20-core -p sub20-plan-wasm --no-default-features
+      - name: Build for WebAssembly
+        run: cargo build -p sub20-plan-wasm --release --target wasm32-unknown-unknown
+
   advisories:
     name: Rust advisories
     runs-on: ubuntu-24.04

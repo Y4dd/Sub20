@@ -18,13 +18,10 @@ use crate::hardware::{self, Report};
 use crate::history::{self, Entry, History};
 use crate::job::{EncodeOptions, JobEvent, JobId, JobResult, JobSpec, Phase};
 use crate::output;
-use crate::plan::{self, Plan};
+use crate::plan::{self, lower_bitrate, Plan, SIZE_RETRIES};
 use crate::probe::{self, MediaInfo};
 use crate::progress::{Eta, Reader};
 use crate::settings::SettingsStore;
-
-/// How many times a too-large result is encoded again.
-const SIZE_RETRIES: u32 = 2;
 
 /// Receives everything the engine has to say. The desktop shell forwards
 /// these to the window; tests collect them.
@@ -803,19 +800,6 @@ fn over_limit(over_percent: f64, attempts: u32) -> Error {
         "Could not get under the size limit: still {over_percent:.1}% over after {attempts} tries, so nothing was saved. \
          Pick a larger size, keep a shorter part, or choose a lower resolution."
     ))
-}
-
-/// A lower video bitrate after a result came out `size` bytes against a
-/// `target`: the more careful of "scale by the miss" and "subtract the miss".
-fn lower_bitrate(video_kbps: u32, size: u64, target: u64, duration: f64) -> u32 {
-    let ratio = target as f64 / size as f64;
-    let proportional = f64::from(video_kbps) * ratio * 0.97;
-    let over_kbps = (size - target) as f64 * 8.0 / 1000.0 / duration.max(0.1);
-    let subtractive = f64::from(video_kbps) - over_kbps * 1.25;
-    // When the overshoot dwarfs the video bitrate the subtraction is
-    // meaningless; scale instead.
-    let lower = if subtractive > proportional * 0.5 { proportional.min(subtractive) } else { proportional };
-    (lower.floor().max(16.0)) as u32
 }
 
 /// `clip` → `clip-10mb`, `clip-2500k` or `clip-audio`.

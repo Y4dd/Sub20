@@ -8,9 +8,7 @@ import {
   type AudioCodec,
 } from "mediabunny";
 import type { MediaInfo, Plan } from "../types";
-
-/** Matches `SIZE_RETRIES` in `crates/core/src/engine.rs`. */
-export const SIZE_RETRIES = 2;
+import { loadPlanner } from "./planner";
 
 export interface FitSettings {
   bitrateMode: "variable" | "constant";
@@ -38,7 +36,7 @@ export interface Fitted {
 
 const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
 
-/** A retry that shrinks the file by less than this means the encoder is at its floor (as in engine.rs). */
+/** A retry that shrinks the file by less than this means the encoder is at its floor (as in `crates/core/src/engine.rs`). */
 const FLOOR_SHRINK = 0.95;
 
 /**
@@ -114,18 +112,6 @@ export async function probe(file: File): Promise<MediaInfo> {
   }
 }
 
-/**
- * The next bitrate after a result came out `size` bytes against `target`.
- * A copy of `lower_bitrate` in `crates/core/src/engine.rs`.
- */
-export function lowerBitrate(videoKbps: number, size: number, target: number, duration: number): number {
-  const proportional = videoKbps * (target / size) * 0.97;
-  const overKbps = ((size - target) * 8) / 1000 / Math.max(duration, 0.1);
-  const subtractive = videoKbps - overKbps * 1.25;
-  const lower = subtractive > proportional * 0.5 ? Math.min(proportional, subtractive) : proportional;
-  return Math.max(16, Math.floor(lower));
-}
-
 /** AAC where this browser can encode it (Discord plays it everywhere), else Opus. */
 async function audioCodec(kbps: number): Promise<AudioCodec | null> {
   for (const codec of ["aac", "opus"] as const) {
@@ -141,6 +127,7 @@ export async function fit(
   settings: FitSettings,
   onProgress?: (attempt: number, fraction: number) => void,
 ): Promise<Fitted> {
+  const planner = await loadPlanner();
   const target = plan.targetBytes ?? Infinity;
   const audio = source.hasAudio && plan.audio ? await audioCodec(plan.audioKbps) : null;
   const fps = plan.fpsCap ?? source.fps ?? 30;
@@ -160,7 +147,7 @@ export async function fit(
   const attempts: Attempt[] = [];
   let videoKbps = plan.videoKbps;
   let blob: Blob | null = null;
-  for (let n = 0; n <= SIZE_RETRIES; n++) {
+  for (let n = 0; n <= planner.sizeRetries; n++) {
     const began = performance.now();
     blob = await encode(file, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f));
     attempts.push({ videoKbps, bytes: blob.size, seconds: (performance.now() - began) / 1000 });
@@ -170,7 +157,7 @@ export async function fit(
       notes.push(`The encoder won't go below ${Math.round((blob.size * 8) / 1000 / plan.duration)} kbps here.`);
       break;
     }
-    videoKbps = lowerBitrate(videoKbps, blob.size, target, plan.duration);
+    videoKbps = planner.lowerBitrate(videoKbps, blob.size, target, plan.duration);
   }
 
   return { plan, fps, attempts, blob: blob!, under: blob!.size <= target, audio, notes };

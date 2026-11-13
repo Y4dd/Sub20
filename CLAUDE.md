@@ -14,7 +14,8 @@ The owner's brief, which every change should still serve: written in Rust; a ste
 
 Dependencies point one way: `crates/core` ← `src-tauri` ← `src`.
 
-- **`crates/core` (the engine, crate `sub20-core`)** has no GUI code and holds all behaviour. It speaks to the outside through one trait, `EventSink`. Put logic here and test it here.
+- **`crates/core` (the engine, crate `sub20-core`)** has no GUI code and holds all behaviour. It speaks to the outside through one trait, `EventSink`. Put logic here and test it here. Everything that runs FFmpeg or touches the system sits behind the default `engine` feature (tokio, uuid, trash, sha2); without it the crate is the planner and its types (`plan`, `job`, `probe::MediaInfo`, `settings`, `encoders`, `command`), which build for WebAssembly. Keep new pure logic out of the gated modules so Lite can share it.
+- **`crates/plan-wasm` (crate `sub20-plan-wasm`)** exports the planner to the browser as plain functions over memory, JSON in and out (`alloc`, `dealloc`, `plan`, `lower_bitrate`, `size_retries`), so no binding generator is needed. `node scripts/build-plan-wasm.mjs` builds it into `src/lib/web/plan.wasm` (not committed; needs `rustup target add wasm32-unknown-unknown`), and `src/lib/web/planner.ts` loads it. CI tests the core without the engine and builds the WebAssembly.
 - **`src-tauri` (the shell, crate `sub20`, lib `sub20_lib`)** is thin: Tauri commands, event forwarding, file access. One command per `Backend` method.
 - **`src` (the window)** is Svelte 5 with runes. It reaches the app only through the `Backend` interface in `src/lib/types.ts`, which has two implementations: `tauri.ts` (real) and `mock.ts` (invented clips and simulated encodes for browser work).
 
@@ -119,7 +120,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 - **Keyboard** handling is in `App.svelte`: arrow keys and vim motions in one interpreter (`vim()`), with counts and two-key commands (`gg`, `dd`, `cw`) that wait a second for their second key. Plain letters are safe because the handler ignores keys typed into fields and keys while a sheet is open. `?` opens `KeysSheet`; keep it, the README table and `vim()` in step.
 - **Renaming** happens in the clip list (double-click, F2, `r`, or the pencil). Before compressing it sets `Clip::outputName`; afterwards it renames the file on disk through `rename_result`. A renamed clip shows its new name in the list; the stage keeps the source name.
 - Judge interface changes by looking: run `npm run dev` and take screenshots in both colour schemes. `?clips` opens the demo clips at startup and `?frame=overlay|native` shows the other frames, so a headless browser can capture a state without clicking. The built-in browser pane's screenshots crop on a display scaled to 150%; a headless Edge or Chrome at a fixed size works. If a component's styles stop updating in `npm run dev`, restart it: Vite's per-component CSS can go stale.
-- The mock planner in `mock.ts` copies the Rust rule for resolution and verdict; change them together. The Lite size test uses it too (`planFor`), and `fit.ts` copies `lower_bitrate` and `SIZE_RETRIES`, until the planner is built to WebAssembly.
+- The mock planner in `mock.ts` copies the Rust rule for resolution, audio and verdict, for design work without a Rust build; change them together. Lite and the size test use the real planner through WebAssembly (`planner.ts`), and so does `fit.ts`'s retry (`lower_bitrate`, `SIZE_RETRIES`, now in `plan.rs`). To check the mock still agrees, import both in the browser under `npm run dev` and compare plans over a grid of sources, sizes, codecs and trims (972 cases agreed in November 2026, after fixing the mock's AAC floor and trim clamp).
 
 ## Planned next
 

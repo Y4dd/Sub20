@@ -3958,6 +3958,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sub20-plan-wasm"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sub20-core",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

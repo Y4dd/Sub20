@@ -7,9 +7,10 @@ import "../app.css";
 import "./lab.css";
 import { canEncodeVideo } from "mediabunny";
 import { bitrate, clock, megabytes, resolution } from "../lib/format";
-import { DEFAULT_OPTIONS, planFor } from "../lib/mock";
+import { DEFAULT_OPTIONS } from "../lib/mock";
 import type { MediaInfo, Plan } from "../lib/types";
 import { fit, probe, type Attempt, type FitSettings } from "../lib/web/fit";
+import { loadPlanner } from "../lib/web/planner";
 
 interface Row {
   name: string;
@@ -133,7 +134,7 @@ async function runAll(list: File[]) {
     const row = results[i];
     try {
       row.source = await probe(file);
-      row.plan = planFor(row.source, null, options);
+      row.plan = (await loadPlanner()).plan(row.source, null, options);
       render();
       const done = await fit(file, row.source, row.plan, settings, () => {});
       row.attempts = done.attempts;
