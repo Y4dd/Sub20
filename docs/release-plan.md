@@ -213,7 +213,16 @@ its licence text and point to its exact source.
       a bundled install stays bundled. Checked at startup (Settings can turn
       it off); a link in the title bar says when one is out.
   - [x] Add the `TAURI_SIGNING_PRIVATE_KEY` secret and back up the key.
-  - [ ] Try an update from one real release to the next.
+  - [x] deb and rpm installs get updates of their own kind
+        (`linux-x86_64-deb`, `linux-x86_64-rpm-lean`, …). Found in the
+        plugin's source (13 November 2026): it installs an update with
+        dpkg or rpm when Sub20 came as a deb or rpm, and refuses anything
+        else, while the feed sent every Linux install the AppImage, so
+        deb and rpm installs could never have updated. The bundler
+        already signed the deb and rpm; the release script now collects
+        those signatures and fails if one is missing.
+  - [ ] Try an update from one real release to the next, including a deb
+        on Ubuntu and an rpm on Fedora.
 - [x] "Open with Sub20" for video files, and a "Compress with Sub20" entry
       in Explorer's context menu (NSIS installer hooks; never the default
       player). macOS and Linux declare the video types too. A video opened

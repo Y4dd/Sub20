@@ -26,7 +26,7 @@ const REPO = "Y4dd/Sub20";
 
 // The rows of the download table in the release notes: the file of each build
 // that a person on that system opens. The rest (.sig, .app.tar.gz) are for
-// the updater.
+// the updater (the deb and rpm are both a row here and an update).
 const ROWS = [
   { os: "windows", system: "Windows (64-bit)", kind: "Installer (.exe)", file: /-setup\.exe$/ },
   { os: "darwin", system: "macOS (Apple Silicon, M1 or newer)", kind: "Disk image (.dmg)", file: /\.dmg$/ },
@@ -63,12 +63,24 @@ function collect() {
   const name = flavor === "lean" ? "Sub20-without-FFmpeg" : "Sub20";
   const arch = target.startsWith("aarch64") ? "aarch64" : "x64";
   const os = target.includes("windows") ? "windows" : target.includes("apple") ? "darwin" : "linux";
-  // The key the app asks the feed for (`update_target` in src-tauri/src/lib.rs).
-  const platform = `${os}-${target.split("-")[0]}${flavor === "lean" ? "-lean" : ""}`;
+  // The keys the app asks the feed for (`update_key` in src-tauri/src/lib.rs):
+  // on Linux each package updates from its own kind, since the updater
+  // installs a deb with dpkg and an rpm with rpm.
+  const lean = flavor === "lean" ? "-lean" : "";
+  const key = (packaging) => `${os}-${target.split("-")[0]}${packaging ? `-${packaging}` : ""}${lean}`;
+  const platform = key(null);
+  const updateKey = (file) => {
+    if (os === "windows") return file.endsWith("-setup.exe") ? key(null) : null;
+    if (os === "darwin") return file.endsWith(".app.tar.gz") ? key(null) : null;
+    if (file.endsWith(".AppImage")) return key(null);
+    if (file.endsWith(".deb")) return key("deb");
+    if (file.endsWith(".rpm")) return key("rpm");
+    return null;
+  };
 
   mkdirSync(out, { recursive: true });
   const files = [];
-  let updater = null;
+  const updaters = [];
 
   for (const file of walk(bundle)) {
     const base = file.split(/[\\/]/).pop();
@@ -80,18 +92,21 @@ function collect() {
     copyFileSync(file, join(out, renamed));
     files.push({ name: renamed, sha256: sha256(join(out, renamed)), bytes: statSync(join(out, renamed)).size });
 
-    const updates = os === "windows" ? renamed.endsWith("-setup.exe") : os === "darwin" ? renamed.endsWith(".app.tar.gz") : renamed.endsWith(".AppImage");
+    const updates = updateKey(renamed);
     if (updates) {
       const sig = `${file}.sig`;
       if (!existsSync(sig)) fail(`${base} has no updater signature. Is TAURI_SIGNING_PRIVATE_KEY set?`);
       copyFileSync(sig, join(out, `${renamed}.sig`));
       files.push({ name: `${renamed}.sig`, sha256: sha256(sig), bytes: statSync(sig).size });
-      updater = { file: renamed, signature: readFileSync(sig, "utf8").trim() };
+      updaters.push({ platform: updates, file: renamed, signature: readFileSync(sig, "utf8").trim() });
     }
   }
-  if (!updater) fail(`No installer the updater can use was found in ${bundle}.`);
+  const missing = (os === "linux" ? [key(null), key("deb"), key("rpm")] : [key(null)]).filter(
+    (wanted) => !updaters.some((u) => u.platform === wanted),
+  );
+  if (missing.length) fail(`No signed installer for ${missing.join(", ")} was found in ${bundle}.`);
 
-  writeFileSync(join(out, `fragment-${platform}.json`), JSON.stringify({ platform, os, flavor, updater, files }, null, 2));
+  writeFileSync(join(out, `fragment-${platform}.json`), JSON.stringify({ platform, os, flavor, updaters, files }, null, 2));
   for (const file of files) console.log(`${file.name}  ${file.sha256}`);
 }
 
@@ -106,10 +121,12 @@ function manifest() {
   const platforms = {};
   const sums = [];
   for (const fragment of fragments) {
-    platforms[fragment.platform] = {
-      signature: fragment.updater.signature,
-      url: `https://github.com/${REPO}/releases/download/v${version}/${fragment.updater.file}`,
-    };
+    for (const updater of fragment.updaters) {
+      platforms[updater.platform] = {
+        signature: updater.signature,
+        url: `https://github.com/${REPO}/releases/download/v${version}/${updater.file}`,
+      };
+    }
     for (const file of fragment.files) sums.push(`${file.sha256}  ${file.name}`);
   }
 

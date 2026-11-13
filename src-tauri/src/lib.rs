@@ -519,15 +519,28 @@ fn has_bundled_ffmpeg(dir: &Path) -> bool {
     dir.join(format!("sub20-ffmpeg{}", std::env::consts::EXE_SUFFIX)).is_file()
 }
 
-/// Which update feed this build follows: the download with FFmpeg inside, or
-/// the lean one, so an install keeps the kind it started as.
+/// Which update feed this build follows, so an install keeps the kind it
+/// started as: with FFmpeg inside or without ("lean"), and on Linux the
+/// package it came in. The updater installs a deb with dpkg and an rpm with
+/// rpm, and refuses anything else, so a deb install must be sent a deb.
 fn update_target() -> String {
-    let os = match std::env::consts::OS {
-        "macos" => "darwin",
-        other => other,
+    use tauri::utils::{config::BundleType, platform::bundle_type};
+    let package = match bundle_type() {
+        Some(BundleType::Deb) => Some("deb"),
+        Some(BundleType::Rpm) => Some("rpm"),
+        _ => None,
     };
-    let lean = if bundled() { "" } else { "-lean" };
-    format!("{os}-{}{lean}", std::env::consts::ARCH)
+    update_key(std::env::consts::OS, std::env::consts::ARCH, package, bundled())
+}
+
+/// `linux-x86_64-deb-lean` and the like; the keys `scripts/collect-release.mjs`
+/// writes into `latest.json`. An AppImage, the Windows installer and the
+/// macOS app have no package part.
+fn update_key(os: &str, arch: &str, package: Option<&str>, bundled: bool) -> String {
+    let os = if os == "macos" { "darwin" } else { os };
+    let package = package.map(|p| format!("-{p}")).unwrap_or_default();
+    let lean = if bundled { "" } else { "-lean" };
+    format!("{os}-{arch}{package}{lean}")
 }
 
 #[derive(Serialize)]
@@ -844,6 +857,15 @@ mod tests {
         assert!(!has_bundled_ffmpeg(dir.path()));
         std::fs::write(dir.path().join(format!("sub20-ffmpeg{}", std::env::consts::EXE_SUFFIX)), b"x").unwrap();
         assert!(has_bundled_ffmpeg(dir.path()));
+    }
+
+    #[test]
+    fn each_install_asks_for_updates_of_its_own_kind() {
+        assert_eq!(update_key("windows", "x86_64", None, true), "windows-x86_64");
+        assert_eq!(update_key("macos", "aarch64", None, false), "darwin-aarch64-lean");
+        assert_eq!(update_key("linux", "x86_64", None, true), "linux-x86_64");
+        assert_eq!(update_key("linux", "x86_64", Some("deb"), true), "linux-x86_64-deb");
+        assert_eq!(update_key("linux", "x86_64", Some("rpm"), false), "linux-x86_64-rpm-lean");
     }
 
     #[test]
