@@ -33,11 +33,20 @@ struct Bench {
     tools: Tools,
 }
 
+/// Says why a test can't run here. With `SUB20_E2E_STRICT` set (the FFmpeg
+/// build workflow sets it, to test its own FFmpeg), that is a failure.
+fn skip(why: &str) {
+    if std::env::var_os("SUB20_E2E_STRICT").is_some() {
+        panic!("can't skip under SUB20_E2E_STRICT: {why}");
+    }
+    eprintln!("skipped: {why}");
+}
+
 fn tools() -> Option<Tools> {
     match Tools::locate(None, &[]) {
         Ok(tools) => Some(tools),
         Err(_) => {
-            eprintln!("skipped: FFmpeg is not installed");
+            skip("FFmpeg is not installed");
             None
         }
     }
@@ -182,7 +191,7 @@ async fn hevc_av1_and_two_pass_all_land_under_the_limit() {
     ];
     for (encoder, options, video, audio) in cases {
         if !report.works(encoder) {
-            eprintln!("skipped {encoder}: not in this FFmpeg build");
+            skip(&format!("{encoder} is not in this FFmpeg build"));
             continue;
         }
         let target = (options.target_mb * MB as f64) as u64;
@@ -639,7 +648,7 @@ async fn an_hdr_clip_comes_out_in_ordinary_colour() {
     let Some(b) = bench().await else { return };
     let report = b.engine.hardware(false).await.unwrap();
     if !report.tone_map || !report.works("libx265") {
-        eprintln!("skipped: this FFmpeg lacks zscale or libx265");
+        skip("this FFmpeg lacks zscale or libx265");
         return;
     }
     // A real HDR10 file: the test pattern converted to PQ and BT.2020, 10-bit

@@ -1,0 +1,176 @@
+name: FFmpeg
+
+# Builds the FFmpeg that Sub20 ships, from the sources pinned in
+# scripts/ffmpeg-build/sources.json, tests each build on its own system
+# with Sub20's end-to-end tests, and (when asked) publishes the binaries
+# with every source archive and the build scripts as a pre-release named
+# ffmpeg-<version>-<revision>. The app's release workflow then takes the
+# binaries from there (scripts/ffmpeg.json).
+#
+# It runs on changes to the build scripts, to check them, and by hand
+# (Actions → FFmpeg → Run workflow, "publish" ticked) to publish a new
+# revision. Bump "revision" in sources.json first: a published revision is
+# never replaced.
+
+on:
+  push:
+    paths:
+      - "scripts/ffmpeg-build/**"
+      - ".github/workflows/ffmpeg.yml"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the build as a pre-release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ffmpeg-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Cross-compiled with mingw-w64: much faster than building on Windows.
+          - { name: Windows x64, os: ubuntu-24.04, target: x86_64-pc-windows-msvc }
+          # The oldest supported Ubuntu, so the binaries run on older glibc too.
+          - { name: Linux x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { name: macOS Apple Silicon, os: macos-latest, target: aarch64-apple-darwin }
+          - { name: macOS Intel, os: macos-15-intel, target: x86_64-apple-darwin }
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm ninja-build autoconf automake libtool pkg-config zip
+          pipx install meson
+          if [ "${{ matrix.target }}" = x86_64-pc-windows-msvc ]; then
+            sudo apt-get install -y mingw-w64
+            # The posix thread model, which C++ threads in x265 and libvpl need.
+            sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+            sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          fi
+
+      - name: Build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install nasm meson ninja autoconf automake libtool pkg-config
+
+      - name: Build
+        run: bash scripts/ffmpeg-build/build.sh ${{ matrix.target }} out
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-${{ matrix.target }}
+          path: out/*
+          retention-days: 14
+
+  test:
+    name: Test ${{ matrix.name }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows x64, os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { name: Linux x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { name: macOS Apple Silicon, os: macos-latest, target: aarch64-apple-darwin }
+          - { name: macOS Intel, os: macos-15-intel, target: x86_64-apple-darwin }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-${{ matrix.target }}
+          path: archive
+
+      - name: Unpack and put first on PATH
+        shell: bash
+        run: |
+          mkdir ffmpeg
+          if [ "$RUNNER_OS" = Windows ]; then
+            # bsdtar, which reads zip, the way the app unpacks it.
+            "$SYSTEMROOT/System32/tar.exe" -xf archive/*.zip -C ffmpeg
+          else
+            tar -xf archive/*.tar.xz -C ffmpeg
+          fi
+          ls -la ffmpeg
+          echo "$PWD/ffmpeg" >> "$GITHUB_PATH"
+
+      - name: Has what Sub20 needs
+        run: node scripts/ffmpeg-build/check.mjs ffmpeg ${{ matrix.target }}
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ffmpeg-test
+
+      - name: Sub20's end-to-end tests
+        shell: bash
+        env:
+          # A test that would skip for want of an encoder or filter fails.
+          SUB20_E2E_STRICT: "1"
+        run: |
+          which ffmpeg
+          ffmpeg -hide_banner -version | head -1
+          cargo test -p sub20-core --test e2e
+
+  publish:
+    name: Publish
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ffmpeg-*
+          path: upload
+          merge-multiple: true
+
+      - name: Sources and build scripts
+        run: |
+          node scripts/ffmpeg-build/sources.mjs fetch upload
+          version=$(node -p "require('./scripts/ffmpeg-build/sources.json').ffmpeg")
+          revision=$(node -p "require('./scripts/ffmpeg-build/sources.json').revision")
+          tar -czf "upload/sub20-ffmpeg-build-$version-$revision.tar.gz" scripts/ffmpeg-build licenses/FFmpeg-GPL-3.0.txt
+          (cd upload && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          echo "TAG=ffmpeg-$version-$revision" >> "$GITHUB_ENV"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "REVISION=$revision" >> "$GITHUB_ENV"
+
+      - name: Pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "$TAG is already published. Bump revision in scripts/ffmpeg-build/sources.json." >&2
+            exit 1
+          fi
+          cat > notes.md <<EOF
+          FFmpeg $VERSION as built for Sub20 (revision $REVISION), from commit ${GITHUB_SHA::7}. Sub20's release workflow takes the binaries from here; you don't need to download this to use Sub20.
+
+          **Binaries**: \`sub20-ffmpeg-*\`, one per system, each with the GPL and BUILD.txt (the libraries inside and how FFmpeg was configured).
+
+          **Source**: FFmpeg and every library built into it, as the archives the binaries were built from, and \`sub20-ffmpeg-build-*\`, the scripts that built them (also in the repository under \`scripts/ffmpeg-build\`). This is the corresponding source the GPL asks for.
+
+          The build is licensed under the GNU General Public License version 3.
+          EOF
+          # A pre-release, and never "latest": the app's updater reads the
+          # latest release.
+          gh release create "$TAG" upload/* --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "FFmpeg $VERSION for Sub20 (revision $REVISION)" --notes-file notes.md
