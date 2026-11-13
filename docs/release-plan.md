@@ -230,8 +230,11 @@ Built during Phase 1, because every later phase uses it.
 - Run by hand, it builds everything without releasing (a dry run).
 - One job per system compiles once and packages both variants from the
   same program, which tells them apart at run time by the FFmpeg beside it.
-  On Windows the full installer's compression of FFmpeg takes about five
-  minutes of the ten.
+  Measured from an empty cache (13 November 2026): eight jobs took 12
+  minutes and 58 runner-minutes; four jobs with the lighter release profile
+  took 13 minutes and 35 runner-minutes. Windows sets the pace: 7 minutes to
+  compile from scratch and 3 to compress FFmpeg into the installer. A warm
+  cache (saved from `main`) should cut the compile to a minute or two.
 - One version number in `Cargo.toml`, `package.json` and `tauri.conf.json`,
   bumped by one script.
 
