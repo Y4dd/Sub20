@@ -8,9 +8,13 @@ edition = "2021"
 license = "MIT"
 rust-version = "1.80"
 
+# Light on purpose: one codegen unit and LTO tripled the release compile
+# (156 s against 67 s from scratch, 94 s against 16 s for an app-only
+# change, November 2026) for a program the same size within 5 KB. The Rust
+# side starts FFmpeg and moves files; FFmpeg does the heavy work either way.
 [profile.release]
-codegen-units = 1
-lto = "thin"
+codegen-units = 16
+lto = false
 opt-level = 3
 strip = true
 panic = "abort"

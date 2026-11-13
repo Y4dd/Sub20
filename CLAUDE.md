@@ -121,7 +121,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 - **The first release**: the release workflow, both builds and the updater exist but have not run end to end yet.
 - **Sub20 Lite**: a third `Backend` on WebCodecs and Mediabunny (`src/lib/web/`), the planner shared through a WebAssembly build of `plan.rs`, capability flags to hide desktop-only features. Gated on the size test in `/lite-lab.html`.
-- **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
+- **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; AV1 does play inline (owner's test, November 2026), but H.264 stays the default because it plays on every device; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
 
 ## Verified, and not
 

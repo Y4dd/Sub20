@@ -28,8 +28,8 @@ Things only the maintainer can do, at their own machine or account.
 - Set aside by the owner (November 2026): **SignPath** (it asks for a
   website and proof of reputation) and an **Apple Developer account**.
   Releases are unsigned for now; see [Signing](#signing).
-- [ ] **Discord fact left:** whether AV1 plays inline on desktop, Android
-      and iOS.
+- [x] **AV1 plays inline in Discord**: the owner sent an AV1 clip made
+      with Sub20 and it played in the chat (November 2026).
 
 ## Blockers to clear first
 
@@ -61,8 +61,10 @@ its licence text and point to its exact source.
 - **HEVC does not play inline in Discord.** Users report a frozen picture
   with sound on desktop; viewers have to download the file. Sub20 offers
   HEVC. H.264 stays the default, and HEVC now says Discord won't play it in
-  the chat (done). Still to check: whether AV1 plays on Discord desktop,
-  Android and iOS before recommending it.
+  the chat (done).
+- **AV1 plays inline in Discord**, checked by the owner with a clip made
+  in Sub20 (November 2026). H.264 stays the default because it plays on
+  every device; AV1's note says it needs a recent device to play.
 - **The tiers** are 20 MB free, 50 MB Nitro Basic, 500 MB with a server
   boost and 1 GB Nitro, per the owner (November 2026). The presets and the
   picker's names follow them.
@@ -500,7 +502,7 @@ day.
 
 | Step | Work | Depends on |
 | --- | --- | --- |
-| 1 | Discord facts: free limit confirmed; Nitro sizes and AV1 playback left (licence done: MIT) | — |
+| 1 | Discord facts: free limit and AV1 playback confirmed; Nitro sizes left (licence done: MIT) | — |
 | 2 | CI, repository files, version script | — |
 | 3 | Phase 1 "Must have" items | 2 |
 | 4 | Bundled FFmpeg, updater, release workflow | 2 |
