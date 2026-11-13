@@ -5,11 +5,10 @@
 //   src-tauri/binaries/sub20-ffprobe-<target>[.exe]
 //   src-tauri/ffmpeg-notice/FFMPEG.txt   (version, origin, checksums)
 //
-// With --keep DIR it also copies the checked archives, unchanged, into DIR
-// under the names the lean build downloads them by from the release page
-// (`asset_name` in crates/core/src/fetch.rs; change both together).
+// The pins point at Sub20's own FFmpeg build (scripts/ffmpeg-build,
+// published by .github/workflows/ffmpeg.yml with its source beside it).
 //
-// Usage: node scripts/fetch-ffmpeg.mjs [target] [--keep DIR]
+// Usage: node scripts/fetch-ffmpeg.mjs [target]
 // The target defaults to this machine's Rust host triple.
 
 import { createHash } from "node:crypto";
@@ -22,10 +21,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pins = JSON.parse(readFileSync(join(root, "scripts", "ffmpeg.json"), "utf8"));
 
-const argv = process.argv.slice(2);
-const keepAt = argv.indexOf("--keep");
-const keep = keepAt >= 0 ? argv.splice(keepAt, 2)[1] : null;
-const target = argv[0] ?? hostTriple();
+const target = process.argv[2] ?? hostTriple();
 const pin = pins.targets[target];
 if (!pin) {
   console.error(`No FFmpeg is pinned for ${target}. Pinned: ${Object.keys(pins.targets).join(", ")}`);
@@ -47,12 +43,12 @@ try {
   const downloads = [];
   if (pin.archive) {
     const file = await download(pin.archive);
-    downloads.push({ ...pin.archive, file, tool: null });
+    downloads.push({ ...pin.archive, file });
     unpack(file, work);
   } else {
     for (const tool of ["ffmpeg", "ffprobe"]) {
       const file = await download(pin[tool]);
-      downloads.push({ ...pin[tool], file, tool });
+      downloads.push({ ...pin[tool], file });
       unpack(file, work);
     }
   }
@@ -64,16 +60,6 @@ try {
     copyFileSync(found, dest);
     if (!windows) chmodSync(dest, 0o755);
     console.log(`${dest} (${Math.round(statSync(dest).size / 1048576)} MB)`);
-  }
-
-  if (keep) {
-    mkdirSync(keep, { recursive: true });
-    for (const d of downloads) {
-      const ext = d.url.endsWith(".tar.xz") ? ".tar.xz" : ".zip";
-      const name = `FFmpeg-${pins.version}-${target}${d.tool ? "-" + d.tool : ""}${ext}`;
-      copyFileSync(d.file, join(keep, name));
-      console.log(join(keep, name));
-    }
   }
 
   writeFileSync(

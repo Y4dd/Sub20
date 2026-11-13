@@ -1,11 +1,10 @@
 //! Getting FFmpeg for the lean download.
 //!
 //! The lean build finds FFmpeg on the system. When there is none, the window
-//! offers to download the same FFmpeg the full download ships: the archives
-//! pinned in `scripts/ffmpeg.json`, checked against the same SHA-256. They
-//! are fetched from Sub20's own release, where the release workflow puts
-//! them unchanged, because the builders' links don't last (BtbN deletes its
-//! daily builds after a few weeks).
+//! offers to download the same FFmpeg the full download ships: the archive
+//! pinned in `scripts/ffmpeg.json`, from Sub20's own FFmpeg release on
+//! GitHub (`ffmpeg-<version>-<revision>`, built by `.github/workflows/ffmpeg.yml`
+//! with its source beside it), checked against the same SHA-256.
 //!
 //! The shell does the HTTP. This module says what to fetch and from where,
 //! checks what arrived, unpacks it and installs it as `sub20-ffmpeg` and
@@ -24,18 +23,15 @@ use crate::ffmpeg;
 const PINS: &str = include_str!("../../../scripts/ffmpeg.json");
 const LICENCE: &str = include_str!("../../../licenses/FFmpeg-GPL-3.0.txt");
 
-/// Where the release workflow uploads the archives, per app version.
-const RELEASES: &str = "https://github.com/Y4dd/Sub20/releases/download";
-
 /// What this system can download.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Offer {
     /// FFmpeg's version, "9.0.2".
     pub version: String,
-    /// Who built it, with a link.
+    /// Who built it.
     pub builder: String,
-    /// Where FFmpeg's source for this build is.
+    /// Where the source of this build is: the release page it came from.
     pub source: String,
     pub files: Vec<Download>,
 }
@@ -44,18 +40,10 @@ pub struct Offer {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Download {
-    /// The name on Sub20's release page.
+    /// The file's name, the last part of `url`.
     pub name: String,
-    /// Where the builder published it.
-    pub upstream: String,
+    pub url: String,
     pub sha256: String,
-}
-
-impl Offer {
-    /// The address of `file` on the release of Sub20 `app_version`.
-    pub fn url(&self, app_version: &str, file: &Download) -> String {
-        format!("{RELEASES}/v{app_version}/{}", file.name)
-    }
 }
 
 /// The Rust target this program was built for, when FFmpeg is pinned for
@@ -79,33 +67,16 @@ pub fn offer() -> Option<Offer> {
 
 fn offer_for(pins: &str, target: &str) -> Option<Offer> {
     let pins: serde_json::Value = serde_json::from_str(pins).ok()?;
-    let version = pins["version"].as_str()?.to_string();
     let pin = &pins["targets"][target];
-    let text = |key: &str| pin[key].as_str().map(str::to_string);
-    let file = |entry: &serde_json::Value, tool: Option<&str>| -> Option<Download> {
-        let upstream = entry["url"].as_str()?.to_string();
-        Some(Download {
-            name: asset_name(&version, target, tool, &upstream),
-            sha256: entry["sha256"].as_str()?.to_string(),
-            upstream,
-        })
-    };
-    let files = if pin["archive"].is_object() {
-        vec![file(&pin["archive"], None)?]
-    } else {
-        vec![file(&pin["ffmpeg"], Some("ffmpeg"))?, file(&pin["ffprobe"], Some("ffprobe"))?]
-    };
-    Some(Offer { builder: text("builder")?, source: text("source")?, version, files })
-}
-
-/// The name an archive is uploaded under. `scripts/fetch-ffmpeg.mjs` gives
-/// it the same name; change both together.
-fn asset_name(version: &str, target: &str, tool: Option<&str>, upstream: &str) -> String {
-    let ext = if upstream.ends_with(".tar.xz") { ".tar.xz" } else { ".zip" };
-    match tool {
-        Some(tool) => format!("FFmpeg-{version}-{target}-{tool}{ext}"),
-        None => format!("FFmpeg-{version}-{target}{ext}"),
-    }
+    let text = |value: &serde_json::Value| value.as_str().map(str::to_string);
+    let url = text(&pin["archive"]["url"])?;
+    let file = Download { name: url.rsplit('/').next()?.to_string(), sha256: text(&pin["archive"]["sha256"])?, url };
+    Some(Offer {
+        version: text(&pins["version"])?,
+        builder: text(&pin["builder"])?,
+        source: text(&pin["source"])?,
+        files: vec![file],
+    })
 }
 
 /// The file's SHA-256 as lowercase hex.
@@ -191,7 +162,7 @@ pub fn install(unpacked: &Path, dest: &Path, offer: &Offer) -> Result<PathBuf> {
         String::new(),
     ];
     for file in &offer.files {
-        notice.push(format!("Built from: {}", file.upstream));
+        notice.push(format!("Downloaded from: {}", file.url));
         notice.push(format!("SHA-256: {}", file.sha256));
     }
     notice.push(String::new());
@@ -222,32 +193,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_pinned_system_gets_an_offer_named_for_the_release_page() {
-        let windows = offer_for(PINS, "x86_64-pc-windows-msvc").expect("windows is pinned");
-        assert_eq!(windows.files.len(), 1);
-        assert!(windows.files[0].name.starts_with(&format!("FFmpeg-{}-x86_64-pc-windows-msvc", windows.version)));
-        assert!(windows.files[0].name.ends_with(".zip"));
-        assert_eq!(windows.files[0].sha256.len(), 64);
-
-        let linux = offer_for(PINS, "x86_64-unknown-linux-gnu").expect("linux is pinned");
-        assert!(linux.files[0].name.ends_with("-x86_64-unknown-linux-gnu.tar.xz"));
-
-        let mac = offer_for(PINS, "aarch64-apple-darwin").expect("mac is pinned");
-        let names: Vec<_> = mac.files.iter().map(|f| f.name.as_str()).collect();
-        assert_eq!(
-            names,
-            [
-                format!("FFmpeg-{}-aarch64-apple-darwin-ffmpeg.zip", mac.version),
-                format!("FFmpeg-{}-aarch64-apple-darwin-ffprobe.zip", mac.version)
-            ]
-        );
+    fn every_supported_system_downloads_sub20s_own_ffmpeg_build() {
+        for (target, ext) in [
+            ("x86_64-pc-windows-msvc", ".zip"),
+            ("x86_64-unknown-linux-gnu", ".tar.xz"),
+            ("aarch64-apple-darwin", ".tar.xz"),
+        ] {
+            let offer = offer_for(PINS, target).unwrap_or_else(|| panic!("{target} is pinned"));
+            assert_eq!(offer.files.len(), 1);
+            let file = &offer.files[0];
+            // From Sub20's FFmpeg release, which carries the source beside it.
+            assert!(file.url.starts_with("https://github.com/Y4dd/Sub20/releases/download/ffmpeg-"), "{}", file.url);
+            assert!(offer.source.starts_with("https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-"), "{}", offer.source);
+            assert!(file.name.contains(target) && file.name.ends_with(ext), "{}", file.name);
+            assert!(file.url.ends_with(&file.name));
+            assert_eq!(file.sha256.len(), 64);
+        }
 
         assert_eq!(offer_for(PINS, "riscv64gc-unknown-linux-gnu"), None);
         assert_eq!(offer_for(PINS, "x86_64-apple-darwin"), None, "Intel Macs aren't supported");
-        assert_eq!(
-            windows.url("1.2.3", &windows.files[0]),
-            format!("https://github.com/Y4dd/Sub20/releases/download/v1.2.3/{}", windows.files[0].name)
-        );
         if this_target().is_some() {
             assert!(offer().is_some());
         }

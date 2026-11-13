@@ -75,13 +75,6 @@ function collect() {
     }
   }
   if (!updater) fail(`No installer the updater can use was found in ${bundle}.`);
-  // The FFmpeg archives the lean build downloads (fetch-ffmpeg.mjs --keep),
-  // listed with the full download so they land in SHA256SUMS.txt.
-  if (flavor === "full") {
-    for (const base of readdirSync(out)) {
-      if (base.startsWith("FFmpeg-")) files.push({ name: base, sha256: sha256(join(out, base)) });
-    }
-  }
 
   writeFileSync(join(out, `fragment-${platform}.json`), JSON.stringify({ platform, updater, files }, null, 2));
   for (const file of files) console.log(`${file.name}  ${file.sha256}`);

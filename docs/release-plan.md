@@ -181,17 +181,20 @@ its licence text and point to its exact source.
 **Installing and updating**
 - [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release
       workflow; not yet tried on a fresh machine.
-  - [ ] Ship the GPL source for the bundled FFmpeg with each release (or a
-        written offer), not only its licence and origin.
+  - [x] Ship the GPL source for the bundled FFmpeg. Sub20 builds its own
+        FFmpeg from pinned sources (`scripts/ffmpeg-build`,
+        `.github/workflows/ffmpeg.yml`) and publishes the binaries with
+        every source archive and the build scripts on one pre-release,
+        [ffmpeg-9.0.2-1](https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1)
+        (13 November 2026). A written offer was ruled out: GPL 3 allows it
+        only for software shipped in a physical product.
 - [x] When FFmpeg is missing (the lean build): a clear first-run screen that
       offers "Download FFmpeg" (pinned URL, SHA-256 checked) or shows how to
-      install it. The archives come from Sub20's own release (the workflow
-      uploads them unchanged, `FFmpeg-<version>-<target>…`), because
-      BtbN deletes its daily builds after a few weeks; they're checked
-      against `scripts/ffmpeg.json`, unpacked with the system's bsdtar and
+      install it. The archive comes from Sub20's own FFmpeg release (the
+      one the full download carries), is checked against
+      `scripts/ffmpeg.json`, unpacked with the system's bsdtar and
       installed in the app's local data folder. Checked on the mock backend
-      only: the real download needs a tagged release with the archives on
-      it, so try it on the first release.
+      only; try it for real on the first release.
 - [x] Auto-update with `tauri-plugin-updater`, signed. One `latest.json`
       with a key per build (`windows-x86_64`, `windows-x86_64-lean`, …), so
       a bundled install stays bundled. Checked at startup (Settings can turn
@@ -317,10 +320,11 @@ Built during Phase 1, because every later phase uses it.
 | **Sub20** (FFmpeg included) | Everyone. The big button. | ~60–100 MB |
 | Sub20 Lean (no FFmpeg) | Package managers, people who already have FFmpeg | ~10 MB |
 
-- Start with a pinned FFmpeg release build (BtbN for Windows and Linux, a
-  signed arm64 and x86-64 build for macOS). Later, build FFmpeg in CI with
-  only the codecs, filters and formats Sub20 uses, which roughly quarters
-  its size.
+- Done (13 November 2026): Sub20 builds its own FFmpeg in CI with only the
+  codecs, filters and formats it uses, and publishes it with its source.
+  The archives are 36 MB (Windows), 25 MB (Linux) and 19 MB (macOS).
+  Before, the full download carried BtbN's and Martin Riedl's general
+  builds.
 - Done: FFmpeg 9.0.2 ships as `externalBin` sidecars named
   `sub20-ffmpeg` and `sub20-ffprobe` (plain names would clash with the
   distribution's FFmpeg in `/usr/bin` on Linux), pinned with SHA-256 in

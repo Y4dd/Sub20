@@ -155,7 +155,6 @@ async fn fetch_ffmpeg(state: &AppState, on_progress: &Channel<Fetching>) -> Comm
     use tokio::io::AsyncWriteExt;
 
     let offer = fetch::offer().ok_or("Sub20 has no FFmpeg download for this system. Install FFmpeg yourself.")?;
-    let version = env!("CARGO_PKG_VERSION");
     std::fs::create_dir_all(&state.fetch_dir).map_err(text)?;
     // The updater's TLS runs on ring; this uses the same.
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -169,13 +168,14 @@ async fn fetch_ffmpeg(state: &AppState, on_progress: &Channel<Fetching>) -> Comm
     let mut received = 0;
     let mut archives = Vec::new();
     for (index, file) in offer.files.iter().enumerate() {
-        let mut response = client.get(offer.url(version, file)).send().await.map_err(|e| {
+        let mut response = client.get(&file.url).send().await.map_err(|e| {
             format!("Couldn't reach GitHub to download FFmpeg: {e}. Check the connection and try again.")
         })?;
         if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Err(format!(
-                "Sub20 {version}'s release page has no FFmpeg to download. Install FFmpeg yourself for now."
-            ));
+            return Err(
+                "FFmpeg is no longer where this version of Sub20 expects it. Update Sub20, or install FFmpeg yourself."
+                    .into(),
+            );
         }
         if !response.status().is_success() {
             return Err(format!("GitHub answered {} to the FFmpeg download. Try again in a while.", response.status()));

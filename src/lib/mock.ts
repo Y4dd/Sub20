@@ -245,11 +245,14 @@ const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (d
 let noFfmpeg = new URLSearchParams(location.search).has("noffmpeg");
 const DEMO_OFFER: FfmpegOffer = {
   version: "9.0.2",
-  builder: "Martin Riedl (https://ffmpeg.martin-riedl.de), signed and notarised",
-  source: "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+  builder: "Sub20 (scripts/ffmpeg-build)",
+  source: "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1",
   files: [
-    { name: "FFmpeg-9.0.2-aarch64-apple-darwin-ffmpeg.zip", upstream: "https://example.invalid/ffmpeg.zip", sha256: "0".repeat(64) },
-    { name: "FFmpeg-9.0.2-aarch64-apple-darwin-ffprobe.zip", upstream: "https://example.invalid/ffprobe.zip", sha256: "0".repeat(64) },
+    {
+      name: "sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
+      url: "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
+      sha256: "0".repeat(64),
+    },
   ],
 };
 

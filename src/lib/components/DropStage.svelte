@@ -7,8 +7,6 @@
   const windows = navigator.platform.toLowerCase().includes("win");
 
   const offer = $derived(app.ffmpegOffer);
-  /** "BtbN", without the link. */
-  const builder = $derived(offer?.builder.split(" (")[0] ?? "");
   const fetching = $derived(app.fetching);
   const stageWords = $derived(
     !fetching
@@ -66,7 +64,7 @@
           {/if}
           {#if app.fetchError}<p class="error" role="alert">{app.fetchError}</p>{/if}
           <p class="small">
-            FFmpeg {offer.version}, built by {builder}, from Sub20's release page and checked against its pinned fingerprint.
+            FFmpeg {offer.version}, built by Sub20 from its published source and checked against a pinned fingerprint.
             It's free software under the GPL.
           </p>
         </div>

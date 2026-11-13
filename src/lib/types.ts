@@ -222,7 +222,7 @@ export interface FfmpegOffer {
   version: string;
   builder: string;
   source: string;
-  files: { name: string; upstream: string; sha256: string }[];
+  files: { name: string; url: string; sha256: string }[];
 }
 
 /** How a download of FFmpeg is going. */

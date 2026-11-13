@@ -23,8 +23,10 @@ What changed in each release. The format follows
 - A release workflow that builds Sub20 with FFmpeg included, and a lean
   build without it, for Windows, macOS and Linux.
 - The lean build offers to download FFmpeg when the computer has none: the
-  same FFmpeg the full build carries, from Sub20's release page, checked
-  against its pinned fingerprint before it is installed.
+  same FFmpeg the full build carries, checked against its pinned
+  fingerprint before it is installed.
+- Sub20 now builds its own FFmpeg, with only what it uses, and publishes its
+  source code beside it. The download with FFmpeg included is smaller.
 - Sub20 asks before quitting while videos are compressing.
 - The options you last used are there again the next time Sub20 opens.
 - Filmstrip thumbnails appear one by one as they are made, not all at once

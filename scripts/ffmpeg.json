@@ -2,32 +2,28 @@
   "version": "9.0.2",
   "targets": {
     "x86_64-pc-windows-msvc": {
-      "builder": "BtbN (https://github.com/BtbN/FFmpeg-Builds)",
+      "builder": "Sub20, from the sources and scripts published with it (scripts/ffmpeg-build)",
       "archive": {
-        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-12-15-40/ffmpeg-n9.0.2-57-gd838f9f9ae-win64-gpl-9.0.zip",
-        "sha256": "cf43d18e45a1b79a4d74f0e6f94206fe23d82f38de11352e5db9496058dc9c48"
+        "url": "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-x86_64-pc-windows-msvc.zip",
+        "sha256": "b9a003cf29a3b2555de0c0370bdfcc052583890d18b1db0e8cccb7ee350493b2"
       },
-      "source": "https://github.com/FFmpeg/FFmpeg/commit/d838f9f9ae"
+      "source": "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1"
     },
     "x86_64-unknown-linux-gnu": {
-      "builder": "BtbN (https://github.com/BtbN/FFmpeg-Builds)",
+      "builder": "Sub20, from the sources and scripts published with it (scripts/ffmpeg-build)",
       "archive": {
-        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-12-15-40/ffmpeg-n9.0.2-57-gd838f9f9ae-linux64-gpl-9.0.tar.xz",
-        "sha256": "ccedeabdb6c1bbfd44647225e3a4452a1983a770847c2d7de261fcbc407250df"
+        "url": "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-x86_64-unknown-linux-gnu.tar.xz",
+        "sha256": "af2856de2eb989e1c966880437dc672ccd3c1a85074b2a4451dee0c0dc0471f1"
       },
-      "source": "https://github.com/FFmpeg/FFmpeg/commit/d838f9f9ae"
+      "source": "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1"
     },
     "aarch64-apple-darwin": {
-      "builder": "Martin Riedl (https://ffmpeg.martin-riedl.de), signed and notarised",
-      "ffmpeg": {
-        "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip",
-        "sha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924"
+      "builder": "Sub20, from the sources and scripts published with it (scripts/ffmpeg-build)",
+      "archive": {
+        "url": "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
+        "sha256": "2d6b802c93a089452895af4845fa10e6c82fc6cbf467551b61d9f8c16b983440"
       },
-      "ffprobe": {
-        "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip",
-        "sha256": "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6"
-      },
-      "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz"
+      "source": "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1"
     }
   }
 }
