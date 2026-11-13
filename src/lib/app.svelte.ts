@@ -119,8 +119,12 @@ class App {
   dragging = $state(false);
   /** The clip whose output name is being edited in the list. */
   renaming = $state<Clip | null>(null);
-  /** Dropped files are being read. */
-  adding = $state(false);
+  /** Dropped or opened files are being read. */
+  get adding(): boolean {
+    return this.#adding > 0;
+  }
+  /** How many `add` calls are reading files; drops and opened videos can overlap. */
+  #adding = $state(0);
   notices = $state<{ id: number; text: string }[]>([]);
   /** A newer release, found at startup when the settings allow it. */
   update = $state<UpdateInfo | null>(null);
@@ -287,7 +291,7 @@ class App {
 
   async add(paths: string[]) {
     if (!paths.length) return;
-    this.adding = true;
+    this.#adding++;
     try {
       const results = await backend.addVideos(paths);
       let first: Clip | null = null;
@@ -311,7 +315,7 @@ class App {
       this.notify(String(error));
       this.ffmpeg = await backend.ffmpegStatus();
     } finally {
-      this.adding = false;
+      this.#adding--;
     }
   }
 

@@ -102,7 +102,7 @@ async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
             // From here on, opened videos go to the window as events.
             let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
             WINDOW_READY.store(true, Ordering::SeqCst);
-            std::mem::take(&mut *waiting)
+            in_name_order(std::mem::take(&mut *waiting))
         },
         bundled: bundled(),
         ffmpeg_notice: state.ffmpeg_notice.clone(),
@@ -475,6 +475,56 @@ static OPENED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 /// Set when the window takes the waiting videos; later ones are sent to it
 /// as `opened` events.
 static WINDOW_READY: AtomicBool = AtomicBool::new(false);
+/// A batch of opened videos is being gathered for the window.
+static GATHERING: AtomicBool = AtomicBool::new(false);
+/// How long no more videos must arrive before a batch goes to the window.
+/// Explorer starts Sub20 once per selected file, so twenty selected videos
+/// arrive as twenty launches a few milliseconds apart.
+const OPENED_QUIET: Duration = Duration::from_millis(150);
+
+/// One batch of opened videos as the window gets it: each once, in name
+/// order as Explorer and Finder show it (clip2 before clip10), since the
+/// launches that brought them arrive in no useful order.
+fn in_name_order(mut paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut seen = HashSet::new();
+    paths.retain(|path| seen.insert(path.clone()));
+    let name = |path: &PathBuf| path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    paths.sort_by(|a, b| natural(&name(a), &name(b)).then_with(|| a.cmp(b)));
+    paths
+}
+
+/// Compares names with runs of digits taken as numbers.
+fn natural(a: &str, b: &str) -> std::cmp::Ordering {
+    let (mut a, mut b) = (a.chars().peekable(), b.chars().peekable());
+    loop {
+        match (a.peek().copied(), b.peek().copied()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (None, Some(_)) => return std::cmp::Ordering::Less,
+            (Some(_), None) => return std::cmp::Ordering::Greater,
+            (Some(x), Some(y)) if x.is_ascii_digit() && y.is_ascii_digit() => {
+                let mut run = |chars: &mut std::iter::Peekable<std::str::Chars>| {
+                    let mut digits = String::new();
+                    while let Some(c) = chars.next_if(char::is_ascii_digit) {
+                        digits.push(c);
+                    }
+                    digits.trim_start_matches('0').to_string()
+                };
+                let (x, y) = (run(&mut a), run(&mut b));
+                let order = x.len().cmp(&y.len()).then_with(|| x.cmp(&y));
+                if order.is_ne() {
+                    return order;
+                }
+            }
+            (Some(x), Some(y)) => {
+                if x != y {
+                    return x.cmp(&y);
+                }
+                a.next();
+                b.next();
+            }
+        }
+    }
+}
 
 /// The videos among command-line arguments, made absolute against the folder
 /// they were given in.
@@ -497,10 +547,26 @@ fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
         let _ = window.set_focus();
     }
     let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
-    if WINDOW_READY.load(Ordering::SeqCst) {
-        let _ = app.emit("opened", paths);
-    } else {
-        waiting.extend(paths);
+    waiting.extend(paths);
+    // Before the window is up, `bootstrap` takes everything at once. After,
+    // videos that arrive together go to it together, once they stop coming.
+    if WINDOW_READY.load(Ordering::SeqCst) && !GATHERING.swap(true, Ordering::SeqCst) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            let mut counted = usize::MAX;
+            loop {
+                std::thread::sleep(OPENED_QUIET);
+                let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+                if waiting.len() == counted {
+                    let batch = in_name_order(std::mem::take(&mut *waiting));
+                    GATHERING.store(false, Ordering::SeqCst);
+                    drop(waiting);
+                    let _ = app.emit("opened", batch);
+                    return;
+                }
+                counted = waiting.len();
+            }
+        });
     }
 }
 
@@ -866,6 +932,19 @@ mod tests {
         assert_eq!(update_key("linux", "x86_64", None, true), "linux-x86_64");
         assert_eq!(update_key("linux", "x86_64", Some("deb"), true), "linux-x86_64-deb");
         assert_eq!(update_key("linux", "x86_64", Some("rpm"), false), "linux-x86_64-rpm-lean");
+    }
+
+    #[test]
+    fn videos_opened_together_arrive_once_each_in_name_order() {
+        let paths =
+            ["b/clip10.mp4", "a/Clip2.mp4", "c/clip1.mp4", "a/Clip2.mp4", "d/clip02b.mp4"].map(PathBuf::from).to_vec();
+        let ordered = in_name_order(paths);
+        assert_eq!(ordered, ["c/clip1.mp4", "a/Clip2.mp4", "d/clip02b.mp4", "b/clip10.mp4"].map(PathBuf::from));
+        // NVIDIA app names sort by when they were recorded.
+        assert_eq!(
+            natural("valorant 2026.11.12 - 21.03.44.02.mp4", "valorant 2026.11.12 - 9.10.00.01.mp4"),
+            std::cmp::Ordering::Greater
+        );
     }
 
     #[test]
