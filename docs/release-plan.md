@@ -341,7 +341,13 @@ its licence text and point to its exact source.
       telemetry, by design, and the About line says so.
 - [x] Panics and crashes are written to a log file the diagnostics include.
   - [ ] Try the quit dialog, Copy diagnostics and a crash in the real
-        window on each system.
+        window on each system. Windows, 13 November 2026, in a release test
+        copy: the dialog says "A video is still compressing. Quitting stops
+        it and deletes the unfinished file." with Stop and quit / Keep
+        compressing; Keep compressing kept FFmpeg running, Stop and quit
+        left no process and no partial file. Copy diagnostics put 5,275
+        characters on the clipboard with the home folder written as `~`.
+        A crash hasn't been tried; macOS and Linux not yet.
 - [x] Accessibility: keyboard reaches everything, controls have labels,
       reduced motion is respected, contrast holds in both themes. Audited
       on the mock backend in both schemes (every text at 4.5:1 or more,
@@ -350,7 +356,7 @@ its licence text and point to its exact source.
       size is chosen; segmented choices move with the arrow keys.
 - [x] About box: version, licence, the FFmpeg licence, "not affiliated
       with Discord" (the end of Settings).
-- [ ] **Memory and performance profile**, before anything that keeps Sub20
+- [x] **Memory and performance profile**, before anything that keeps Sub20
       running in the background (such as minimise to tray for the folder
       watch). Measure on Windows, the release build, at least:
   - Idle with an empty bench, and idle with a few clips loaded: memory
@@ -387,9 +393,38 @@ its licence text and point to its exact source.
     hidden. "Keep watching when the window is closed" has to destroy the
     window and its WebView2, leaving about 40 MB, and build it again
     when opened. Measure that case when it is built.
-  - Still to measure: the folder watch idling (a large folder, a network
-    share), Sub20's share during a compress, wake-ups per second, and
-    memory over a long session.
+
+  **The rest** (13 November 2026, the same machine, a release test copy
+  with its own identifier driven through UI Automation; Sub20's own
+  process apart from WebView2's):
+
+  | State | Sub20 CPU | Sub20 wake-ups/s | Sub20 file ops/s | WebView2 CPU |
+  | --- | --- | --- | --- | --- |
+  | Idle, watch off | 0.03–0.1% | 34 | 0 | 0.16–0.8% |
+  | Watch on 2,000 files, 5 s polls, before the fix | 2.58% | 45 | 3,749 | 0.21% |
+  | The same, after the fix | 0.23–0.26% | 57–100 | 13 | 0.6–3.1% |
+
+  - The watch opened every file on every poll to read its size and date
+    (Windows reads those by opening the file). It now trusts the directory
+    listing for files it has already handled and asks the file itself only
+    about new or changed ones, whose listing NTFS may not update while
+    they are still being written. Fixed and measured above.
+  - WebView2's idle cost swings from run to run (0.16% to 3.1%, with the
+    watch on or off): its own background work, not Sub20's.
+  - During a compress (a 20-minute 720p clip to 20 MB, 25 s on NVENC):
+    Sub20 0.3–0.5% of one core, FFmpeg about 6 cores (CPU decoding),
+    WebView2 53–59%. Three progress bars animated their width on every
+    progress event, which lays the page out each frame; they now move by
+    transform, and WebView2 dropped to 32–35%.
+  - Adding and removing 20 clips five times: private memory 376, 384,
+    374, 393, 381 MB. No growth.
+  - Network share: not measured (none here). The listing change helps
+    there most, since every open is a round trip.
+
+  **Budget for running without the window** (when that is built): under
+  100 MB and under 0.5% of one core with a watch on, measured as above.
+  Sub20's own process already meets it (30 MB, 0.25%); WebView2 can't,
+  so the window must be destroyed, not hidden.
 
 ### After 1.0 (only once 1.0 is stable)
 

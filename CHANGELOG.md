@@ -74,6 +74,13 @@ What changed in each release. The format follows
 - HEVC now says Discord won't play it in the chat, where you pick it and in
   the options summary.
 
+### Fixed
+
+- A settings file saved with a byte-order mark (as Windows PowerShell 5 and
+  older Notepad save them) no longer resets every setting.
+- The folder watch costs a tenth of what it did on a folder with thousands
+  of clips, and the window does less work while compressing.
+
 ## [0.1.0] - not released
 
 The first version, before any public release.
