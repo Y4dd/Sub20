@@ -107,7 +107,13 @@ jobs:
             tar -xf archive/*.tar.xz -C ffmpeg
           fi
           ls -la ffmpeg
-          echo "$PWD/ffmpeg" >> "$GITHUB_PATH"
+          if [ "$RUNNER_OS" = Windows ]; then
+            # PATH is read by Windows programs too: give it D:\a\..., not
+            # Git Bash's /d/a/...
+            cygpath -w "$PWD/ffmpeg" >> "$GITHUB_PATH"
+          else
+            echo "$PWD/ffmpeg" >> "$GITHUB_PATH"
+          fi
 
       - name: Has what Sub20 needs
         run: node scripts/ffmpeg-build/check.mjs ffmpeg ${{ matrix.target }}
