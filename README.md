@@ -58,7 +58,9 @@ account, no upload and no ads.
 
 Download from the [Releases](https://github.com/Y4dd/Sub20/releases) page.
 `Sub20` has FFmpeg built in; `Sub20-Lean` is smaller and uses the FFmpeg
-already on your system. Sub20 updates itself, and every update is signed.
+already on your system. If there is none, it offers to download the same
+FFmpeg the full build carries, checked against a pinned SHA-256. Sub20
+updates itself, and every update is signed.
 
 The Windows and macOS builds aren't code-signed yet, so the system warns
 the first time you open one:

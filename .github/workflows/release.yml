@@ -114,7 +114,8 @@ jobs:
           node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor lean --out upload
 
       - name: FFmpeg
-        run: node scripts/fetch-ffmpeg.mjs ${{ matrix.target }}
+        # Also keeps the archives, for the lean build to download from the release.
+        run: node scripts/fetch-ffmpeg.mjs ${{ matrix.target }} --keep upload
 
       - name: Package the download with FFmpeg
         shell: bash

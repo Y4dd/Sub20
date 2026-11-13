@@ -19,7 +19,7 @@ use sub20_core::job::{EncodeOptions, JobEvent, JobId, JobSpec, Origin, Trim};
 use sub20_core::plan::{self, Plan};
 use sub20_core::settings::{OutputMode, Settings};
 use sub20_core::watch::{self, WatchStatus, Watcher};
-use sub20_core::{thumbs, Engine, MediaInfo};
+use sub20_core::{fetch, thumbs, Engine, MediaInfo};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WindowEvent};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
@@ -45,6 +45,10 @@ struct AppState {
     /// Where panics are written (`log_crashes`).
     crash_log: PathBuf,
     ffmpeg_notice: Option<PathBuf>,
+    /// Where a downloaded FFmpeg is installed (`download_ffmpeg`).
+    fetched_ffmpeg: PathBuf,
+    /// Scratch for a download in progress.
+    fetch_dir: PathBuf,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -83,6 +87,8 @@ struct Bootstrap {
     bundled: bool,
     /// The licence and origin of the FFmpeg inside, when there is one.
     ffmpeg_notice: Option<PathBuf>,
+    /// The FFmpeg this system can download when it has none.
+    ffmpeg_offer: Option<fetch::Offer>,
 }
 
 /// Everything the window needs when it opens.
@@ -100,12 +106,114 @@ async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
         },
         bundled: bundled(),
         ffmpeg_notice: state.ffmpeg_notice.clone(),
+        ffmpeg_offer: fetch::offer(),
     })
 }
 
 #[tauri::command]
 async fn ffmpeg_status(state: State<'_, AppState>) -> CommandResult<FfmpegStatus> {
     Ok(ffmpeg_state(&state.engine).await)
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Fetching {
+    /// "downloading", "checking" or "installing".
+    stage: &'static str,
+    /// How much of the download has arrived, 0 to 1, when its size is known.
+    fraction: Option<f64>,
+    /// Bytes received so far, across all files.
+    received: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Fetched {
+    ffmpeg: FfmpegStatus,
+    notice: PathBuf,
+}
+
+static FETCHING: AtomicBool = AtomicBool::new(false);
+
+/// Downloads the FFmpeg pinned for this system from Sub20's release page,
+/// checks its SHA-256, and installs it where the engine looks.
+#[tauri::command]
+async fn download_ffmpeg(state: State<'_, AppState>, on_progress: Channel<Fetching>) -> CommandResult<Fetched> {
+    if FETCHING.swap(true, Ordering::SeqCst) {
+        return Err("FFmpeg is already downloading.".into());
+    }
+    let _ = std::fs::remove_dir_all(&state.fetch_dir);
+    let fetched = fetch_ffmpeg(&state, &on_progress).await;
+    let _ = std::fs::remove_dir_all(&state.fetch_dir);
+    FETCHING.store(false, Ordering::SeqCst);
+    let notice = fetched?;
+    state.engine.forget_tools().await;
+    Ok(Fetched { ffmpeg: ffmpeg_state(&state.engine).await, notice })
+}
+
+async fn fetch_ffmpeg(state: &AppState, on_progress: &Channel<Fetching>) -> CommandResult<PathBuf> {
+    use tokio::io::AsyncWriteExt;
+
+    let offer = fetch::offer().ok_or("Sub20 has no FFmpeg download for this system. Install FFmpeg yourself.")?;
+    let version = env!("CARGO_PKG_VERSION");
+    std::fs::create_dir_all(&state.fetch_dir).map_err(text)?;
+    // The updater's TLS runs on ring; this uses the same.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let client = reqwest::Client::builder()
+        .user_agent(concat!("Sub20/", env!("CARGO_PKG_VERSION")))
+        .connect_timeout(Duration::from_secs(20))
+        .build()
+        .map_err(text)?;
+
+    let count = offer.files.len() as f64;
+    let mut received = 0;
+    let mut archives = Vec::new();
+    for (index, file) in offer.files.iter().enumerate() {
+        let mut response = client.get(offer.url(version, file)).send().await.map_err(|e| {
+            format!("Couldn't reach GitHub to download FFmpeg: {e}. Check the connection and try again.")
+        })?;
+        if response.status() == reqwest::StatusCode::NOT_FOUND {
+            return Err(format!(
+                "Sub20 {version}'s release page has no FFmpeg to download. Install FFmpeg yourself for now."
+            ));
+        }
+        if !response.status().is_success() {
+            return Err(format!("GitHub answered {} to the FFmpeg download. Try again in a while.", response.status()));
+        }
+        let size = response.content_length();
+        let path = state.fetch_dir.join(&file.name);
+        let mut out = tokio::fs::File::create(&path).await.map_err(text)?;
+        let mut this_file = 0;
+        let mut told = std::time::Instant::now();
+        on_progress.send(Fetching { stage: "downloading", fraction: Some(index as f64 / count), received }).ok();
+        while let Some(chunk) =
+            response.chunk().await.map_err(|e| format!("The FFmpeg download stopped: {e}. Try again."))?
+        {
+            out.write_all(&chunk).await.map_err(|e| format!("Couldn't save the FFmpeg download: {e}"))?;
+            this_file += chunk.len() as u64;
+            received += chunk.len() as u64;
+            if told.elapsed() >= Duration::from_millis(100) {
+                told = std::time::Instant::now();
+                let fraction = size.map(|size| (index as f64 + (this_file as f64 / size as f64).min(1.0)) / count);
+                on_progress.send(Fetching { stage: "downloading", fraction, received }).ok();
+            }
+        }
+        out.flush().await.map_err(text)?;
+        drop(out);
+
+        on_progress.send(Fetching { stage: "checking", fraction: None, received }).ok();
+        let (checked, sha256) = (path.clone(), file.sha256.clone());
+        tokio::task::spawn_blocking(move || fetch::check(&checked, &sha256)).await.map_err(text)?.map_err(text)?;
+        archives.push(path);
+    }
+
+    on_progress.send(Fetching { stage: "installing", fraction: None, received }).ok();
+    let unpacked = state.fetch_dir.join("unpacked");
+    for archive in &archives {
+        fetch::unpack(archive, &unpacked).await.map_err(text)?;
+    }
+    let dest = state.fetched_ffmpeg.clone();
+    tokio::task::spawn_blocking(move || fetch::install(&unpacked, &dest, &offer)).await.map_err(text)?.map_err(text)
 }
 
 #[derive(Serialize)]
@@ -595,14 +703,17 @@ pub fn run() {
             let _ = std::fs::remove_dir_all(cache_dir.join("work"));
             app.asset_protocol_scope().allow_directory(&thumbs_dir, true)?;
 
-            // An FFmpeg shipped inside the app wins over one on PATH.
+            // An FFmpeg shipped inside the app wins over one on PATH, and so
+            // does one the lean build downloaded (`download_ffmpeg`).
+            let fetched_ffmpeg = app.path().app_local_data_dir()?.join("ffmpeg");
             let mut bundled = Vec::new();
             let ffmpeg_notice = app
                 .path()
                 .resource_dir()
                 .ok()
                 .map(|resources| resources.join("ffmpeg").join("FFMPEG.txt"))
-                .filter(|notice| notice.is_file());
+                .filter(|notice| notice.is_file())
+                .or_else(|| Some(fetched_ffmpeg.join("FFMPEG.txt")).filter(|notice| notice.is_file()));
             if let Ok(resources) = app.path().resource_dir() {
                 bundled.push(resources.join("ffmpeg"));
                 bundled.push(resources);
@@ -610,6 +721,7 @@ pub fn run() {
             if let Some(beside) = std::env::current_exe().ok().and_then(|exe| exe.parent().map(Path::to_path_buf)) {
                 bundled.push(beside);
             }
+            bundled.push(fetched_ffmpeg.clone());
 
             let results: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
             let produced = results.clone();
@@ -653,12 +765,15 @@ pub fn run() {
                 asking: AtomicBool::new(false),
                 crash_log,
                 ffmpeg_notice,
+                fetched_ffmpeg,
+                fetch_dir: cache_dir.join("ffmpeg-download"),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             bootstrap,
             ffmpeg_status,
+            download_ffmpeg,
             add_videos,
             filmstrip,
             preview_frame,

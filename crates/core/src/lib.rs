@@ -14,7 +14,8 @@
 //! * watch a folder and compress whatever appears in it ([`watch`]),
 //! * cut thumbnails for the trim timeline ([`thumbs`]),
 //! * write a bug report's diagnostics ([`diagnostics`]),
-//! * say what went wrong in words that name the fix ([`advice`]).
+//! * say what went wrong in words that name the fix ([`advice`]),
+//! * download FFmpeg for the lean build ([`fetch`]).
 
 pub mod advice;
 pub mod command;
@@ -22,6 +23,7 @@ pub mod diagnostics;
 pub mod encoders;
 pub mod engine;
 pub mod error;
+pub mod fetch;
 pub mod ffmpeg;
 pub mod hardware;
 pub mod history;

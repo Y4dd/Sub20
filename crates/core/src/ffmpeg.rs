@@ -134,7 +134,7 @@ async fn end_tree(pid: Option<u32>) {
 #[cfg(not(windows))]
 async fn end_tree(_pid: Option<u32>) {}
 
-fn quiet(program: impl AsRef<OsStr>) -> Command {
+pub(crate) fn quiet(program: impl AsRef<OsStr>) -> Command {
     let mut cmd = Command::new(program);
     cmd.stdin(Stdio::null()).kill_on_drop(true);
     #[cfg(windows)]

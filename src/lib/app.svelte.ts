@@ -5,7 +5,7 @@ import { mockBackend } from "./mock";
 import { tauriBackend } from "./tauri";
 import { baseName, plain } from "./format";
 import type {
-  Backend, EncodeOptions, FfmpegStatus, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
+  Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
   UpdateInfo,
 } from "./types";
 
@@ -93,6 +93,12 @@ class App {
   /** FFmpeg ships inside this build. */
   bundled = $state(false);
   ffmpegNotice = $state<string | null>(null);
+  /** The FFmpeg this system can download, for the lean build without one. */
+  ffmpegOffer = $state<FfmpegOffer | null>(null);
+  /** How the FFmpeg download is going, while it runs. */
+  fetching = $state<Fetching | null>(null);
+  /** Why the last FFmpeg download failed. */
+  fetchError = $state<string | null>(null);
   clips = $state<Clip[]>([]);
   selectedKey = $state<string | null>(null);
   options = $state<EncodeOptions>({ ...FALLBACK_OPTIONS });
@@ -143,6 +149,7 @@ class App {
     this.version = boot.version;
     this.bundled = boot.bundled;
     this.ffmpegNotice = boot.ffmpegNotice;
+    this.ffmpegOffer = boot.ffmpegOffer;
     this.loadProfile(boot.settings.defaultProfile);
     if (boot.settings.lastOptions) this.#restore(boot.settings.lastOptions);
     this.#rememberOptions();
@@ -181,6 +188,24 @@ class App {
     } catch (error) {
       this.updating = false;
       this.notify(`The update did not install: ${error}. Try again, or download it from the Releases page.`);
+    }
+  }
+
+  /** Downloads the offered FFmpeg, then gets the encoder report as a found FFmpeg would. */
+  async downloadFfmpeg() {
+    if (this.fetching) return;
+    this.fetchError = null;
+    this.fetching = { stage: "downloading", fraction: 0, received: 0 };
+    try {
+      const fetched = await backend.downloadFfmpeg((progress) => (this.fetching = progress));
+      this.ffmpeg = fetched.ffmpeg;
+      this.ffmpegNotice = fetched.notice;
+      if (fetched.ffmpeg.found) void this.loadReport(true);
+      else this.fetchError = "FFmpeg was installed but won't start. Install it yourself, or choose its folder.";
+    } catch (error) {
+      this.fetchError = String(error);
+    } finally {
+      this.fetching = null;
     }
   }
 

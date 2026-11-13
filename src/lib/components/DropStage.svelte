@@ -5,15 +5,75 @@
 
   const mac = navigator.platform.toLowerCase().includes("mac");
   const windows = navigator.platform.toLowerCase().includes("win");
+
+  const offer = $derived(app.ffmpegOffer);
+  /** "BtbN", without the link. */
+  const builder = $derived(offer?.builder.split(" (")[0] ?? "");
+  const fetching = $derived(app.fetching);
+  const stageWords = $derived(
+    !fetching
+      ? ""
+      : fetching.stage === "checking"
+        ? "Checking it"
+        : fetching.stage === "installing"
+          ? "Installing"
+          : fetching.fraction === null
+            ? "Downloading FFmpeg"
+            : `Downloading FFmpeg, ${Math.floor(fetching.fraction * 100)}%`,
+  );
+
+  // The button gives way to the progress bar while it runs; when a download
+  // fails, focus comes back to it, now "Try again".
+  let fetchButton = $state<HTMLButtonElement | null>(null);
+  $effect(() => {
+    if (app.fetchError && fetchButton) fetchButton.focus();
+  });
+
+  function megabytes(bytes: number): string {
+    return (bytes / 1048576).toFixed(0);
+  }
 </script>
 
 <section class="empty" class:over={app.dragging}>
   {#if !app.ffmpeg.found}
-    <div class="notice" role="alert">
+    <div class="notice">
       <h1>FFmpeg is needed first</h1>
+      <p>Sub20 uses FFmpeg to read and write video, and could not find it on this computer.</p>
+      {#if offer}
+        <div class="fetch">
+          {#if fetching}
+            <div
+              class="progress"
+              role="progressbar"
+              aria-label="Downloading FFmpeg"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={fetching.fraction === null ? undefined : Math.floor(fetching.fraction * 100)}
+              aria-valuetext={stageWords}
+            >
+              <span class="words">
+                <b>{stageWords}</b>
+                {#if fetching.stage === "downloading"}<span class="muted">{megabytes(fetching.received)} MB</span>{/if}
+              </span>
+              <span class="bar" class:waiting={fetching.fraction === null || fetching.stage !== "downloading"}>
+                <span style:width="{fetching.stage === 'downloading' ? (fetching.fraction ?? 0) * 100 : 100}%"></span>
+              </span>
+            </div>
+          {:else}
+            <button type="button" class="primary" bind:this={fetchButton} onclick={() => app.downloadFfmpeg()}>
+              {app.fetchError ? "Try again" : "Download FFmpeg"}
+            </button>
+          {/if}
+          {#if app.fetchError}<p class="error" role="alert">{app.fetchError}</p>{/if}
+          <p class="small">
+            FFmpeg {offer.version}, built by {builder}, from Sub20's release page and checked against its pinned fingerprint.
+            It's free software under the GPL.
+          </p>
+        </div>
+      {/if}
       <p>
-        Sub20 uses FFmpeg to read and write video, and could not find it on this computer.
-        {#if mac}Install it with <code>brew install ffmpeg</code>.{:else if windows}Install it with <code>winget install ffmpeg</code>.{:else}Install it with your package manager, for example <code>sudo apt install ffmpeg</code>.{/if}
+        {offer ? "Or install it yourself" : "Install it"}
+        {#if mac}with <code>brew install ffmpeg</code>.{:else if windows}with <code>winget install ffmpeg</code>.{:else}with your package manager, for example <code>sudo apt install ffmpeg</code>.{/if}
       </p>
       <p class="choices">
         <button type="button" class="link" onclick={async () => (app.ffmpeg = await backend.ffmpegStatus())}>Look again</button>
@@ -186,5 +246,96 @@
   .choices {
     display: flex;
     gap: 20px;
+  }
+
+  .fetch {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    margin-block: 6px 4px;
+  }
+
+  .notice .small {
+    font-size: var(--step-0);
+    text-wrap: pretty;
+  }
+
+  .notice .error {
+    color: var(--bad);
+  }
+
+  .primary {
+    height: 44px;
+    padding: 0 22px;
+    border-radius: 10px;
+    background: var(--trim);
+    box-shadow: inset 0 0 0 1px var(--trim-edge);
+    color: var(--trim-ink);
+    font-size: var(--step-1);
+    font-weight: 650;
+    transition: transform 120ms var(--ease), filter 120ms;
+  }
+
+  .primary:hover {
+    filter: brightness(1.07);
+  }
+
+  .primary:active {
+    transform: scale(0.98);
+  }
+
+  .progress {
+    display: grid;
+    gap: 6px;
+    width: min(360px, 100%);
+    min-height: 44px;
+    align-content: center;
+  }
+
+  .progress .words {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .progress b {
+    font-weight: 650;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--raised);
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--trim);
+    transition: width 300ms linear;
+  }
+
+  /* Checking and installing take a moment with nothing to count. */
+  .bar.waiting span {
+    animation: breathe 1.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes breathe {
+    to {
+      opacity: 0.45;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar.waiting span {
+      animation: none;
+    }
   }
 </style>

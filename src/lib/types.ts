@@ -213,6 +213,31 @@ export interface Bootstrap {
   bundled: boolean;
   /** The bundled FFmpeg's licence and origin, as a file. */
   ffmpegNotice: string | null;
+  /** The FFmpeg this system can download when it has none. */
+  ffmpegOffer: FfmpegOffer | null;
+}
+
+/** An FFmpeg Sub20 can download (`fetch::Offer`). */
+export interface FfmpegOffer {
+  version: string;
+  builder: string;
+  source: string;
+  files: { name: string; upstream: string; sha256: string }[];
+}
+
+/** How a download of FFmpeg is going. */
+export interface Fetching {
+  stage: "downloading" | "checking" | "installing";
+  /** 0 to 1, when the size is known. */
+  fraction: number | null;
+  /** Bytes so far. */
+  received: number;
+}
+
+export interface Fetched {
+  ffmpeg: FfmpegStatus;
+  /** FFmpeg's licence and origin, as a file. */
+  notice: string;
 }
 
 export interface Added {
@@ -259,6 +284,8 @@ export interface Backend {
   onMaximized(handler: (maximized: boolean) => void): Promise<() => void>;
   bootstrap(): Promise<Bootstrap>;
   ffmpegStatus(): Promise<FfmpegStatus>;
+  /** Downloads the offered FFmpeg, checks it against its pin and installs it. */
+  downloadFfmpeg(onProgress: (progress: Fetching) => void): Promise<Fetched>;
   addVideos(paths: string[]): Promise<Added[]>;
   /** Thumbnail URLs, in order. `onThumb` hears each one as soon as it is made. */
   filmstrip(path: string, duration: number, count: number, onThumb: (index: number, url: string) => void): Promise<string[]>;

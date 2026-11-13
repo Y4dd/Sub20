@@ -3,8 +3,8 @@
 // ships behaviour: the desktop app always uses `tauri.ts`.
 
 import type {
-  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, Frame, HistoryEntry, JobEvent, JobResult, MediaInfo,
-  Plan, Quality, Report, Settings, Trim,
+  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, FfmpegOffer, FfmpegStatus, Frame, HistoryEntry, JobEvent,
+  JobResult, MediaInfo, Plan, Quality, Report, Settings, Trim,
 } from "./types";
 
 export const DEFAULT_OPTIONS: EncodeOptions = {
@@ -241,6 +241,18 @@ function simulate(id: string, job: CompressRequest) {
   timers.set(id, timer);
 }
 
+const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" };
+let noFfmpeg = new URLSearchParams(location.search).has("noffmpeg");
+const DEMO_OFFER: FfmpegOffer = {
+  version: "9.0.2",
+  builder: "Martin Riedl (https://ffmpeg.martin-riedl.de), signed and notarised",
+  source: "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+  files: [
+    { name: "FFmpeg-9.0.2-aarch64-apple-darwin-ffmpeg.zip", upstream: "https://example.invalid/ffmpeg.zip", sha256: "0".repeat(64) },
+    { name: "FFmpeg-9.0.2-aarch64-apple-darwin-ffprobe.zip", upstream: "https://example.invalid/ffprobe.zip", sha256: "0".repeat(64) },
+  ],
+};
+
 export const mockBackend: Backend = {
   demo: true,
   // The Windows frame by default; `?frame=overlay` or `?frame=native` shows the others.
@@ -257,17 +269,36 @@ export const mockBackend: Backend = {
   },
   bootstrap: async () => ({
     settings: structuredClone(settings),
-    ffmpeg: { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" },
+    // `?noffmpeg` starts as a lean build on a computer without FFmpeg.
+    ffmpeg: noFfmpeg ? { found: false, version: null, folder: null } : DEMO_FFMPEG,
     version: "0.1.0",
     bundled: false,
     ffmpegNotice: null,
+    ffmpegOffer: DEMO_OFFER,
     // `?clips` opens the demo clips at startup, so a headless screenshot can
     // show the bench without clicking.
     openedWith: new URLSearchParams(location.search).has("clips")
       ? DEMOS.slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`)
       : [],
   }),
-  ffmpegStatus: async () => ({ found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" }),
+  ffmpegStatus: async () => (noFfmpeg ? { found: false, version: null, folder: null } : DEMO_FFMPEG),
+  // `?noffmpeg=fail` makes the download fail halfway.
+  downloadFfmpeg: async (onProgress) => {
+    const size = 84 * 1048576;
+    for (let step = 0; step <= 40; step++) {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      onProgress({ stage: "downloading", fraction: step / 40, received: (size * step) / 40 });
+      if (step === 20 && new URLSearchParams(location.search).get("noffmpeg") === "fail") {
+        throw "The FFmpeg download stopped: connection reset (demo). Try again.";
+      }
+    }
+    onProgress({ stage: "checking", fraction: null, received: size });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    onProgress({ stage: "installing", fraction: null, received: size });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    noFfmpeg = false;
+    return { ffmpeg: DEMO_FFMPEG, notice: "/Users/demo/Library/Application Support/io.github.y4dd.sub20/ffmpeg/FFMPEG.txt" };
+  },
   addVideos: async (paths): Promise<Added[]> => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return paths.map((path) => {

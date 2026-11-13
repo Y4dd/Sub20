@@ -140,9 +140,15 @@ its licence text and point to its exact source.
       workflow; not yet tried on a fresh machine.
   - [ ] Ship the GPL source for the bundled FFmpeg with each release (or a
         written offer), not only its licence and origin.
-- [ ] When FFmpeg is missing (the lean build): a clear first-run screen that
+- [x] When FFmpeg is missing (the lean build): a clear first-run screen that
       offers "Download FFmpeg" (pinned URL, SHA-256 checked) or shows how to
-      install it.
+      install it. The archives come from Sub20's own release (the workflow
+      uploads them unchanged, `FFmpeg-<version>-<target>…`), because
+      BtbN deletes its daily builds after a few weeks; they're checked
+      against `scripts/ffmpeg.json`, unpacked with the system's bsdtar and
+      installed in the app's local data folder. Checked on the mock backend
+      only: the real download needs a tagged release with the archives on
+      it, so try it on the first release.
 - [x] Auto-update with `tauri-plugin-updater`, signed. One `latest.json`
       with a key per build (`windows-x86_64`, `windows-x86_64-lean`, …), so
       a bundled install stays bundled. Checked at startup (Settings can turn

@@ -6,7 +6,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
-import type { Added, Backend, Frame, JobEvent } from "./types";
+import type { Added, Backend, Fetching, Frame, JobEvent } from "./types";
 
 /** File types offered in the "choose files" dialog. */
 const VIDEO_EXTENSIONS = [
@@ -36,6 +36,11 @@ export const tauriBackend: Backend = {
   },
   bootstrap: () => invoke("bootstrap"),
   ffmpegStatus: () => invoke("ffmpeg_status"),
+  downloadFfmpeg: (onProgress) => {
+    const channel = new Channel<Fetching>();
+    channel.onmessage = onProgress;
+    return invoke("download_ffmpeg", { onProgress: channel });
+  },
   addVideos: async (paths) => {
     const added = await invoke<Added[]>("add_videos", { paths });
     for (const item of added) if (item.playUrl) playUrls.set(item.path, item.playUrl);
