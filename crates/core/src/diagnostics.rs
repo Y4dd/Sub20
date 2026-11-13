@@ -10,7 +10,7 @@ use crate::settings::Settings;
 /// Everything the report is made from. The shell gathers it.
 pub struct Facts<'a> {
     pub app_version: &'a str,
-    /// "FFmpeg included" or "lean".
+    /// "FFmpeg included" or "without FFmpeg".
     pub build: &'a str,
     /// Operating system name, version and architecture.
     pub system: &'a str,
@@ -134,7 +134,7 @@ mod tests {
         let log = vec![r"Input #0, mov, from 'C:/Users/sam/Videos/clip.mp4':".to_string()];
         let text = report(&Facts {
             app_version: "0.2.0",
-            build: "lean",
+            build: "without FFmpeg",
             system: "Windows 11 (x86_64)",
             ffmpeg: Some(("ffmpeg version 9.0.2", &folder)),
             report: Some(&tested),
@@ -144,7 +144,7 @@ mod tests {
             home: Some(&home),
         });
 
-        assert!(text.contains("**Sub20** 0.2.0 (lean)"), "{text}");
+        assert!(text.contains("**Sub20** 0.2.0 (without FFmpeg)"), "{text}");
         assert!(text.contains(r"in ~\scoop\shims"), "{text}");
         assert!(text.contains("- h264_nvenc: works"), "{text}");
         assert!(text.contains("- h264_qsv: failed (No device available)"), "{text}");

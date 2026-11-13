@@ -604,12 +604,12 @@ fn may_quit(app: &AppHandle) -> bool {
     false
 }
 
-/// "FFmpeg included" or "lean", as `update_target` decides.
+/// "FFmpeg included" or "without FFmpeg", as `update_target` decides.
 fn build_kind() -> &'static str {
     if bundled() {
         "FFmpeg included"
     } else {
-        "lean"
+        "without FFmpeg"
     }
 }
 

@@ -26,8 +26,8 @@ Things only the maintainer can do, at their own machine or account.
       artifacts: installed, compressed, and "Open with" worked for one
       video (owner, 13 November 2026). The screen reader pass is still
       open (under Hands-on testing).
-- [ ] **Ask a friend to try the lean build** on their machine, ideally one
-      without FFmpeg: install `Sub20-Lean`, check the first screen offers
+- [ ] **Ask a friend to try Sub20 without FFmpeg** on their machine, ideally
+      one with no FFmpeg: install `Sub20-without-FFmpeg`, check the first screen offers
       "Download FFmpeg", let it download, and compress a clip. A dry run's
       build will do: the download comes from Sub20's FFmpeg release
       (`ffmpeg-9.0.2-1`), not from a Sub20 release.
@@ -201,7 +201,7 @@ its licence text and point to its exact source.
         [ffmpeg-9.0.2-1](https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1)
         (13 November 2026). A written offer was ruled out: GPL 3 allows it
         only for software shipped in a physical product.
-- [x] When FFmpeg is missing (the lean build): a clear first-run screen that
+- [x] When FFmpeg is missing (Sub20 without FFmpeg): a first-run screen that
       offers "Download FFmpeg" (pinned URL, SHA-256 checked) or shows how to
       install it. The archive comes from Sub20's own FFmpeg release (the
       one the full download carries), is checked against
@@ -255,19 +255,20 @@ its licence text and point to its exact source.
       files (the AppImage only with FFmpeg, since deb and rpm users can
       install their distribution's FFmpeg), or a slimmer AppImage. What a
       person downloads matters more than the job's total; write both here.
-- [ ] **Downloads people can tell apart.** "Lean" says nothing to someone
-      choosing a file. Before the first release:
-      - A name that says what to expect, for example "Sub20" and "Sub20
-        without FFmpeg (downloads it on first run, or uses yours)". Owner
-        to pick. Change `scripts/collect-release.mjs` (`Sub20-Lean_*`),
-        the README, the plan's table below and the changelog. The updater
-        keys (`…-lean`) are internal and can stay, so existing installs
-        aren't affected.
-      - A "Which file do I need?" table in the release notes and the
-        README, per system with sizes: most people want the first row.
-      - Split the workflow's artifacts by build, not one zip per system,
-        so a tester downloads only the file they need (`windows-x64`,
-        `windows-x64-without-ffmpeg`, …).
+- [x] **Downloads people can tell apart.** "Lean" said nothing to someone
+      choosing a file. The owner picked "Sub20 without FFmpeg" (November
+      2026):
+      - Files are `Sub20-without-FFmpeg_*`; Copy diagnostics says
+        "without FFmpeg". "lean" stays the internal name (`--flavor lean`,
+        updater keys `…-lean`), so installs keep updating.
+      - The feed job rewrites the draft's notes to open with "Which file
+        do I need?": a table per system (Windows, macOS, deb, rpm,
+        AppImage) of both downloads with their sizes, built from the
+        fragments by `scripts/collect-release.mjs`. The README's Install
+        section has the same table without sizes.
+      - The workflow uploads one artifact per download
+        (`windows-x64`, `windows-x64-without-ffmpeg`, …).
+      Checked with the script on stand-in files; not yet on a dry run.
 - [x] Code signing: set aside for 1.0 (owner, November 2026). Windows and
       macOS builds ship unsigned. See [Signing](#signing).
   - [x] First-launch steps for unsigned builds in the README (SmartScreen,
@@ -350,7 +351,7 @@ Built during Phase 1, because every later phase uses it.
 - `cargo deny` (licences and advisories) and `npm audit --omit=dev`.
 
 **Release workflow** (`.github/workflows/release.yml`, on a `v*` tag)
-- Done; a dry run passed (13 November 2026). Builds two variants (FFmpeg included, lean) for
+- Done; a dry run passed (13 November 2026). Builds two variants (Sub20, and Sub20 without FFmpeg) for
   Windows x64, macOS Apple Silicon and Linux x64. Intel Macs were dropped
   in November 2026 (owner's decision): Apple stopped selling them in 2023,
   macOS 26 is the last version for them, and they cost a release job and
@@ -378,7 +379,7 @@ Built during Phase 1, because every later phase uses it.
 | Download | Who it's for | Size |
 | --- | --- | --- |
 | **Sub20** (FFmpeg included) | Everyone. The big button. | 32 MB (Windows installer) |
-| Sub20 Lean (no FFmpeg) | Package managers, people who already have FFmpeg | ~10 MB |
+| Sub20 without FFmpeg | Package managers, people who already have FFmpeg | 2.8 MB (Windows installer) |
 
 - Done (13 November 2026): Sub20 builds its own FFmpeg in CI with only the
   codecs, filters and formats it uses, and publishes it with its source.
@@ -419,7 +420,7 @@ either way: that's the updater key, not code signing.
 
 After 1.0, in this order:
 1. winget
-2. Scoop (extras bucket; the lean build can depend on Scoop's `ffmpeg`)
+2. Scoop (extras bucket; Sub20 without FFmpeg can depend on Scoop's `ffmpeg`)
 3. Homebrew cask
 4. Flathub
 5. AUR
@@ -545,7 +546,7 @@ mounted at `/app`). Deployed by one Pages workflow next to Lite.
     - Hero line: "Trim it. Fit it. Send it."
     - A looping demo video (encoded by Sub20, naturally).
     - Download for your system (detected), with the other systems and the
-      Lean build beneath it.
+      download without FFmpeg beneath it.
     - "Try it in your browser".
     - Three facts: under the limit every time, on your GPU, nothing
       uploaded.

@@ -57,11 +57,22 @@ account, no upload and no ads.
 ## Install
 
 Download from the [Releases](https://github.com/Y4dd/Sub20/releases) page.
-`Sub20` has FFmpeg built in; `Sub20-Lean` is smaller and uses the FFmpeg
-already on your system. If there is none, it offers to download the same
-FFmpeg the full build carries, checked against a pinned SHA-256. Sub20
-updates itself, and every update is signed. On a Mac, Sub20 needs Apple
-Silicon (M1 or newer); Intel Macs aren't supported.
+Each release has two kinds, and its notes open with a table of the files:
+
+| Your system | Sub20 (most people) | Sub20 without FFmpeg |
+| --- | --- | --- |
+| Windows (64-bit) | `Sub20_…_x64-setup.exe` | `Sub20-without-FFmpeg_…_x64-setup.exe` |
+| macOS (Apple Silicon, M1 or newer) | `Sub20_…_aarch64.dmg` | `Sub20-without-FFmpeg_…_aarch64.dmg` |
+| Ubuntu, Debian, Mint | `Sub20_…_amd64.deb` | `Sub20-without-FFmpeg_…_amd64.deb` |
+| Fedora, openSUSE | `Sub20-….x86_64.rpm` | `Sub20-without-FFmpeg-….x86_64.rpm` |
+| Other Linux | `Sub20_…_amd64.AppImage` | `Sub20-without-FFmpeg_…_amd64.AppImage` |
+
+**Sub20** has FFmpeg, which does the compressing, built in. **Sub20 without
+FFmpeg** is a much smaller download that uses the FFmpeg already on your
+computer; if there is none, it offers to download the same FFmpeg the other
+kind carries, checked against a pinned SHA-256. Sub20 updates itself, each
+kind to its own kind, and every update is signed. Intel Macs aren't
+supported.
 
 The Windows and macOS builds aren't code-signed yet, so the system warns
 the first time you open one:
@@ -107,8 +118,8 @@ instead of the Windows one.
 
 ### Bundling FFmpeg
 
-`npm run tauri build` makes the lean app, which finds FFmpeg on the system.
-To build the one with FFmpeg inside, as the releases do:
+`npm run tauri build` makes Sub20 without FFmpeg, which finds FFmpeg on the
+system. To build the one with FFmpeg inside, as the releases do:
 
 ```bash
 node scripts/fetch-ffmpeg.mjs
@@ -124,7 +135,7 @@ from ship inside the app.
 ### Releases
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It builds both
-kinds (FFmpeg included, and lean) for Windows, macOS (Apple Silicon) and
+kinds (Sub20, and Sub20 without FFmpeg) for Windows, macOS (Apple Silicon) and
 Linux, and puts them on a draft release with the update feed
 (`latest.json`) and `SHA256SUMS.txt`. Set the version first with
 `npm run set-version -- x.y.z`. Updates are signed; the workflow needs the

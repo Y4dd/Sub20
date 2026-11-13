@@ -23,9 +23,10 @@ What changed in each release. The format follows
 - Updates from inside the app: Sub20 checks GitHub for a newer version when
   it opens (Settings → Updates turns that off), and the title bar says when
   one is out. Updates are signed.
-- A release workflow that builds Sub20 with FFmpeg included, and a lean
-  build without it, for Windows, macOS and Linux.
-- The lean build offers to download FFmpeg when the computer has none: the
+- A release workflow that builds Sub20 with FFmpeg included, and Sub20
+  without FFmpeg, for Windows, macOS and Linux. The release notes open with
+  a table of which file to download, with sizes.
+- Sub20 without FFmpeg offers to download it when the computer has none: the
   same FFmpeg the full build carries, checked against its pinned
   fingerprint before it is installed.
 - Sub20 now builds its own FFmpeg, with only what it uses, and publishes its

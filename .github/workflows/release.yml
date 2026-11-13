@@ -51,8 +51,9 @@ jobs:
             gh release create "v$VERSION" --draft --verify-tag --title "Sub20 $VERSION" --notes-file notes.md
           fi
 
-  # One job per system: compile once, then package the lean download and the
-  # one with FFmpeg inside from the same program. The program tells them
+  # One job per system: compile once, then package the download without
+  # FFmpeg ("lean" inside the scripts) and the one with FFmpeg inside from the
+  # same program. The program tells them
   # apart at run time by the sidecar beside it (`bundled` in src-tauri).
   build:
     name: ${{ matrix.name }}
@@ -62,10 +63,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: Windows x64, os: windows-latest, target: x86_64-pc-windows-msvc, bundles: nsis }
-          - { name: macOS Apple Silicon, os: macos-latest, target: aarch64-apple-darwin, bundles: "app,dmg" }
+          - { name: Windows x64, os: windows-latest, target: x86_64-pc-windows-msvc, slug: windows-x64, bundles: nsis }
+          - { name: macOS Apple Silicon, os: macos-latest, target: aarch64-apple-darwin, slug: macos-apple-silicon, bundles: "app,dmg" }
           # 22.04 so the AppImage runs on older glibc too.
-          - { name: Linux x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, bundles: "appimage,deb,rpm" }
+          - { name: Linux x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, slug: linux-x64, bundles: "appimage,deb,rpm" }
     env:
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -106,11 +107,11 @@ jobs:
       - name: Compile
         run: npx tauri build --target ${{ matrix.target }} --no-bundle --config src-tauri/tauri.release.conf.json
 
-      - name: Package the lean download
+      - name: Package the download without FFmpeg
         shell: bash
         run: |
           npx tauri bundle --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config src-tauri/tauri.release.conf.json
-          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor lean --out upload
+          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor lean --out upload/without-ffmpeg
 
       - name: FFmpeg
         run: node scripts/fetch-ffmpeg.mjs ${{ matrix.target }}
@@ -118,22 +119,29 @@ jobs:
       - name: Package the download with FFmpeg
         shell: bash
         run: |
-          # Start from an empty bundle folder, so nothing lean is collected twice.
+          # Start from an empty bundle folder, so nothing is collected twice.
           rm -rf "target/${{ matrix.target }}/release/bundle"
           npx tauri bundle --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}             --config src-tauri/tauri.release.conf.json --config src-tauri/tauri.bundled.conf.json
-          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor full --out upload
+          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor full --out upload/full
 
       - name: Upload to the draft
         if: github.ref_type == 'tag'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v${{ needs.draft.outputs.version }}" $(ls upload/* | grep -v fragment-) --clobber
+        run: gh release upload "v${{ needs.draft.outputs.version }}" $(ls upload/*/* | grep -v fragment-) --clobber
 
+      # One artifact per download, so a tester takes only the one they need.
+      # On a tag only the fragments are kept; the files are on the draft.
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.target }}
-          path: ${{ github.ref_type == 'tag' && 'upload/fragment-*.json' || 'upload/*' }}
+          name: ${{ matrix.slug }}
+          path: ${{ github.ref_type == 'tag' && 'upload/full/fragment-*.json' || 'upload/full/*' }}
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.slug }}-without-ffmpeg
+          path: ${{ github.ref_type == 'tag' && 'upload/without-ffmpeg/fragment-*.json' || 'upload/without-ffmpeg/*' }}
           retention-days: 7
 
   feed:
@@ -150,7 +158,10 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v${{ needs.draft.outputs.version }}" feed/latest.json feed/SHA256SUMS.txt --clobber
+        run: |
+          gh release upload "v${{ needs.draft.outputs.version }}" feed/latest.json feed/SHA256SUMS.txt --clobber
+          # The notes again, now opening with "Which file do I need?" and the sizes.
+          gh release edit "v${{ needs.draft.outputs.version }}" --notes-file feed/notes.md
       - uses: actions/upload-artifact@v7
         with:
           name: feed
