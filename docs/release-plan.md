@@ -220,7 +220,9 @@ its licence text and point to its exact source.
         else, while the feed sent every Linux install the AppImage, so
         deb and rpm installs could never have updated. The bundler
         already signed the deb and rpm; the release script now collects
-        those signatures and fails if one is missing.
+        those signatures and fails if one is missing. Checked on a dry run
+        the same day: `latest.json` has all ten keys, each deb and rpm
+        key carrying that package's own signature.
   - [ ] Try an update from one real release to the next, including a deb
         on Ubuntu and an rpm on Fedora.
 - [x] "Open with Sub20" for video files, and a "Compress with Sub20" entry
