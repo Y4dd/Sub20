@@ -54,6 +54,26 @@ account, no upload and no ads.
   and Xbox Game Bar's clip folders are offered in one click when found.
 - **History** of what was compressed and what it shrank to.
 
+## Install
+
+Download from the [Releases](https://github.com/Y4dd/Sub20/releases) page.
+`Sub20` has FFmpeg built in; `Sub20-Lean` is smaller and uses the FFmpeg
+already on your system. Sub20 updates itself, and every update is signed.
+
+The Windows and macOS builds aren't code-signed yet, so the system warns
+the first time you open one:
+
+- **Windows** shows "Windows protected your PC". Click **More info**, then
+  **Run anyway**.
+- **macOS** says Sub20 can't be opened because Apple can't check it. Open
+  **System Settings → Privacy & Security**, scroll down, and click
+  **Open Anyway** next to Sub20.
+- **Linux** (AppImage, deb, rpm) opens without a warning. Make the AppImage
+  executable first: `chmod +x Sub20*.AppImage`.
+
+Each release lists SHA-256 checksums in `SHA256SUMS.txt`, to check a
+download against.
+
 ## Requirements
 
 - [FFmpeg](https://ffmpeg.org) 6 or newer, with `ffprobe`. The app looks on

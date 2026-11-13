@@ -12,19 +12,18 @@ its list is ticked.
 
 Things only the maintainer can do, at their own machine or account.
 
-- [ ] **Back up the updater key.** `~/.tauri/sub20-updater.key` (made
+- [x] **Back up the updater key.** `~/.tauri/sub20-updater.key` (made
       12 November 2026, no password) signs every update. Keep a copy
       somewhere safe and offline, such as a password manager. If it's lost,
       installed copies can never update again; if it leaks, someone else
       can sign updates.
-- [ ] **Add it to GitHub** so the release workflow can sign:
+- [x] **Add it to GitHub** so the release workflow can sign:
       `gh secret set TAURI_SIGNING_PRIVATE_KEY --repo Y4dd/Sub20 < ~/.tauri/sub20-updater.key`
 - [ ] **Dry run** the release workflow (Actions → Release → Run workflow)
       once the code is pushed, and try a Windows build with FFmpeg included.
-- [ ] **SignPath** (free Windows code signing): apply at signpath.org. They
-      need the code signing policy page (see [Signing](#signing)).
-- [ ] **Apple Developer account** ($99 a year) if macOS should be signed and
-      notarised; until then macOS is "beta, unsigned".
+- Set aside by the owner (November 2026): **SignPath** (it asks for a
+  website and proof of reputation) and an **Apple Developer account**.
+  Releases are unsigned for now; see [Signing](#signing).
 - [ ] **Discord fact left:** whether AV1 plays inline on desktop, Android
       and iOS.
 
@@ -142,7 +141,7 @@ its licence text and point to its exact source.
       with a key per build (`windows-x86_64`, `windows-x86_64-lean`, …), so
       a bundled install stays bundled. Checked at startup (Settings can turn
       it off); a link in the title bar says when one is out.
-  - [ ] Add the `TAURI_SIGNING_PRIVATE_KEY` secret and back up the key.
+  - [x] Add the `TAURI_SIGNING_PRIVATE_KEY` secret and back up the key.
   - [ ] Try an update from one real release to the next.
 - [x] "Open with Sub20" for video files, and a "Compress with Sub20" entry
       in Explorer's context menu (NSIS installer hooks; never the default
@@ -151,7 +150,10 @@ its licence text and point to its exact source.
   - [ ] Try them on each system from an installed build: Open with, the
         Explorer entry with several videos selected, Finder, and a video
         opened while Sub20 is running.
-- [ ] Code signing. See [Signing](#signing).
+- [x] Code signing: set aside for 1.0 (owner, November 2026). Windows and
+      macOS builds ship unsigned. See [Signing](#signing).
+  - [x] First-launch steps for unsigned builds in the README (SmartScreen,
+        Gatekeeper); the download page repeats them.
 
 **Small gaps that look broken to a stranger**
 - [x] Ask before quitting while jobs are running.
@@ -199,7 +201,7 @@ its licence text and point to its exact source.
 - [ ] Ten or more beta testers on at least three GPU vendors, over two
       weeks or more, with no data-loss bugs and no open crash bugs.
 - [ ] A fresh Windows machine goes from download to a finished clip in
-      Discord without reading anything.
+      Discord without reading anything beyond the SmartScreen step.
 
 ## Engineering and release infrastructure
 
@@ -242,14 +244,21 @@ Built during Phase 1, because every later phase uses it.
 
 ### Signing
 
-- **Windows:** apply to SignPath Foundation (free for OSI-licensed
-  projects; publishing a code signing policy page is a condition). Without
-  signing, SmartScreen warns "Windows protected your PC" and many people
-  stop there. The fallback is Azure Artifact Signing, about $10 a month.
-- **macOS:** notarisation needs an Apple Developer account ($99 a year).
-  Without it, Gatekeeper blocks the app. Either pay before the macOS
-  release, or label macOS "beta, unsigned" with the right-click → Open
-  steps until donations cover it.
+**Decision (owner, November 2026): no code signing for now.** SignPath
+asks for a website and proof of the project's reputation, which Sub20
+doesn't have yet, and the Apple account costs $99 a year. The cost is a
+warning on first launch, which the README explains. Updates are signed
+either way: that's the updater key, not code signing.
+
+- **Windows:** SmartScreen says "Windows protected your PC" until a build
+  earns reputation; **More info → Run anyway** opens it. Some people stop
+  there. Later, when there's a site and some downloads: SignPath Foundation
+  (free for OSI-licensed projects, needs a code signing policy page), or
+  Azure Artifact Signing at about $10 a month.
+- **macOS:** builds are ad-hoc signed, not notarised, so Gatekeeper blocks
+  the first launch. On macOS 15 and later, **System Settings → Privacy &
+  Security → Open Anyway** opens it (right-click → Open no longer does).
+  Later: an Apple Developer account, once donations cover it.
 - **Linux:** no signing needed. Flathub builds it themselves.
 
 ### Package managers
@@ -264,8 +273,8 @@ After 1.0, in this order:
 ### Repository
 
 - `LICENSE`, `CHANGELOG.md` (Keep a Changelog), `CONTRIBUTING.md`,
-  `CODE_OF_CONDUCT.md`, `SECURITY.md`, a code signing policy (SignPath
-  requires one).
+  `CODE_OF_CONDUCT.md`, `SECURITY.md`, and a code signing policy if
+  SignPath is taken up later (it requires one).
 - Issue templates for bugs (they ask for Copy diagnostics) and for feature
   requests. Discussions turned on. Labels `good first issue` and
   `help wanted`.
@@ -398,7 +407,8 @@ mounted at `/app`). Deployed by one Pages workflow next to Lite.
     upload your files, HandBrake (no size target) and LosslessCut (no size
     target).
   - **FAQ, Privacy** (no telemetry, nothing uploaded), **Changelog**
-    (from `CHANGELOG.md`), **Code signing policy**.
+    (from `CHANGELOG.md`), and **Code signing policy** if SignPath is
+    taken up.
 - **Analytics:** privacy-friendly (GoatCounter or Cloudflare Web Analytics,
   no cookies, no banner), on the site only, never in the app.
 - **Design:** the app's tokens, fonts and trim bracket, so the site and
@@ -487,11 +497,10 @@ day.
 | 3 | Phase 1 "Must have" items | 2 |
 | 4 | Bundled FFmpeg, updater, release workflow | 2 |
 | 5 | Lite prototype (go or no-go) | — (runs in parallel with 3) |
-| 6 | Apply for SignPath (needs the MIT licence, now in place) | — |
+| 6 | Code signing: set aside (owner, November 2026); SignPath once there's a site and some reputation | 9 |
 | 7 | Closed beta of desktop 0.9 | 3, 4 |
 | 8 | Lite build (if 5 passed) | 5, 2 |
 | 9 | Website and domain | 7 for real screenshots |
-| 10 | Signed 1.0, Lite, site live → launch sequence | 6, 7, 8, 9 |
+| 10 | 1.0, Lite, site live → launch sequence | 7, 8, 9 |
 
-Steps 1, 2, 5 and 6 can start today. SignPath reviews applications by
-hand, so send that one early.
+Steps 1, 2 and 5 can start today.
