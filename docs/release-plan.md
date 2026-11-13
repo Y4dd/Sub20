@@ -149,6 +149,16 @@ its licence text and point to its exact source.
   - A system notification when a watched clip is ready ("clip.mp4 is
     ready, 18.4 MB"); clicking it opens that result with Copy ready. No
     prompt per file.
+  - Watched clips stay off the bench until the user reaches for one
+    (owner agreed, November 2026). The bench is the user's working set,
+    under the dock's size and options; clips arriving on their own would
+    crowd it mid-trim and blur what "Clear finished" covers. The watch
+    view's rows have Copy and the drag-out chip for a quick hand-off.
+    Clicking a notification, or "Open" on a row, puts that clip on the
+    bench as a finished clip and selects it, so the existing finished
+    state does the rest: Original/Result preview, Copy, drag-out,
+    renaming, and the trim (editing it puts the clip back to ready, for
+    cutting a 30-second instant replay down and sending it again).
   - **Never while in a game** (owner's note: most users are gamers).
     Before showing one, ask Windows whether the user is busy
     (`SHQueryUserNotificationState`: a full-screen Direct3D game,
