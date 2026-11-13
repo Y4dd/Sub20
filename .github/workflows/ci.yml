@@ -1,9 +1,12 @@
 name: CI
 
+# Changes to prose alone (the README, the docs, the changelog) don't run it.
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**", "LICENSE", "licenses/**"]
   pull_request:
+    paths-ignore: ["**.md", "docs/**", "LICENSE", "licenses/**"]
   workflow_dispatch:
 
 concurrency:

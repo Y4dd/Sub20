@@ -51,36 +51,52 @@ jobs:
             gh release create "v$VERSION" --draft --verify-tag --title "Sub20 $VERSION" --notes-file notes.md
           fi
 
+  # One job per system: compile once, then package the lean download and the
+  # one with FFmpeg inside from the same program. The program tells them
+  # apart at run time by the sidecar beside it (`bundled` in src-tauri).
   build:
-    name: ${{ matrix.host.name }} (${{ matrix.flavor }})
+    name: ${{ matrix.name }}
     needs: draft
-    runs-on: ${{ matrix.host.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        flavor: [full, lean]
-        host:
+        include:
           - { name: Windows x64, os: windows-latest, target: x86_64-pc-windows-msvc, bundles: nsis }
           - { name: macOS Apple Silicon, os: macos-latest, target: aarch64-apple-darwin, bundles: "app,dmg" }
           - { name: macOS Intel, os: macos-latest, target: x86_64-apple-darwin, bundles: "app,dmg" }
           # 22.04 so the AppImage runs on older glibc too.
           - { name: Linux x64, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, bundles: "appimage,deb,rpm" }
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Signing key
+        shell: bash
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::The TAURI_SIGNING_PRIVATE_KEY secret is missing, so updates can't be signed."
+            exit 1
+          fi
 
       - name: Linux packages
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
-            libxdo-dev libssl-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev             libxdo-dev libssl-dev patchelf
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.host.target }}
+          targets: ${{ matrix.target }}
+      # Saved from main only: a cache saved on a tag can't be read by the next
+      # tag, while main's can be read by every tag. A dry run on main shortly
+      # before tagging leaves a warm one.
       - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.host.target }}-${{ matrix.flavor }}
+          shared-key: release-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - uses: actions/setup-node@v7
         with:
@@ -88,29 +104,25 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: FFmpeg
-        if: matrix.flavor == 'full'
-        run: node scripts/fetch-ffmpeg.mjs ${{ matrix.host.target }}
+      - name: Compile
+        run: npx tauri build --target ${{ matrix.target }} --no-bundle --config src-tauri/tauri.release.conf.json
 
-      - name: Build
+      - name: Package the lean download
         shell: bash
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          SUB20_BUNDLED: ${{ matrix.flavor == 'full' && '1' || '' }}
         run: |
-          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
-            echo "::error::The TAURI_SIGNING_PRIVATE_KEY secret is missing, so updates can't be signed."
-            exit 1
-          fi
-          # An empty SUB20_BUNDLED still counts as set for option_env!.
-          [ -n "$SUB20_BUNDLED" ] || unset SUB20_BUNDLED
-          configs=(--config src-tauri/tauri.release.conf.json)
-          if [ "${{ matrix.flavor }}" = full ]; then configs+=(--config src-tauri/tauri.bundled.conf.json); fi
-          npx tauri build --target ${{ matrix.host.target }} --bundles ${{ matrix.host.bundles }} "${configs[@]}"
+          npx tauri bundle --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config src-tauri/tauri.release.conf.json
+          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor lean --out upload
 
-      - name: Collect
-        run: node scripts/collect-release.mjs collect --target ${{ matrix.host.target }} --flavor ${{ matrix.flavor }} --out upload
+      - name: FFmpeg
+        run: node scripts/fetch-ffmpeg.mjs ${{ matrix.target }}
+
+      - name: Package the download with FFmpeg
+        shell: bash
+        run: |
+          # Start from an empty bundle folder, so nothing lean is collected twice.
+          rm -rf "target/${{ matrix.target }}/release/bundle"
+          npx tauri bundle --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}             --config src-tauri/tauri.release.conf.json --config src-tauri/tauri.bundled.conf.json
+          node scripts/collect-release.mjs collect --target ${{ matrix.target }} --flavor full --out upload
 
       - name: Upload to the draft
         if: github.ref_type == 'tag'
@@ -121,7 +133,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.host.target }}-${{ matrix.flavor }}
+          name: ${{ matrix.target }}
           path: ${{ github.ref_type == 'tag' && 'upload/fragment-*.json' || 'upload/*' }}
           retention-days: 7
 

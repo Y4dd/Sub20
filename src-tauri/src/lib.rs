@@ -8,7 +8,7 @@ mod media;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use base64::Engine as _;
@@ -98,7 +98,7 @@ async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
             WINDOW_READY.store(true, Ordering::SeqCst);
             std::mem::take(&mut *waiting)
         },
-        bundled: option_env!("SUB20_BUNDLED").is_some(),
+        bundled: bundled(),
         ffmpeg_notice: state.ffmpeg_notice.clone(),
     })
 }
@@ -396,15 +396,29 @@ fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
     }
 }
 
-/// Which update feed this build follows. The release with FFmpeg inside is
-/// built with `SUB20_BUNDLED=1`; every other build is the lean one, so an
-/// install keeps the kind it started as.
+/// Whether this is the download with FFmpeg inside: its FFmpeg sits beside
+/// the program as `sub20-ffmpeg`, where Tauri puts sidecars on every system.
+/// Read from the install rather than compiled in, so one compile serves both
+/// downloads.
+fn bundled() -> bool {
+    static BUNDLED: OnceLock<bool> = OnceLock::new();
+    *BUNDLED.get_or_init(|| {
+        std::env::current_exe().ok().and_then(|exe| exe.parent().map(has_bundled_ffmpeg)).unwrap_or(false)
+    })
+}
+
+fn has_bundled_ffmpeg(dir: &Path) -> bool {
+    dir.join(format!("sub20-ffmpeg{}", std::env::consts::EXE_SUFFIX)).is_file()
+}
+
+/// Which update feed this build follows: the download with FFmpeg inside, or
+/// the lean one, so an install keeps the kind it started as.
 fn update_target() -> String {
     let os = match std::env::consts::OS {
         "macos" => "darwin",
         other => other,
     };
-    let lean = if option_env!("SUB20_BUNDLED").is_some() { "" } else { "-lean" };
+    let lean = if bundled() { "" } else { "-lean" };
     format!("{os}-{}{lean}", std::env::consts::ARCH)
 }
 
@@ -484,7 +498,7 @@ fn may_quit(app: &AppHandle) -> bool {
 
 /// "FFmpeg included" or "lean", as `update_target` decides.
 fn build_kind() -> &'static str {
-    if option_env!("SUB20_BUNDLED").is_some() {
+    if bundled() {
         "FFmpeg included"
     } else {
         "lean"
@@ -705,6 +719,17 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_download_with_ffmpeg_inside_is_told_by_its_sidecar() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!has_bundled_ffmpeg(dir.path()));
+        // A plain `ffmpeg` beside the program is someone's own, not ours.
+        std::fs::write(dir.path().join(format!("ffmpeg{}", std::env::consts::EXE_SUFFIX)), b"x").unwrap();
+        assert!(!has_bundled_ffmpeg(dir.path()));
+        std::fs::write(dir.path().join(format!("sub20-ffmpeg{}", std::env::consts::EXE_SUFFIX)), b"x").unwrap();
+        assert!(has_bundled_ffmpeg(dir.path()));
+    }
 
     #[test]
     fn opened_files_are_made_absolute_and_missing_ones_dropped() {

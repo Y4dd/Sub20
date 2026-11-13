@@ -19,8 +19,12 @@ Things only the maintainer can do, at their own machine or account.
       can sign updates.
 - [x] **Add it to GitHub** so the release workflow can sign:
       `gh secret set TAURI_SIGNING_PRIVATE_KEY --repo Y4dd/Sub20 < ~/.tauri/sub20-updater.key`
-- [ ] **Dry run** the release workflow (Actions → Release → Run workflow)
-      once the code is pushed, and try a Windows build with FFmpeg included.
+- [x] **Dry run** the release workflow: passed on 13 November 2026, all 8
+      downloads, a signed update entry for each and the checksums, in
+      about 12 minutes.
+- [ ] **Try a Windows build with FFmpeg included** from a dry run's
+      artifacts: install it, compress a clip, check Settings says FFmpeg is
+      included.
 - Set aside by the owner (November 2026): **SignPath** (it asks for a
   website and proof of reputation) and an **Apple Developer account**.
   Releases are unsigned for now; see [Signing](#signing).
@@ -215,13 +219,17 @@ Built during Phase 1, because every later phase uses it.
 - `cargo deny` (licences and advisories) and `npm audit --omit=dev`.
 
 **Release workflow** (`.github/workflows/release.yml`, on a `v*` tag)
-- Done, not yet run. Builds two variants (FFmpeg included, lean) for
+- Done; a dry run passed (13 November 2026). Builds two variants (FFmpeg included, lean) for
   Windows x64, macOS Apple Silicon and Intel, and Linux x64. Uploads to a
   draft release with `SHA256SUMS.txt`, the updater signatures and one
   `latest.json`. Release notes come from `CHANGELOG.md`. Plain
   `tauri build` and our own scripts rather than `tauri-action`, which
   can't give two variants their own update entries.
 - Run by hand, it builds everything without releasing (a dry run).
+- One job per system compiles once and packages both variants from the
+  same program, which tells them apart at run time by the FFmpeg beside it.
+  On Windows the full installer's compression of FFmpeg takes about five
+  minutes of the ten.
 - One version number in `Cargo.toml`, `package.json` and `tauri.conf.json`,
   bumped by one script.
 
