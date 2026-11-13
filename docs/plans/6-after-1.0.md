@@ -1,0 +1,77 @@
+# Plan 6: after 1.0
+
+**Goal.** Hold everything that 1.0 doesn't need, in the order it should be
+picked up, so the plans before this one stay small.
+
+**Status.** Parked until 1.0.0 is stable. Nothing here is started before
+plan 5 is finished, unless the owner asks for one item by name.
+
+This is a list, not yet a plan. Before any item is built, it gets tasks
+with "Done when" lines here (or a plan file of its own if it is large),
+the way plans 1 to 5 are written.
+
+## In this order
+
+### 6.1 Package managers
+
+Each is also a place people find software. One at a time, as each is
+accepted:
+
+1. winget
+2. Scoop (extras bucket; "Sub20 without FFmpeg" can depend on Scoop's
+   `ffmpeg`)
+3. Homebrew cask
+4. Flathub (they build it themselves)
+5. AUR
+
+### 6.2 Code signing
+
+Set aside for 1.0 by the owner. Come back to it once there is a site and
+some downloads:
+
+- **Windows:** SignPath Foundation (free for open-source projects; needs a
+  code signing policy page on the site), or Azure Artifact Signing at
+  about $10 a month.
+- **macOS:** an Apple Developer account ($99 a year) and notarisation, once
+  donations cover it.
+
+### 6.3 The folder watch without a window
+
+"Keep watching when the window is closed": off by default, offered only
+when a watch is set up. Measured in November 2026 ([record.md](record.md)):
+the window's WebView2 holds about 350 MB even when minimised, and Sub20's
+own process about 40 MB. So closing must destroy the window, not hide it,
+and build it again when opened.
+
+- A tray menu: Open, Pause watching, Quit.
+- Watched encodes at below-normal priority, so they don't cost frames in a
+  game.
+- Windows and macOS first; trays on Linux are patchy.
+- **Budget, to be met before it ships:** under 100 MB and under 0.5% of one
+  core with a watch on and no window.
+
+### 6.4 Smaller things asked for or left over
+
+- Open a watched clip from a click on its notice, if plan 3's task 3.4
+  moved here.
+- Pick sound tracks per clip, if anyone asks. Options are global and
+  tracks differ per file, so it would sit beside the trim.
+- A top-level "Compress with Sub20" on Windows 11 (today it is under "Show
+  more options"); it needs a packaged `IExplorerCommand` handler.
+- A "Send to" shortcut, if Explorer's menu turns out to behave badly with
+  many files.
+- macOS Focus and Game Mode for watch notices, checked the way Windows was.
+- Lite: whatever moved here from plan 4 (HDR conversion, mixing tracks,
+  results on disk, other codecs).
+
+### 6.5 New features
+
+- Crop and aspect (9:16 for phones).
+- Translations (the strings are in one place after plan 3's task 3.7, or
+  that task comes first here).
+- Merge several clips into one.
+- GIF output for short clips.
+
+## Not planned
+
+By the owner's decision: a login, an Android app, storing uploads.

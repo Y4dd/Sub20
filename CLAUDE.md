@@ -138,9 +138,9 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 ## Planned next
 
-`docs/release-plan.md` is the road to a public 1.0: blockers, desktop hardening, Sub20 Lite, the website and the launch, with exit criteria per phase. Keep it current as items land. Highlights:
+`docs/plans/` is the road to a public 1.0, as six plans that run in order: 1 the website, 2 the first release (v0.9.0), 3 the desktop beta, 4 Sub20 Lite (beside 3), 5 1.0 and the launch, 6 after 1.0. `docs/plans/README.md` has the order, each plan's status, how to work from them and the rules that hold in all of them. Each plan is the source of truth for its work: numbered tasks with a "Done when" line, what only the owner can do, and exit criteria. Work on the lowest-numbered unfinished plan, tick tasks there as they land, and put new ideas into a plan before writing code for them. `docs/plans/record.md` keeps what was built and measured before the split. Highlights:
 
-- **The first release**: the release workflow, both builds and the updater exist but have not run end to end yet.
+- **The first release**: the release workflow, both builds and the updater pass a dry run but have not made a real release yet.
 - **Sub20 Lite**: built (see Lite decisions); still gated on the size test across real clips, browsers and GPUs before it ships.
 - **Discord facts**: HEVC doesn't play inline in Discord, so H.264 stays the default and HEVC must say so; AV1 does play inline (owner's test, November 2026), but H.264 stays the default because it plays on every device; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
 
