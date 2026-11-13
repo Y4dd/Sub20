@@ -296,7 +296,8 @@ case "$OS" in
     ;;
   linux)
     deps=$(ldd "$DIST/ffmpeg" | awk '{ print $1 }')
-    bad=$(echo "$deps" | grep -v -E '^(linux-vdso|/lib64/ld-linux-x86-64|libc|libm|libdl|libpthread|librt)\.so' || true)
+    # glibc's own libraries, and GCC's libgcc_s, which glibc itself needs.
+    bad=$(echo "$deps" | grep -v -E '^(linux-vdso|/lib64/ld-linux-x86-64|libc|libm|libmvec|libdl|libpthread|librt|libgcc_s)\.so' || true)
     ;;
   mac)
     deps=$(otool -L "$DIST/ffmpeg" | tail -n +2 | awk '{ print $1 }')
