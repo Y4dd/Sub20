@@ -317,14 +317,19 @@ Built during Phase 1, because every later phase uses it.
 
 | Download | Who it's for | Size |
 | --- | --- | --- |
-| **Sub20** (FFmpeg included) | Everyone. The big button. | ~60–100 MB |
+| **Sub20** (FFmpeg included) | Everyone. The big button. | 32 MB (Windows installer) |
 | Sub20 Lean (no FFmpeg) | Package managers, people who already have FFmpeg | ~10 MB |
 
 - Done (13 November 2026): Sub20 builds its own FFmpeg in CI with only the
   codecs, filters and formats it uses, and publishes it with its source.
   The archives are 36 MB (Windows), 25 MB (Linux) and 19 MB (macOS).
   Before, the full download carried BtbN's and Martin Riedl's general
-  builds.
+  builds. Measured on a dry run the same day: the Windows installer went
+  from about 97 MB to 32 MB; everything one system's job makes (both
+  downloads) went from 130 to 76 MB on macOS and from 590 to 289 MB on
+  Linux (AppImage, deb and rpm, twice). With a warm cache the whole
+  release now takes about 5 minutes; Windows packaging fell from 2.5
+  minutes to seconds.
 - Done: FFmpeg 9.0.2 ships as `externalBin` sidecars named
   `sub20-ffmpeg` and `sub20-ffprobe` (plain names would clash with the
   distribution's FFmpeg in `/usr/bin` on Linux), pinned with SHA-256 in
