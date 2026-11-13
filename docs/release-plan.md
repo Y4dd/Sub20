@@ -242,13 +242,20 @@ its licence text and point to its exact source.
         in for a selection. It already sets `MultiSelectModel=Player`
         (Explorer hides a plain verb past 15 items) and passes `"%1"`, so
         Explorer starts Sub20 once per file and the single-instance
-        plugin hands the others to the first. Not tried yet: whether
-        every file of a 20-file selection arrives, in order, when the
-        launches race the first window's startup (`OPENED`, then
-        `opened` events).
-      - If they don't, the fixes are batching on our side (collect what
-        arrives in the first moment, then add them as one) or a "Send to"
-        shortcut, which gets the whole selection on one command line.
+        plugin hands the others to the first (it retries for a second
+        when launches race the first one's startup).
+      - [x] Done (13 November 2026): each launch used to reach the window
+        as its own add, so a big selection came in out of order, moved
+        the selection around, and switched "adding" off early. The shell
+        now gathers opened videos until none arrive for 150 ms
+        (`OPENED_QUIET`) and sends them as one batch, each once, in the
+        name order Explorer shows (`in_name_order`, numbers by value);
+        the window counts overlapping adds. Tried with the release build
+        on Windows: 20 clips launched one process each in random order
+        all arrived, listed clip1 to clip20.
+      - [ ] Try it from Explorer's own menu on an installed build. A
+        "Send to" shortcut, which gets the whole selection on one command
+        line, stays an option if Explorer behaves differently.
       - On Windows 11 both sit under "Show more options". A top-level
         entry needs a packaged `IExplorerCommand` handler; not for 1.0.
       - macOS (Finder's Open With, several files are sent together) and
@@ -343,6 +350,29 @@ its licence text and point to its exact source.
   Write the numbers here, set a budget for the background case (for
   example under 100 MB and under 0.5% CPU while hidden), and fix what
   misses it before the watch can run without the window.
+
+  **First numbers** (13 November 2026, Windows 11, release build, 30 s
+  each, Sub20 and all its WebView2 processes summed):
+
+  | State | Processes | Working set | Private | CPU (one core) |
+  | --- | --- | --- | --- | --- |
+  | Idle, empty bench (from 8 s after launch) | 7 | 388 MB | 232 MB | 0.47% |
+  | Idle, 20 clips loaded | 8 | 475 MB | 270 MB | 0.05% |
+  | Minimised, 20 clips loaded | 8 | 473 MB | 268 MB | 0.05% |
+
+  - Sub20's own process is about 40 MB; the rest is WebView2, the
+    browser engine the window runs in. Minimising frees none of it.
+  - CPU at rest is near nothing once started. The empty bench's 0.47% was
+    probably startup work still finishing (nothing on that screen
+    animates), not a steady cost.
+  - Quitting left no process behind.
+  - So the memory budget can't be met with the window kept alive, even
+    hidden. "Keep watching when the window is closed" has to destroy the
+    window and its WebView2, leaving about 40 MB, and build it again
+    when opened. Measure that case when it is built.
+  - Still to measure: the folder watch idling (a large folder, a network
+    share), Sub20's share during a compress, wake-ups per second, and
+    memory over a long session.
 
 ### After 1.0 (only once 1.0 is stable)
 

@@ -502,7 +502,7 @@ fn natural(a: &str, b: &str) -> std::cmp::Ordering {
             (None, Some(_)) => return std::cmp::Ordering::Less,
             (Some(_), None) => return std::cmp::Ordering::Greater,
             (Some(x), Some(y)) if x.is_ascii_digit() && y.is_ascii_digit() => {
-                let mut run = |chars: &mut std::iter::Peekable<std::str::Chars>| {
+                let run = |chars: &mut std::iter::Peekable<std::str::Chars>| {
                     let mut digits = String::new();
                     while let Some(c) = chars.next_if(char::is_ascii_digit) {
                         digits.push(c);
