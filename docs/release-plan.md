@@ -139,6 +139,34 @@ its licence text and point to its exact source.
       (`Videos\Captures`) when those folders exist, new clips only. Steam
       isn't offered: it keeps recordings as stream segments, not video
       files, and saves an exported clip wherever the player chooses.
+- [ ] **Make the folder watch visible** (proposed November 2026, not
+      settled). Today the watch runs only while Sub20 is open, catches up
+      at the next launch on what arrived while it was closed, and shows
+      its jobs only in History and Settings. The direction discussed:
+  - A title-bar indicator, only while a watch is on, with a count while
+    it works; it opens History focused on the watch (folder, status, the
+    job in progress, recent results with Copy and the drag-out chip).
+  - A system notification when a watched clip is ready ("clip.mp4 is
+    ready, 18.4 MB"); clicking it opens that result with Copy ready. No
+    prompt per file.
+  - **Never while in a game** (owner's note: most users are gamers).
+    Before showing one, ask Windows whether the user is busy
+    (`SHQueryUserNotificationState`: a full-screen Direct3D game,
+    presentation mode, quiet hours) and hold it if so; borderless
+    windowed games don't always count as busy, so also hold it while a
+    full-screen window that isn't Sub20 has the focus. Held notices
+    become one summary ("3 clips are ready") once the user is back on
+    the desktop. Never flash the taskbar or take the focus. macOS:
+    respect Focus and Game Mode the same way.
+  - At launch, when several clips (more than five, say) piled up while
+    Sub20 was closed, ask once: compress them, or skip them.
+  - Later, only after the memory and performance profile below: "Keep
+    watching when the window is closed" (off by default, offered only
+    when a watch is set up), closing the window rather than hiding it so
+    the browser engine isn't kept running, with a tray menu (Open, Pause
+    watching, Quit) and watched encodes at below-normal priority so they
+    don't cost frames in a game. Windows and macOS first; Linux trays
+    are patchy.
 
 **Installing and updating**
 - [x] FFmpeg bundled. See [Downloads](#downloads). Built by the release
