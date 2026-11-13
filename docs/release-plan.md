@@ -202,6 +202,23 @@ its licence text and point to its exact source.
       size is chosen; segmented choices move with the arrow keys.
 - [x] About box: version, licence, the FFmpeg licence, "not affiliated
       with Discord" (the end of Settings).
+- [ ] **Memory and performance profile**, before anything that keeps Sub20
+      running in the background (such as minimise to tray for the folder
+      watch). Measure on Windows, the release build, at least:
+  - Idle with an empty bench, and idle with a few clips loaded: memory
+    (working set and private bytes, the WebView2 processes included), CPU
+    and wake-ups per second.
+  - Minimised and hidden: does the window stop animating and repainting,
+    and does CPU drop to near zero?
+  - The folder watch idling on a large folder (the NVIDIA folder) and on
+    a network share: CPU and disk per poll, memory over an hour.
+  - During a compress: Sub20's own share against FFmpeg's, and whether
+    progress events or filmstrips make the window busy.
+  - Memory after many clips added and removed, and over a long session
+    (thumbnails, preview players, history), to catch leaks.
+  Write the numbers here, set a budget for the background case (for
+  example under 100 MB and under 0.5% CPU while hidden), and fix what
+  misses it before the watch can run without the window.
 
 ### After 1.0 (only once 1.0 is stable)
 
