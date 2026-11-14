@@ -39,6 +39,10 @@ are the gate; do them before the rest.
       plays in the chat). If that proves too thin to find a miss's cause,
       publish the lab beside Lite at `/app/lab.html`.
       *Done when:* a tester can run it on a phone without help.
+      Written 14 November 2026: part 9 of `docs/testing.md`, six steps,
+      labels taken from the components (the bracket says "Choose videos"
+      on a phone, "Drop videos here" on a computer). Waits for Lite to be
+      online and a tester's run.
 - [ ] **4.3 Read the results** as they come in from the owner and testers
       (see below), and fix what misses. A browser that can't hold the limit
       after a fix is told so on Lite's first screen, as browsers without

@@ -1,9 +1,10 @@
 # Testing Sub20 by hand
 
 Thanks for trying Sub20 before 1.0. This sheet takes about twenty minutes
-for parts 1 to 3; the rest is for whoever has the hardware or the time. Do
-the steps in order, and note any step where what happened isn't what the
-sheet says.
+for parts 1 to 3; the rest is for whoever has the hardware or the time.
+Part 9 is Sub20 Lite, in a browser, and can be done on its own, on a
+phone. Do the steps in order, and note any step where what happened isn't
+what the sheet says.
 
 ## Before you start
 
@@ -173,3 +174,36 @@ Only if you have them:
 - **Nitro:** if you have it, the largest file Discord takes at 50 MB,
   500 MB and 1 GB tells us how its limits are counted. Try a result a
   little under each.
+
+## 9. Sub20 Lite, in a browser
+
+Sub20 Lite is the same app in a web page, encoding on your browser's own
+graphics card, with nothing uploaded. The owner will send its address once
+it is online. This part works on a phone as well as a computer and takes
+about ten minutes; what matters most is whether every result stays under
+the size.
+
+1. Open the address in the browser you normally use: Chrome, Edge, Firefox
+   or Safari, on a computer, an Android phone or an iPhone.
+   *Expected:* the yellow bracket, saying **Choose videos** on a phone or
+   **Drop videos here** on a computer. If it says **This browser can't do
+   it** instead, report that with the browser's name and version, and stop
+   here.
+2. Tap the bracket (or drop videos on it) and choose up to five videos you
+   would really send, at least one over 20 MB. Phone videos and game clips
+   are the most useful.
+   *Expected:* each appears in the list with a filmstrip.
+3. Leave the size at 20 MB and press **Compress**.
+   *Expected:* each finishes and shows its size under the filmstrip.
+4. Write down, for each video: its name or what it was, its length, the
+   size before, the size Lite shows after, and roughly how long it took.
+   *Expected:* every size is under 20 MB. One that isn't is the most
+   important thing to report.
+5. Send one result to Discord: **Share** on a phone, then Discord;
+   **Download** on a computer, then drag the file into a channel.
+   *Expected:* it uploads, and it plays in the chat on your phone and on
+   a computer.
+6. Report the list from step 4 and whether step 5 played, with the
+   browser, its version, the device, and its graphics card if you know
+   it. There is no Copy diagnostics in Lite, so those few words are what
+   tell us where it ran.
