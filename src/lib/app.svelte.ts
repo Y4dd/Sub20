@@ -239,6 +239,7 @@ class App {
     this.#rememberOptions();
     await backend.onJob((event) => this.#onJob(event));
     await backend.onOpened((paths) => void this.add(paths));
+    await backend.onNotice((results) => void this.openNotice(results));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
         this.dragging = false;
@@ -306,6 +307,14 @@ class App {
     clip.error = null;
     this.selectedKey = clip.key;
     this.sheet = null;
+  }
+
+  /** A watch notice was clicked: the one clip it names opens on the bench,
+   *  ready to copy; several, or a notice about failures, open History. */
+  async openNotice(results: string[]) {
+    const job = results.length === 1 ? this.watched.find((j) => j.result?.output === results[0]) : undefined;
+    if (job) return this.openWatched(job);
+    this.sheet = "history";
   }
 
   async copyWatched(job: WatchedJob) {

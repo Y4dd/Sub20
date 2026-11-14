@@ -38,8 +38,13 @@ let settings: Settings = {
 };
 
 // `?watch` sets up a watch on a demo clip folder that finds a clip now and
-// then; `?watch=pile` adds a pile that arrived while the app was closed.
+// then; `?watch=pile` adds a pile that arrived while the app was closed, and
+// `?watch=notice` clicks the notice for the first watched clip a second after
+// it is ready.
 const WATCH = new URLSearchParams(location.search).get("watch");
+/** Who hears a click on a watch notice. */
+const noticeHandlers = new Set<(results: string[]) => void>();
+let noticeClicked = false;
 const watching = { inProgress: 0, done: 0, failed: 0, waiting: WATCH === "pile" ? 12 : 0 };
 if (WATCH !== null) {
   settings.watch = { ...settings.watch, enabled: true, folder: "/Users/demo/Videos/NVIDIA", recursive: true };
@@ -257,6 +262,10 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
         watching.done++;
       }
       emit({ type: "done", id, result });
+      if (origin === "watch" && WATCH === "notice" && !noticeClicked) {
+        noticeClicked = true;
+        window.setTimeout(() => noticeHandlers.forEach((handler) => handler([result.output])), 1000);
+      }
       return;
     }
     emit({
@@ -495,4 +504,8 @@ export const mockBackend: Backend = {
   },
   onDrop: async () => () => {},
   onOpened: async () => () => {},
+  onNotice: async (handler) => {
+    noticeHandlers.add(handler);
+    return () => noticeHandlers.delete(handler);
+  },
 };

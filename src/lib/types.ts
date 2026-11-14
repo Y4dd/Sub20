@@ -400,4 +400,6 @@ export interface Backend {
   onDrop(handler: (event: DropEvent) => void): Promise<() => void>;
   /** Videos opened with Sub20 ("Open with", Explorer, Finder) while it is already running. */
   onOpened(handler: (paths: string[]) => void): Promise<() => void>;
+  /** A watch notice was clicked; it names the results it said were ready (none for failures). */
+  onNotice(handler: (results: string[]) => void): Promise<() => void>;
 }

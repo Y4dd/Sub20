@@ -446,4 +446,6 @@ export const webBackend: Backend = {
     opened.add(handler);
     return () => opened.delete(handler);
   },
+  // No folder watch, so no notices.
+  onNotice: async () => () => {},
 };

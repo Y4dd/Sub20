@@ -12,8 +12,11 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use sub20_core::job::{JobEvent, Origin};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
+
+/// The key under which a notice carries the results it names.
+const RESULTS: &str = "results";
 
 /// How often a held notice checks whether the user is back.
 const RECHECK: Duration = Duration::from_secs(10);
@@ -21,7 +24,7 @@ const RECHECK: Duration = Duration::from_secs(10);
 /// What became of one watched clip.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Outcome {
-    Ready { name: String, bytes: u64 },
+    Ready { name: String, bytes: u64, output: PathBuf },
     Failed { name: String },
 }
 
@@ -43,9 +46,11 @@ impl Notices {
                 self.watched.lock().expect("watched lock").insert(id.to_string(), input.clone());
                 return;
             }
-            JobEvent::Done { id, result } => self
-                .forget(&id.to_string())
-                .map(|_| Outcome::Ready { name: file_name(&result.output), bytes: result.size_bytes }),
+            JobEvent::Done { id, result } => self.forget(&id.to_string()).map(|_| Outcome::Ready {
+                name: file_name(&result.output),
+                bytes: result.size_bytes,
+                output: result.output.clone(),
+            }),
             JobEvent::Failed { id, .. } => {
                 self.forget(&id.to_string()).map(|source| Outcome::Failed { name: file_name(&source) })
             }
@@ -90,10 +95,44 @@ impl Notices {
     fn flush(&self, app: &AppHandle) {
         let outcomes = std::mem::take(&mut *self.held.lock().expect("held lock"));
         let Some((title, body)) = summary(&outcomes) else { return };
-        if let Err(e) = app.notification().builder().title(title).body(body).show() {
+        // A click on the notice opens what it names (see `listen`).
+        let results: Vec<&PathBuf> = outcomes
+            .iter()
+            .filter_map(|o| match o {
+                Outcome::Ready { output, .. } => Some(output),
+                Outcome::Failed { .. } => None,
+            })
+            .collect();
+        if let Err(e) = app.notification().builder().title(title).body(body).extra(RESULTS, results).show() {
             log::warn!("could not show a notification: {e}");
         }
     }
+}
+
+/// Makes a click on a notice open what it names: the window comes forward
+/// and hears `notice` with the paths of the results (none for a notice
+/// about failures), then opens one result on the bench or several in
+/// History. Call before the first notice: one shown with no handler reports
+/// nothing. On Windows a click is heard while the notice is on screen, not
+/// once it has gone to the notification centre.
+pub fn listen(app: &AppHandle) {
+    let handle = app.clone();
+    let _ = app.notification().on_action(move |performed| {
+        if performed.action_id() != "tap" {
+            return;
+        }
+        let results: Vec<PathBuf> = performed
+            .notification()
+            .and_then(|n| n.extra().get(RESULTS))
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+        if let Some(window) = handle.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+        let _ = handle.emit("notice", results);
+    });
 }
 
 fn file_name(path: &Path) -> String {
@@ -137,7 +176,7 @@ pub fn summary(outcomes: &[Outcome]) -> Option<(String, String)> {
     let ready: Vec<_> = outcomes
         .iter()
         .filter_map(|o| match o {
-            Outcome::Ready { name, bytes } => Some((name.as_str(), *bytes)),
+            Outcome::Ready { name, bytes, .. } => Some((name.as_str(), *bytes)),
             Outcome::Failed { .. } => None,
         })
         .collect();
@@ -235,7 +274,7 @@ mod tests {
     use super::*;
 
     fn ready(name: &str, mb: f64) -> Outcome {
-        Outcome::Ready { name: name.into(), bytes: (mb * 1024.0 * 1024.0) as u64 }
+        Outcome::Ready { name: name.into(), bytes: (mb * 1024.0 * 1024.0) as u64, output: PathBuf::from(name) }
     }
 
     fn failed(name: &str) -> Outcome {

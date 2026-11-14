@@ -105,6 +105,7 @@ export const tauriBackend: Backend = {
   },
   onJob: (handler) => listen<JobEvent>("job", (event) => handler(event.payload)),
   onOpened: (handler) => listen<string[]>("opened", (event) => handler(event.payload)),
+  onNotice: (handler) => listen<string[]>("notice", (event) => handler(event.payload)),
   onDrop: (handler) =>
     getCurrentWebview().onDragDropEvent((event) => {
       const payload = event.payload;

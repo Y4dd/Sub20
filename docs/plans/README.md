@@ -14,7 +14,7 @@ finished. What was built and measured before the split is in
 | --- | --- | --- | --- | --- |
 | 1 | [Website](1-website.md) | The site under `site/`, deployed to GitHub Pages with Lite at `/app`, unannounced | nothing | Built and committed; waits for Pages to be enabled and a push |
 | 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | Not started; the dry run passes |
-| 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems and three GPU makers, a two-week beta, its fixes | 2 | Not started |
+| 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems and three GPU makers, a two-week beta, its fixes | 2 | Started: test sheet written, first beta reports fixed; the hands-on pass waits on a release |
 | 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built; not tested outside this machine |
 | 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3, and 4 or a decision to launch without Lite | Not started |
 | 6 | [After 1.0](6-after-1.0.md) | Package managers, code signing, the watch without a window, new features | 5 | Parked |

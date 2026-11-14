@@ -6,7 +6,9 @@ people have used it for two weeks; and nothing they found that loses data
 or crashes is still open. After this plan the desktop app is ready to be
 called 1.0.
 
-**Status.** Not started. The features for 1.0 are built
+**Status.** Started 14 November 2026: the test sheet is written, real
+clips have run through the engine, and the first beta reports are fixed
+(3.6). The features for 1.0 are built
 ([record.md](record.md)). Most were checked on the mock backend, from the
 command line, or on one Windows machine with an NVIDIA card. What has not
 been tried by hand is listed in `CLAUDE.md` under "Verified, and not".
@@ -58,6 +60,15 @@ fix what comes back (3.6).
       why and move it to plan 6.
       *Done when:* a click opens the result in a release build on Windows,
       or the task has moved with its reason.
+      Built 14 November 2026 without an activation handler:
+      tauri-plugin-notification 2.8 reports clicks on desktop
+      (`on_action`), so `notify::listen` brings the window forward and opens
+      what the notice names (one clip on the bench, several in History).
+      On Windows that works while the notice is on screen, not from the
+      notification centre; that part would need a COM activator and a
+      registered app identity, and goes to plan 6 if testers miss it.
+      Checked on the mock (`?watch=notice`); waits for a click in a release
+      build on Windows.
 - [ ] **3.5 The first update.** When the first fix is ready, release 0.9.1
       the way plan 2 released 0.9.0. Then, on every kind someone can reach:
       0.9.0 says an update is out, installs it, restarts as 0.9.1, and

@@ -22,7 +22,8 @@ What changed in each release. The format follows
 - The folder watch shows itself: the title bar says "Watching" and what it
   is doing, History lists this session's watched clips with Open and Copy,
   and Windows tells you when one is ready, never during a game (Settings
-  turns that off). When more than five clips arrived while Sub20 was
+  turns that off); clicking the notice opens the clip, ready to copy. When
+  more than five clips arrived while Sub20 was
   closed, it asks once whether to compress them.
 - Leave a video out of Compress without removing it: "Leave out" under its
   plan, or the `s` key. It stays in the list with its trim and name, and

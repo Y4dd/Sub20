@@ -841,6 +841,7 @@ pub fn run() {
             let results: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
             let produced = results.clone();
             let window = app.handle().clone();
+            notify::listen(app.handle());
             let notices = Arc::new(notify::Notices::default());
             let sink = Arc::new(move |event: JobEvent| {
                 if let JobEvent::Done { result, .. } = &event {

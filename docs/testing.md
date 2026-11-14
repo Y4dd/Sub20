@@ -109,7 +109,8 @@ sheet says.
    *Expected:* the title bar says **Watching**.
 2. Save a clip with the NVIDIA app or Game Bar while Sub20 is open.
    *Expected:* it is compressed by itself; **History** (in the title bar) lists it with **Open** and **Copy**, and a notice says it is
-   ready.
+   ready. Click the notice while it is on screen: Sub20 comes forward with
+   the clip finished, ready to copy.
 3. Save two clips while a game fills the screen, both full screen and
    borderless if you can, then leave the game.
    *Expected:* no notice during the game; one notice afterwards saying how
