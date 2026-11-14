@@ -7,7 +7,8 @@ and pull requests are all welcome.
 
 Open an issue with the bug form. The most useful things to include:
 
-- The diagnostics: Settings, About, **Copy diagnostics**, then paste. It
+- The diagnostics: **Copy diagnostics** at the bottom of Settings, then
+  paste. It
   holds the versions, your system, GPU and the encoders found, with your
   home folder written as `~`.
 - What you did, what you expected, and what happened.

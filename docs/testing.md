@@ -1,0 +1,165 @@
+# Testing Sub20 by hand
+
+Thanks for trying Sub20 before 1.0. This sheet takes about twenty minutes
+for parts 1 to 3; the rest is for whoever has the hardware or the time. Do
+the steps in order, and note any step where what happened isn't what the
+sheet says.
+
+## Before you start
+
+- **Which download:** on the [releases page](https://github.com/Y4dd/Sub20/releases/latest),
+  take **Sub20** for your system (the table at the top of the release
+  says which file). Take **Sub20 without FFmpeg** only if part 8 asks you
+  to.
+- **A few clips:** two or three videos you would really send, at least one
+  over 20 MB. A game clip from the NVIDIA app, OBS or Xbox Game Bar, and a
+  phone video, are the most useful.
+- **Discord:** a channel or a DM where you can paste a test clip.
+
+### How to report
+
+1. In Sub20, open **Settings** (in the title bar) and press
+   **Copy diagnostics** at the bottom. It copies the versions, your
+   system, GPU and encoders, and the FFmpeg log of the video on screen.
+   Your home folder is written as `~`, and nothing is sent anywhere.
+2. Open a [bug report](https://github.com/Y4dd/Sub20/issues/new/choose),
+   say which step of this sheet it was, what you expected and what
+   happened, and paste the diagnostics into its box.
+3. Things that went right are worth telling too, with your system and GPU:
+   one line in an issue or a message to the owner is enough.
+
+## 1. Install and first launch
+
+1. **Windows:** run the installer. If SmartScreen says "Windows protected
+   your PC", click **More info**, then **Run anyway**.
+   *Expected:* it installs and Sub20 opens.
+2. **macOS:** open the disk image and drag Sub20 to Applications, then open
+   it. macOS says it can't be opened; close that. Open **System Settings →
+   Privacy & Security**, scroll down and click **Open Anyway** next to
+   Sub20, and confirm.
+   *Expected:* Sub20 opens, and opens normally from then on.
+3. **Linux:** install the deb or the rpm, or make the AppImage executable
+   (`chmod +x Sub20*.AppImage`) and run it.
+   *Expected:* Sub20 is in your applications menu (deb, rpm) and opens.
+4. *Expected on every system:* the first screen shows the yellow bracket
+   and **Drop videos here**. Settings lists encoders under **Encoders**,
+   each marked **Works** or **Not working**.
+
+## 2. Compress and send to Discord
+
+1. Drop two or three clips on the window, or press **Choose videos**.
+   *Expected:* they appear in the list on the left with a filmstrip, and
+   the first one plays in the preview.
+2. Drag the yellow handles under the preview to keep a few seconds.
+   *Expected:* the line under the timeline says what will come out (size,
+   resolution and how it should look) and changes as you drag.
+3. Leave the size at 20 MB and press **Compress** (Ctrl+Enter).
+   *Expected:* the kept part of the bracket fills from the left, with a
+   percentage and the time left, and "Compressing on the NVIDIA GPU" (or
+   your card's maker; "CPU" when no card can do it).
+4. When a clip is done, switch between **Original** and **Result**.
+   *Expected:* the result plays, and its size is under 20 MB.
+5. Press **Copy** (or Ctrl+C), then paste into Discord with Ctrl+V.
+   *Expected:* Discord attaches the video, and it plays in the chat after
+   sending.
+6. Drag the file chip (the file's name under the timeline) into a Discord
+   channel, and once into a folder.
+   *Expected:* the video is attached, and the folder gets a copy.
+7. Rename a finished clip: double-click its name in the list (or F2),
+   type a new name and press Enter.
+   *Expected:* the file on disk has the new name; **Show in folder** finds
+   it.
+8. Press **Compress** on several clips at once, then **Cancel** one of them
+   while it runs.
+   *Expected:* the canceled one stops and says **Canceled**; the others
+   finish.
+9. In Settings, under **Where results go**, choose **Replace the original**,
+   then compress a copy of a clip (not one you want to keep).
+   *Expected:* the original goes to the recycle bin or trash, and the result
+   takes its name.
+
+## 3. The window
+
+1. **Windows:** drag the window by its title bar, snap it to a side of the
+   screen, maximise and restore it with the title bar's buttons, and move
+   it to a second monitor if you have one.
+   *Expected:* each works like any other window.
+2. While a clip is compressing, close the window (the close button, Alt+F4
+   or ⌘Q).
+   *Expected:* a question offers **Stop and quit** or **Keep compressing**;
+   **Keep compressing** keeps it going, **Stop and quit** closes Sub20 and
+   leaves no half-written file beside the clip.
+3. Press `?`.
+   *Expected:* the keyboard shortcuts open; Escape closes them.
+4. **Linux and macOS:** the preview plays the original and the result.
+
+## 4. The folder watch (Windows)
+
+1. In Settings, under **Watch a folder**, press **Watch NVIDIA app clips**
+   or **Watch Xbox Game Bar clips** (each appears when its folder exists).
+   *Expected:* the title bar says **Watching**.
+2. Save a clip with the NVIDIA app or Game Bar while Sub20 is open.
+   *Expected:* it is compressed by itself; **History** (in the title bar) lists it with **Open** and **Copy**, and a notice says it is
+   ready.
+3. Save two clips while a game fills the screen, both full screen and
+   borderless if you can, then leave the game.
+   *Expected:* no notice during the game; one notice afterwards saying how
+   many are ready.
+
+## 5. Opening videos from the system
+
+1. **Windows:** right-click a video in Explorer, **Open with**, Sub20.
+   Then select several videos, right-click, and choose **Compress with
+   Sub20** (under **Show more options** on Windows 11).
+   *Expected:* they all arrive in Sub20's list together, in name order.
+2. With Sub20 already open, open another video with it the same way.
+   *Expected:* it joins the list in the open window; no second window.
+3. **macOS:** select several videos in Finder, **Open With**, Sub20.
+   **Linux:** open a video with Sub20 from your file manager.
+   *Expected:* they arrive in the list.
+
+## 6. Updating
+
+When the next version is out (the owner will say):
+
+1. Open Sub20. *Expected:* Settings, under **Updates**, says it is out,
+   with **Update and restart**.
+2. Press it. *Expected:* Sub20 restarts as the new version, and stays the
+   kind you installed (with or without FFmpeg; a deb stays a deb, an rpm
+   an rpm).
+
+## 7. A screen reader
+
+With NVDA (Windows) or VoiceOver (macOS):
+
+1. Move through the window with Tab. *Expected:* every button and field is
+   reached and has a name that says what it does.
+2. Open Settings, Options and History. *Expected:* focus stays inside the
+   open sheet; Escape closes it and focus goes back where it was.
+3. Change the size and the options' choices with the arrow keys.
+   *Expected:* each change is announced.
+
+## 8. Hardware and special cases
+
+Only if you have them:
+
+- **An Intel or AMD graphics card:** compress a clip (part 2, steps 1 to
+  4). *Expected:* it says "Compressing on the Intel GPU" or "on the AMD GPU",
+  and the result is under the size. Send the diagnostics either way.
+- **macOS:** the same, "on the Apple GPU". **Linux:** "on the GPU
+  (VAAPI)", where the driver has it.
+- **An HDR video** (an iPhone on its default settings, or a game recorded
+  in HDR). *Expected:* the line under the timeline says "HDR, converted to
+  ordinary colour", and the result's colours look like the original, not
+  grey.
+- **A video with the microphone on its own track** (OBS or the NVIDIA app
+  set that way). *Expected:* the line says "2 sound tracks, mixed", and
+  your voice is in the result.
+- **Sub20 without FFmpeg, on a computer with no FFmpeg.** *Expected:* the
+  first screen says **FFmpeg is needed first** and offers **Download
+  FFmpeg**; after it downloads, a clip compresses as in part 2.
+- **If Sub20 ever closes by itself:** open it again, press **Copy
+  diagnostics** (it includes the crash log), and report it.
+- **Nitro:** if you have it, the largest file Discord takes at 50 MB,
+  500 MB and 1 GB tells us how its limits are counted. Try a result a
+  little under each.

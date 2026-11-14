@@ -29,6 +29,9 @@ fix what comes back (3.6).
       "By hand" below, so a filled-in sheet ticks them.
       *Done when:* the sheet exists and the owner has followed it once on
       Windows without asking what a step means.
+      Written 14 November 2026, every label taken from the components
+      (parts 1 to 3 are the twenty minutes; 4 to 8 cover the rest of "By
+      hand"). Waits for the owner's run on Windows.
 - [ ] **3.2 Real clips through the engine.** With files the owner
       provides, run `cargo run -p sub20-core --example compress` on: an OBS
       recording (MKV, game and microphone on separate tracks), an NVIDIA

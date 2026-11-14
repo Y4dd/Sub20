@@ -32,7 +32,7 @@ body:
     id: diagnostics
     attributes:
       label: Diagnostics
-      description: In the desktop app, open Settings, then About, press Copy diagnostics and paste here. It holds the versions, your system, GPU, the encoders found and the FFmpeg log of the video on screen, with your home folder written as ~. In Sub20 Lite, give your browser and device instead.
+      description: In the desktop app, open Settings, press Copy diagnostics at the bottom and paste here. It holds the versions, your system, GPU, the encoders found and the FFmpeg log of the video on screen, with your home folder written as ~. In Sub20 Lite, give your browser and device instead.
       render: text
   - type: textarea
     id: source
