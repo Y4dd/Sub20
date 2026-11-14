@@ -15,7 +15,7 @@ import { loadPlanner } from "./planner";
 
 const LITE: Capabilities = {
   watch: false, replace: false, files: false, encoders: false, ffmpeg: false, copyFile: false, dragOut: false,
-  updates: false, download: true, history: false, cut: false,
+  updates: false, download: true, history: false, cut: false, toneMap: false, mixAudio: true,
   // Phones and tablets hand a file straight to the Discord app. A computer
   // downloads it instead, and the file drags into Discord from there.
   share: matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function" && navigator.canShare({ files: [new File([], "x.mp4", { type: "video/mp4" })] }),
@@ -159,7 +159,7 @@ async function run(job: Job) {
     const plan = planner.plan(source, request.trim, request.options);
     emit({ type: "progress", id, phase: "analyzing", percent: 0, speed: null, etaSeconds: null, outBytes: 0 });
     let started = false;
-    const fitted = await fit(file, source, plan, { bitrateMode: "constant", hardware: "no-preference" }, {
+    const fitted = await fit(file, source, plan, { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio }, {
       signal: job.stop.signal,
       onProgress: (_attempt, fraction) => {
         if (!started) {
@@ -304,9 +304,9 @@ export const webBackend: Backend = {
         try {
           const info = await (await media()).probe(file);
           if (!info.hasVideo) return { path, name, info: null, playUrl: null, error: "This file has no video this browser can read." };
-          // Lite has no tone mapping: HDR comes out flat, and the stage
-          // must not claim it is converted.
-          return { path, name, info: { ...info, hdr: null }, playUrl: urlOf(path), error: null };
+          // HDR and extra sound tracks are kept in the facts: the stage
+          // says Lite can't convert or mix them yet (`can.toneMap`, `can.mixAudio`).
+          return { path, name, info, playUrl: urlOf(path), error: null };
         } catch {
           return { path, name, info: null, playUrl: null, error: "This browser can't read this file." };
         }

@@ -313,11 +313,15 @@ export interface Capabilities {
   history: boolean;
   /** Cut a finished result shorter without compressing it again. */
   cut: boolean;
+  /** Convert HDR to ordinary colour. */
+  toneMap: boolean;
+  /** Mix every sound track into one. */
+  mixAudio: boolean;
 }
 
 export const DESKTOP: Capabilities = {
   watch: true, replace: true, files: true, encoders: true, ffmpeg: true, copyFile: true, dragOut: true, updates: true,
-  download: false, share: false, history: true, cut: true,
+  download: false, share: false, history: true, cut: true, toneMap: true, mixAudio: true,
 };
 
 /** A finished cut (`sub20_core::cut::Cut`). */

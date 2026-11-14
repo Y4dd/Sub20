@@ -53,12 +53,22 @@ are the gate; do them before the rest.
       if the colour measures close to the desktop's result.
       *Done when:* the warning is there, and the conversion is either in or
       moved to plan 6 with what was measured.
-- [ ] **4.5 Several sound tracks.** Lite keeps the first only, which loses
+      Warning in, 14 November 2026: Lite keeps `info.hdr` and the stage
+      says "HDR, the colours will come out flat here (the desktop app
+      converts them)" (`can.toneMap`), checked on a generated PQ clip.
+      Left: the conversion.
+- [x] **4.5 Several sound tracks.** Lite keeps the first only, which loses
       a microphone recorded on its own track. First, say it on the stage
       ("2 sound tracks, only the first is kept"). Then mix them (decode
       each, sum with a limiter, as the desktop does).
       *Done when:* the line is there, and mixing is either in and heard in
       a test clip, or moved to plan 6.
+      Done 14 November 2026: Lite mixes every track (`web/mix.ts`, the
+      desktop's rule: stereo, summed at full volume, limited at 0.95), and
+      Options shows "Mix all sound tracks" there too. A 44.1 kHz mono mic
+      beside a silent game track came out at full volume (peak 0.131, as
+      in the source), and two loud tracks peaked at 0.95. With mixing off
+      the stage says "2 sound tracks, only the first is kept".
 - [ ] **4.6 A planner that knows the GPU's limits.** Today Lite plans, then
       steps down the resolution ladder when the encoder refuses a size
       (1440p60 on this GPU). Ask the encoder first and plan within what it

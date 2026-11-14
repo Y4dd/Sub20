@@ -8,11 +8,14 @@ import {
   type AudioCodec,
 } from "mediabunny";
 import type { MediaInfo, Plan } from "../types";
+import { Mixer, RATE } from "./mix";
 import { loadPlanner } from "./planner";
 
 export interface FitSettings {
   bitrateMode: "variable" | "constant";
   hardware: "no-preference" | "prefer-hardware" | "prefer-software";
+  /** Mix every sound track into one (`mix.ts`); off keeps the first. */
+  mixAudio: boolean;
 }
 
 export interface Attempt {
@@ -191,7 +194,14 @@ async function encode(
   signal?.throwIfAborted();
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
   const output = new Output({ format: new Mp4OutputFormat({ fastStart: "in-memory" }), target: new BufferTarget() });
+  let mixer: Mixer | null = null;
   try {
+    if (audio && settings.mixAudio) {
+      const primary = await input.getPrimaryAudioTrack();
+      const others = (await input.getAudioTracks()).filter((track) => track.id !== primary?.id);
+      const start = plan.trimmed ? plan.start : 0;
+      if (others.length) mixer = new Mixer(others, start, start + plan.duration);
+    }
     const conversion = await Conversion.init({
       input,
       output,
@@ -208,7 +218,14 @@ async function encode(
         hardwareAcceleration: settings.hardware,
       },
       audio: audio
-        ? { codec: audio, forceTranscode: true, quality: new Quality({ bitrate: plan.audioKbps * 1000 }) }
+        ? {
+            codec: audio,
+            forceTranscode: true,
+            quality: new Quality({ bitrate: plan.audioKbps * 1000 }),
+            ...(mixer
+              ? { numberOfChannels: 2, sampleRate: RATE, process: mixer.process, processedNumberOfChannels: 2, processedSampleRate: RATE }
+              : {}),
+          }
         : { discard: true },
       showWarnings: false,
     });
@@ -227,6 +244,7 @@ async function encode(
     signal?.throwIfAborted();
     return new Blob([output.target.buffer!], { type: "video/mp4" });
   } finally {
+    await mixer?.close().catch(() => {});
     input.dispose();
   }
 }

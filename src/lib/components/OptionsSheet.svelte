@@ -305,12 +305,14 @@
       {/if}
     </div>
 
-    {#if backend.can.ffmpeg}
     <div class="toggles">
+      {#if backend.can.mixAudio}
       <Toggle checked={o.mixAudio} disabled={o.audio === "none" && !o.audioOnly} onchange={(on) => (o.mixAudio = on)}>
         Mix all sound tracks
         <small>Keeps a microphone that OBS or the NVIDIA app recorded on its own track.</small>
       </Toggle>
+      {/if}
+      {#if backend.can.ffmpeg}
       <Toggle checked={o.audioOnly} onchange={(on) => { o.audioOnly = on; if (on && o.audio === "none") o.audio = "aac"; }}>
         Keep only the sound
         <small>Writes an audio file and drops the picture.</small>
@@ -323,8 +325,8 @@
         Skip the finishing step on MP4
         <small>Long videos save sooner. A few older players cannot open the result.</small>
       </Toggle>
+      {/if}
     </div>
-    {/if}
   </details>
 </Sheet>
 

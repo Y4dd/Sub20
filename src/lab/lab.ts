@@ -127,7 +127,7 @@ async function runAll(list: File[]) {
   for (const r of results) if (r.url) URL.revokeObjectURL(r.url);
   results = list.map((f) => ({ name: f.name, sourceBytes: f.size, attempts: [] }));
   render();
-  const settings: FitSettings = { bitrateMode: mode.value as FitSettings["bitrateMode"], hardware: hardware.value as FitSettings["hardware"] };
+  const settings: FitSettings = { bitrateMode: mode.value as FitSettings["bitrateMode"], hardware: hardware.value as FitSettings["hardware"], mixAudio: true };
   const options = { ...DEFAULT_OPTIONS, targetMb: Number(target.value) || 20 };
 
   for (const [i, file] of list.entries()) {

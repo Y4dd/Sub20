@@ -180,11 +180,18 @@
     parts.push(megabytes(info.sizeBytes));
     // HDR is turned into ordinary colour, so it doesn't play grey in Discord.
     if (info.hdr && !app.options.audioOnly) {
-      parts.push(app.report && !app.report.toneMap ? "HDR (this FFmpeg can't convert it, it may look grey)" : "HDR, converted to ordinary colour");
+      parts.push(
+        !backend.can.toneMap
+          ? "HDR, the colours will come out flat here (the desktop app converts them)"
+          : app.report && !app.report.toneMap
+            ? "HDR (this FFmpeg can't convert it, it may look grey)"
+            : "HDR, converted to ordinary colour",
+      );
     }
     // Several sound tracks usually means game and microphone kept apart.
     if (info.audioTracks > 1 && (app.options.audio !== "none" || app.options.audioOnly)) {
-      parts.push(`${info.audioTracks} sound tracks, ${app.options.mixAudio ? "mixed" : "first only"}`);
+      const mixed = backend.can.mixAudio && app.options.mixAudio;
+      parts.push(`${info.audioTracks} sound tracks, ${mixed ? "mixed" : "only the first is kept"}`);
     }
     return parts.join(", ");
   });
