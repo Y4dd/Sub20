@@ -3,13 +3,13 @@
 // screen (the close and the footer). The kit in public/assets is the design
 // system (tasteskill, MIT, its licence beside it); the palette and fonts are
 // the app's own (src/app.css), so the site and the app read as one thing.
-import "@fontsource-variable/bricolage-grotesque/wdth.css";
+import "../styles/fonts.css";
 import "@fontsource-variable/hanken-grotesk/wght.css";
 import "../styles/site.css";
-// The same files the two imports above point to, preloaded so the first
-// screen's text paints in its own fonts without waiting for the CSS
-// (Lighthouse on a phone: first paint 1.7 s with both, 2.2 s with one).
-import displayFont from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2?url";
+// The Latin files of both faces (the same ones the CSS points to), preloaded
+// so the first screen's text paints in its own fonts without waiting for the
+// CSS (Lighthouse on a phone: first paint 1.7 s with both, 2.2 s with one).
+import displayFont from "../assets/fonts/bricolage-grotesque-display-latin.woff2?url";
 import textFont from "@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url";
 import Shot from "../components/Shot.astro";
 import { u, GITHUB } from "../lib/site";

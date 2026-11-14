@@ -158,21 +158,20 @@ invented.
       `site/**` and `pages.yml`. Run locally: Lite at `/Sub20/app/` loads
       and its service worker registers, and every link on the home page and
       a guide answers under `/Sub20/`.
-- [ ] **1.9 Finish gate and Lighthouse.** The gate's last run, and
+- [x] **1.9 Finish gate and Lighthouse.** The gate's last run, and
       Lighthouse on a phone profile for the home page and one guide.
       *Done when:* the gate passes and both score 95 or more for
       performance and accessibility.
-      Gate done, Lighthouse short on the home page, 14 November 2026: the
-      gate passed in round 2 (round 1 failed
+      Done 14 November 2026: the gate passed in round 2 (round 1 failed
       `button-styles` at 390, the selected size tile's outline). Lighthouse
       on a phone, behind a gzip server as Pages serves: the iPhone guide 96
       for performance, 100 for accessibility, best practices and SEO; the
-      home page 93 and 100. Dropping the kit's unused grounds and
-      preloading both fonts took first paint from 2.4 s to 1.7 s; the home
-      page's LCP (3.2 s) is the hero lead's place in the kit's entrance,
-      which the skill requires. Measure again live in 1.11; if the home
-      page is still under 95 there, the owner decides between the score and
-      the entrance.
+      home page 95 (three runs) and 100. It started at 74 (89 with gzip):
+      dropping the kit's unused grounds and preloading both fonts took
+      first paint from 2.4 s to 1.7 s (93), and cutting the display face to
+      the widths and weights the site uses (78 KB to 57 KB,
+      `npm run fonts`) took LCP to 2.8 s (95). The rest of the LCP is the
+      hero's entrance, which the skill requires. Measure again live in 1.11.
 - [x] **1.10 Write it down and commit.** A "Site decisions" section in
       `CLAUDE.md` (stack, the address variables, the checks, what the kit
       is), a `CHANGELOG.md` line, the plan's table. Commit `site/`, the
@@ -197,8 +196,8 @@ invented.
 
 ## Exit criteria
 
-- [ ] The finish gate passes and Lighthouse on a phone is 95 or more.
-      (The gate passes; the home page scored 93 locally, the guide 96.)
+- [x] The finish gate passes and Lighthouse on a phone is 95 or more.
+      (Locally: home 95, the guide 97. Seen again live in 1.11.)
 - [ ] The download links read the latest release at build time, and fall
       back to the releases page when there is none. (Seen with a real
       release in plan 2, task 2.8.)
