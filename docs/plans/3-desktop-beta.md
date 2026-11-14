@@ -42,6 +42,9 @@ fix what comes back (3.6).
       the result's colour with the source.
       *Done when:* each kind the owner could provide came out under the
       limit and looks and sounds right, or has an issue.
+      Started 14 November 2026: the NVIDIA app clips on this machine,
+      including HEVC and 2-3 minute recordings, all under on the first try
+      ([record.md](record.md)). Left: the other kinds, which need files.
 - [ ] **3.3 A long real recording** (an hour or more) in a release test
       copy: memory while it loads and compresses, the time estimate against
       the real time, Page Up and Page Down on the trim handles.

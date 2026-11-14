@@ -28,6 +28,9 @@ are the gate; do them before the rest.
       `npm run dev`, with the owner's NVIDIA clips and whatever plan 3's
       task 3.2 collected (OBS, iPhone, Android), at 20 MB: how close each
       lands, how many tries, how long. Results into the record.
+      Started 14 November 2026: 13 of the owner's NVIDIA clips, all under
+      on the first try ([record.md](record.md)). Left: OBS, iPhone and
+      Android clips from 3.2.
       *Done when:* every clip is under, or each miss has a cause and a fix.
 - [ ] **4.2 A way to test on other devices.** The lab page is in neither
       build, and a phone can't run `npm run dev`. Use Lite itself: a short

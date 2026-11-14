@@ -49,6 +49,19 @@ Built, and how far each was checked:
   99.7% of the limit. `h264_nvenc` landed 17% and 6% over on two short AV1
   sources and the retry fixed both. A clip recorded at a nominal 240 fps
   averaging 60 kept 60 fps.
+- **More NVIDIA app clips, desktop engine (14 November 2026):** an HEVC
+  2560x1600 clip (28.6 s) came out at 18.37 MB for 20 and 8.49 MB for 10;
+  a 30 s 1080p60 recording of 218 MB at 19.29 MB; Black Myth: Wukong
+  recordings of 2 min 20 s (740 MB) at 18.86 MB, scaled to 1080p, and of
+  2 min 49 s (902 MB) at 19.37 MB, scaled to 720p, softer but with the
+  colours intact. All `h264_nvenc`, first try, 5 to 9 s each.
+- **Sub20 Lite on the same machine's clips** (Edge 157 headless, GPU
+  encoder, constant bitrate, 20 MB, 14 November 2026): 12 of 12 under on
+  the first try, at 65.1 to 99.1% of the limit: eight 4.5 to 21 s clips
+  from The Finals (AV1 and H.264, 1080p30 and 60), a 59 s AV1 aim-trainer
+  clip, an 82 s AV1 clip and two 30 s 1080p60 recordings of 123 and
+  218 MB. 93 s for all twelve. The 10 MB run of the HEVC clip landed at
+  96.9%.
 - **A generated 2-hour 4K file** (3.5 GB) came out at 491 MB for a 500 MB
   limit (1080p, `h264_nvenc`, 3.9% over on the first try, fixed by the
   retry) in 4.5 minutes. At 20 MB the plan is refused: "it holds 37 minutes
