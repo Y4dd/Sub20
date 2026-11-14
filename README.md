@@ -4,6 +4,10 @@
 
 Trim a clip and get it under 20 MB, ready for Discord.
 
+**[Download Sub20](https://github.com/Y4dd/Sub20/releases/latest)** for
+Windows 10 and 11, macOS 11 or newer (Apple Silicon) and Linux. It's free.
+[Which file do I need?](#install)
+
 I kept cutting clips and re-encoding them by hand to fit under Discord's upload
 limit, so I made one app that does both. Drop videos in, trim each one with two
 handles, pick a size, and every result comes out under it. Encoding runs on the
@@ -90,9 +94,11 @@ download against.
 
 ## Requirements
 
-- [FFmpeg](https://ffmpeg.org) 6 or newer, with `ffprobe`. The app looks on
-  `PATH`, in the usual install folders, and in a folder you choose in
-  Settings. The download marked "FFmpeg included" has it built in.
+- **Sub20** needs nothing else installed: FFmpeg is built in.
+- **Sub20 without FFmpeg** uses [FFmpeg](https://ffmpeg.org) 6 or newer,
+  with `ffprobe`. It looks on `PATH`, in the usual install folders, and in
+  a folder you choose in Settings; with none found, its first screen offers
+  to download it.
 - To build: [Rust](https://rustup.rs) 1.80+, Node.js 20+, and the
   [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your system
   (WebView2 on Windows, Xcode command line tools on macOS, WebKitGTK 4.1 on
@@ -250,13 +256,14 @@ at 720p, so when a limit is too tight for it the job switches to the CPU
 encoder rather than save a file over the limit. The other hardware encoder
 paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) use common
 FFmpeg settings for those encoders but have only been exercised through their
-failure-and-fallback path so far. The app window has not been run on Windows
-or macOS yet.
+failure-and-fallback path so far. A release-style build has been installed
+and used on Windows; the app has not been run on macOS yet.
 
 ## Coming next
 
-- Downloads on the [Releases](../../releases) page, with FFmpeg included
-  or without it, and updates from inside the app.
+The road to 1.0 is in [docs/plans](docs/plans/README.md): the first
+release, a beta with testers on Windows, macOS and Linux, and Sub20 Lite,
+the same app in a browser with nothing uploaded.
 
 ## Licence
 

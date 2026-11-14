@@ -50,6 +50,11 @@ test of the download without FFmpeg.
       The demo GIF's place is left for plan 5.
       *Done when:* someone who has never seen Sub20 finds the right file
       from the README's first screen.
+      Partly done 14 November 2026: a download line under the tagline
+      (latest release, the three systems, "Which file do I need?" to the
+      Install table), Requirements per download, the Windows run recorded,
+      "Coming next" pointing to the plans. Left: the "Try it in your
+      browser" line, once the site is live (1.11).
 - [ ] **2.3 The AppImage without FFmpeg: keep it.** It is 79 MB because it
       carries its own WebKitGTK, and few will pick it. Keeping it costs
       nothing but storage, and dropping it after a release would leave its
