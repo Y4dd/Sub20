@@ -27,17 +27,22 @@ test of the download without FFmpeg.
 - `CHANGELOG.md` has everything under "Unreleased". The version is 0.1.0.
 - In the repository: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, issue
   templates for bugs and features, a pull request template. Missing:
-  `CODE_OF_CONDUCT.md`, `FUNDING.yml`, the labels, Discussions.
+  `FUNDING.yml`, the labels, Discussions.
 - The release cache is saved from `main` only, so a dry run on `main`
   shortly before tagging leaves it warm (about 6 minutes instead of 12).
 
 ## Tasks
 
-- [ ] **2.1 Repository files.** `CODE_OF_CONDUCT.md` (Contributor
+- [x] **2.1 Repository files.** `CODE_OF_CONDUCT.md` (Contributor
       Covenant), and a look through `CONTRIBUTING.md`, `SECURITY.md` and
       the bug template: the template asks for Copy diagnostics, and none
       of them names something that no longer exists.
       *Done when:* the files are committed.
+      Done 14 November 2026: the Contributor Covenant 2.0 from GitHub's
+      template, reports going to the private report form (no address is
+      published); the bug form asks for Copy diagnostics in place of the
+      GPU and log fields and no longer offers Intel Macs; `CONTRIBUTING.md`
+      points to both. Private reporting itself is off: see below.
 - [ ] **2.2 README for a stranger.** The top reads: what it is, the
       download, "Try it in your browser" (the site's `/app`, once plan 1
       is live), then the rest. The Requirements section says the main
@@ -86,6 +91,11 @@ test of the download without FFmpeg.
 - [ ] **A friend installs "Sub20 without FFmpeg"** on a machine with no
       FFmpeg: the first screen offers "Download FFmpeg", it downloads, a
       clip compresses. A dry-run build will do.
+- [ ] **Turn on private vulnerability reporting:** repository Settings →
+      Advanced Security (or Code security) → Private vulnerability
+      reporting → Enable. `SECURITY.md`, the code of conduct and the issue
+      form's "Security problem" link all send people to it, and it was off
+      on 14 November 2026. (Or say so, and the AI turns it on with `gh`.)
 - [ ] **Say when to push, and when to tag.**
 - [ ] **Publish the draft release.**
 - [ ] Optional: a GitHub Sponsors or Ko-fi account, then `FUNDING.yml`.

@@ -7,7 +7,9 @@ and pull requests are all welcome.
 
 Open an issue with the bug form. The most useful things to include:
 
-- Your system, GPU, and the Sub20 and FFmpeg versions (Settings shows them).
+- The diagnostics: Settings, About, **Copy diagnostics**, then paste. It
+  holds the versions, your system, GPU and the encoders found, with your
+  home folder written as `~`.
 - What you did, what you expected, and what happened.
 - The FFmpeg log for the job ("Show log" under the video).
 - If you can share it, a short clip that shows the problem.
@@ -65,6 +67,6 @@ CI runs the same checks on Windows, macOS and Linux.
 
 ## Conduct
 
-Be kind and assume good intent. Harassment, insults and personal attacks
-aren't welcome in issues, pull requests or discussions, and the maintainer
-will remove them and may block whoever posts them.
+Be kind and assume good intent. Everyone taking part follows the
+[code of conduct](CODE_OF_CONDUCT.md), which also says how to report a
+problem privately.

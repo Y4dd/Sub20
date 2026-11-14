@@ -13,7 +13,7 @@ body:
     id: version
     attributes:
       label: Sub20 version
-      placeholder: "0.1.0"
+      placeholder: "0.9.0"
     validations:
       required: true
   - type: dropdown
@@ -24,21 +24,15 @@ body:
         - Windows 11
         - Windows 10
         - macOS (Apple Silicon)
-        - macOS (Intel)
         - Linux
         - Sub20 Lite (in a browser)
     validations:
       required: true
-  - type: input
-    id: gpu
-    attributes:
-      label: GPU and FFmpeg version
-      placeholder: "NVIDIA RTX 4070, FFmpeg 7.1"
   - type: textarea
-    id: log
+    id: diagnostics
     attributes:
-      label: FFmpeg log
-      description: For a failed or wrong result, "Show log" under that video. Paste it here.
+      label: Diagnostics
+      description: In the desktop app, open Settings, then About, press Copy diagnostics and paste here. It holds the versions, your system, GPU, the encoders found and the FFmpeg log of the video on screen, with your home folder written as ~. In Sub20 Lite, give your browser and device instead.
       render: text
   - type: textarea
     id: source
