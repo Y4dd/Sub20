@@ -281,6 +281,13 @@ export interface UpdateInfo {
 /** What a backend can do; the window hides what it can't. The desktop app
  *  can do everything except `share`; Sub20 Lite in a browser can't reach
  *  files, folders or FFmpeg. */
+/** Mirrors `sub20_core::crawl::Found`. */
+export interface Found {
+  files: string[];
+  /** The search stopped at 1,000 videos. */
+  capped: boolean;
+}
+
 export interface Capabilities {
   /** Watch a folder and compress what lands in it. */
   watch: boolean;
@@ -328,6 +335,9 @@ export interface Backend {
   ffmpegStatus(): Promise<FfmpegStatus>;
   /** Downloads the offered FFmpeg, checks it against its pin and installs it. */
   downloadFfmpeg(onProgress: (progress: Fetching) => void): Promise<Fetched>;
+  /** The files to add for dropped or chosen paths: a folder is searched with its subfolders. */
+  findVideos(paths: string[]): Promise<Found>;
+  /** Reads each file's facts. The window sends a few at a time. */
   addVideos(paths: string[]): Promise<Added[]>;
   /** Thumbnail URLs, in order. `onThumb` hears each one as soon as it is made. */
   filmstrip(path: string, duration: number, count: number, onThumb: (index: number, url: string) => void): Promise<string[]>;

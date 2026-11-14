@@ -6,7 +6,7 @@ import { tauriBackend } from "./tauri";
 import { webBackend } from "./web/backend";
 import { baseName, plain } from "./format";
 import type {
-  Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
+  Added, Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
   UpdateInfo, WatchStatus,
 } from "./types";
 
@@ -22,6 +22,11 @@ export type ClipStatus = "ready" | "queued" | "running" | "done" | "failed" | "c
 export const MIN_KEEP = 0.5;
 
 const LOG_LINES = 400;
+
+/** Files read side by side when videos are added. */
+const ADD_AT_ONCE = 6;
+/** Filmstrips made side by side; each runs up to four FFmpeg processes. */
+const THUMBS_AT_ONCE = 2;
 
 export class Clip {
   readonly key = crypto.randomUUID();
@@ -258,7 +263,7 @@ class App {
       clip = new Clip(item.path, item.name, item.info);
       this.clips.push(clip);
       this.replan(clip, 0);
-      void this.#loadThumbs(clip);
+      this.#queueThumbs(clip);
     }
     clip.status = "done";
     clip.result = job.result;
@@ -419,33 +424,92 @@ class App {
     if (paths.length) await this.add(paths);
   }
 
+  /** Adds every video in a folder and its subfolders. */
+  async chooseFolder() {
+    const folder = await backend.pickFolder();
+    if (folder) await this.add([folder]);
+  }
+
+  /** Adds what was dropped or chosen. Folders are searched first (with their
+   *  subfolders); then the files are read six at a time, and each joins the
+   *  list once it and every file before it are read, so the list fills in
+   *  name order while the rest are still being read. */
   async add(paths: string[]) {
     if (!paths.length) return;
     this.#adding++;
+    const rejected: string[] = [];
+    let failure: unknown = null;
+    let first = true;
     try {
-      const results = await backend.addVideos(paths);
-      let first: Clip | null = null;
-      const rejected: string[] = [];
-      for (const item of results) {
+      const found = await backend.findVideos(paths);
+      if (found.capped) this.notify(`Added the first ${found.files.length} videos. Drop a smaller folder for the rest.`);
+      const files = found.files.filter((path) => !this.clips.some((clip) => clip.path === path));
+      const read: (Added[] | undefined)[] = new Array(files.length);
+      let shown = 0;
+      const take = (item: Added) => {
         if (!item.info) {
           rejected.push(item.name);
-          continue;
+          return;
         }
-        if (this.clips.some((clip) => clip.path === item.path)) continue;
+        if (this.clips.some((clip) => clip.path === item.path)) return;
         const clip = new Clip(item.path, item.name, item.info);
         this.clips.push(clip);
-        first ??= clip;
+        if (first) {
+          first = false;
+          this.selectedKey = clip.key;
+        }
         this.replan(clip, 0);
-        void this.#loadThumbs(clip);
-      }
-      if (first) this.selectedKey = first.key;
-      if (rejected.length === 1) this.notify(`${rejected[0]} is not a video this app can read.`);
-      else if (rejected.length > 1) this.notify(`${rejected.length} files are not videos this app can read.`);
+        this.#queueThumbs(clip);
+      };
+      let next = 0;
+      const reader = async () => {
+        while (next < files.length) {
+          const index = next++;
+          try {
+            read[index] = await backend.addVideos([files[index]]);
+          } catch (error) {
+            failure ??= error;
+            read[index] = [];
+          }
+          while (shown < files.length && read[shown]) read[shown++]!.forEach(take);
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(ADD_AT_ONCE, files.length) }, reader));
     } catch (error) {
-      this.notify(String(error));
-      this.ffmpeg = await backend.ffmpegStatus();
+      failure ??= error;
     } finally {
       this.#adding--;
+    }
+    if (failure) {
+      this.notify(String(failure));
+      this.ffmpeg = await backend.ffmpegStatus();
+    }
+    if (rejected.length === 1) this.notify(`${rejected[0]} is not a video this app can read.`);
+    else if (rejected.length > 1) this.notify(`${rejected.length} files are not videos this app can read.`);
+  }
+
+  /** Filmstrips wait their turn, two at a time, the selected video's first:
+   *  each runs several FFmpeg processes, and thirty at once starved
+   *  everything else. */
+  #thumbQueue: Clip[] = [];
+  #thumbsRunning = 0;
+
+  #queueThumbs(clip: Clip) {
+    this.#thumbQueue.push(clip);
+    this.#pumpThumbs();
+  }
+
+  #pumpThumbs() {
+    while (this.#thumbsRunning < THUMBS_AT_ONCE && this.#thumbQueue.length) {
+      const selected = this.#thumbQueue.findIndex((clip) => clip.key === this.selectedKey);
+      const [clip] = this.#thumbQueue.splice(Math.max(0, selected), 1);
+      // Removed from the list while it waited.
+      if (!this.clips.some((c) => c.key === clip.key)) continue;
+      this.#thumbsRunning++;
+      void this.#loadThumbs(clip).finally(() => {
+        this.#thumbsRunning--;
+        this.#pumpThumbs();
+      });
     }
   }
 

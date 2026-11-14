@@ -70,6 +70,21 @@ fix what comes back (3.6).
       out as 0.9.x releases, a few at a time. Requests for new features go
       to plan 6.
       *Done when:* the exit criteria hold.
+      First reports (owner, 14 November 2026):
+      - Adding many videos is slow. Cause: every file was read one after
+        another and nothing showed until the last, and every video's
+        filmstrip started at once (four FFmpeg processes each, so 120 for
+        30 videos). Fix: read six at a time, show each in the list as it
+        is read (in name order), and make filmstrips two at a time, the
+        selected video's first.
+      - A folder should be crawled, not opened one level deep. Fix: a
+        dropped or chosen folder is searched with its subfolders for
+        videos, skipping Sub20's own results, hidden folders and
+        unfinished files, up to 1,000 videos; "Choose a folder" beside
+        "Choose videos".
+      - The result can't be sought, plays in another player, and people
+        trimmed it after compressing. Being discussed with the owner;
+        nothing built yet.
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so

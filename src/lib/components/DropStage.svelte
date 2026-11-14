@@ -118,6 +118,11 @@
       </span>
       <span class="grip right" aria-hidden="true"></span>
     </button>
+    {#if backend.can.files && !touch}
+      <button type="button" class="link quiet" onclick={() => app.chooseFolder()} disabled={app.adding}>
+        Or choose a folder of videos
+      </button>
+    {/if}
   {/if}
 </section>
 
@@ -126,6 +131,8 @@
     grid-column: 1 / -1;
     display: grid;
     place-items: center;
+    align-content: center;
+    gap: 20px;
     padding: 24px 48px 56px;
     min-height: 0;
   }

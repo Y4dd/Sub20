@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use base64::Engine as _;
 use serde::{Deserialize, Serialize};
+use sub20_core::crawl::{self, Found};
 use sub20_core::hardware::Report;
 use sub20_core::history::Entry;
 use sub20_core::job::{EncodeOptions, JobEvent, JobId, JobSpec, Origin, Trim};
@@ -230,22 +231,19 @@ struct Added {
     error: Option<String>,
 }
 
-/// Reads the facts of each dropped or picked file. Folders are opened one
-/// level deep.
+/// The files to add for what was dropped or chosen: folders are searched
+/// with their subfolders (`sub20_core::crawl`).
+#[tauri::command]
+async fn find_videos(paths: Vec<PathBuf>) -> CommandResult<Found> {
+    tokio::task::spawn_blocking(move || crawl::find_videos(&paths)).await.map_err(text)
+}
+
+/// Reads the facts of each file. The window sends a few at a time, so they
+/// are read side by side and each shows as soon as it is read; a folder
+/// here is searched as `find_videos` does.
 #[tauri::command]
 async fn add_videos(app: AppHandle, state: State<'_, AppState>, paths: Vec<PathBuf>) -> CommandResult<Vec<Added>> {
-    let mut files = Vec::new();
-    for path in paths {
-        if path.is_dir() {
-            let mut inside: Vec<PathBuf> = std::fs::read_dir(&path)
-                .map(|entries| entries.flatten().map(|e| e.path()).filter(|p| watch::is_video(p)).collect())
-                .unwrap_or_default();
-            inside.sort();
-            files.extend(inside);
-        } else {
-            files.push(path);
-        }
-    }
+    let files = tokio::task::spawn_blocking(move || crawl::find_videos(&paths).files).await.map_err(text)?;
 
     let mut added = Vec::with_capacity(files.len());
     for path in files {
@@ -866,6 +864,7 @@ pub fn run() {
             bootstrap,
             ffmpeg_status,
             download_ffmpeg,
+            find_videos,
             add_videos,
             filmstrip,
             preview_frame,

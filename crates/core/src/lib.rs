@@ -34,6 +34,8 @@ pub mod timecode;
 #[cfg(feature = "engine")]
 pub mod advice;
 #[cfg(feature = "engine")]
+pub mod crawl;
+#[cfg(feature = "engine")]
 pub mod diagnostics;
 #[cfg(feature = "engine")]
 pub mod engine;

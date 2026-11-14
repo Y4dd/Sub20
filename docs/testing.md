@@ -69,11 +69,15 @@ sheet says.
    type a new name and press Enter.
    *Expected:* the file on disk has the new name; **Show in folder** finds
    it.
-8. Press **Compress** on several clips at once, then **Cancel** one of them
+8. Drop a folder that has videos in it and in folders inside it, or use
+   **Or choose a folder of videos** on the first screen.
+   *Expected:* the list fills in by name as the videos are read, with
+   Sub20's own results left out.
+9. Press **Compress** on several clips at once, then **Cancel** one of them
    while it runs.
    *Expected:* the canceled one stops and says **Canceled**; the others
    finish.
-9. In Settings, under **Where results go**, choose **Replace the original**,
+10. In Settings, under **Where results go**, choose **Replace the original**,
    then compress a copy of a clip (not one you want to keep).
    *Expected:* the original goes to the recycle bin or trash, and the result
    takes its name.

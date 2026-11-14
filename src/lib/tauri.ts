@@ -42,6 +42,7 @@ export const tauriBackend: Backend = {
     channel.onmessage = onProgress;
     return invoke("download_ffmpeg", { onProgress: channel });
   },
+  findVideos: (paths) => invoke("find_videos", { paths }),
   addVideos: async (paths) => {
     const added = await invoke<Added[]>("add_videos", { paths });
     for (const item of added) if (item.playUrl) playUrls.set(item.path, item.playUrl);

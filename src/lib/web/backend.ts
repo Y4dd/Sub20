@@ -293,6 +293,8 @@ export const webBackend: Backend = {
     return { found: reason === null, version: reason, folder: null };
   },
   downloadFfmpeg: desktopOnly,
+  // A browser hands over files, never folders.
+  findVideos: async (paths) => ({ files: paths, capped: false }),
   addVideos: async (paths): Promise<Added[]> =>
     Promise.all(
       paths.map(async (path) => {

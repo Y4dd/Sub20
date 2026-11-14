@@ -339,6 +339,11 @@ export const mockBackend: Backend = {
     noFfmpeg = false;
     return { ffmpeg: DEMO_FFMPEG, notice: "/Users/demo/Library/Application Support/io.github.y4dd.sub20/ffmpeg/FFMPEG.txt" };
   },
+  // A folder (a path with no extension) holds the demo clips.
+  findVideos: async (paths) => ({
+    files: paths.flatMap((path) => (/\.[a-z0-9]+$/i.test(path) ? [path] : DEMOS.map((demo) => `${path}/${demo.name}`))),
+    capped: false,
+  }),
   addVideos: async (paths): Promise<Added[]> => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return paths.map((path) => {
