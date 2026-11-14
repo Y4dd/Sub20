@@ -11,6 +11,7 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::sync::{mpsc, oneshot, watch, Notify};
 
 use crate::command::{self, EncodeArgs, Pass};
+use crate::cut::{self, Cut};
 use crate::encoders::{self, Encoder};
 use crate::error::{Error, IoContext, Result};
 use crate::ffmpeg::Tools;
@@ -175,6 +176,56 @@ impl Engine {
             log::warn!("could not update history: {e}");
         }
         Ok(renamed)
+    }
+
+    /// Where a finished result can be cut from: its keyframes ([`cut`]).
+    pub async fn keyframes(&self, path: &Path) -> Result<Vec<f64>> {
+        cut::keyframes(&self.tools()?, path).await
+    }
+
+    /// Cuts a finished result to `start..end` (seconds into it) by copying
+    /// its packets. The start moves back to a keyframe. The cut takes the
+    /// result's name and the uncut file goes to the bin; if the bin refuses,
+    /// both stay. The history entry follows the cut.
+    pub async fn cut_result(&self, path: &Path, start: f64, end: f64) -> Result<Cut> {
+        self.cut_result_with(path, start, end, |file| trash::delete(file).map_err(std::io::Error::other)).await
+    }
+
+    /// [`Engine::cut_result`] with the bin given, so tests can use a fake one.
+    #[doc(hidden)]
+    pub async fn cut_result_with(
+        &self,
+        path: &Path,
+        start: f64,
+        end: f64,
+        to_bin: impl Fn(&Path) -> std::io::Result<()>,
+    ) -> Result<Cut> {
+        let tools = self.tools()?;
+        let info = probe::probe(&tools, path).await?;
+        let keys = if info.has_video { cut::keyframes(&tools, path).await? } else { Vec::new() };
+        let (start, end) = cut::window(&keys, start, end, info.duration)?;
+
+        let dir = path.parent().ok_or_else(|| Error::Invalid(format!("{} has no folder", path.display())))?;
+        let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let extension = path.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
+        let partial = dir.join(format!(".{stem}.{}.part.{extension}", uuid::Uuid::new_v4().simple()));
+        let _cleanup = Cleanup { partial: partial.clone(), scratch: None };
+        cut::copy(&tools, path, start, end, &partial).await?;
+
+        let size_bytes = std::fs::metadata(&partial).ctx("could not read the cut file")?.len();
+        let duration = probe::probe(&tools, &partial).await.map(|i| i.duration).unwrap_or(end - start);
+        let placed = output::place(&partial, dir, &stem, &extension, Some(path), to_bin)?;
+        let note = (!placed.replaced).then(|| {
+            format!(
+                "The uncut file could not go to the {}, so both were kept.",
+                if cfg!(windows) { "Recycle Bin" } else { "bin" }
+            )
+        });
+        let cut = Cut { output: placed.path, size_bytes, duration, start, note };
+        if let Err(e) = self.inner.history.cut(path, &cut) {
+            log::warn!("could not update history: {e}");
+        }
+        Ok(cut)
     }
 
     /// FFmpeg and FFprobe, located once and remembered.
@@ -371,7 +422,7 @@ impl Engine {
         let partial = out_dir.join(format!(".{stem}.{}.part.{extension}", &id[..8]));
         let scratch = self.inner.work_dir.join(id);
         std::fs::create_dir_all(&scratch).ctx("could not create a scratch folder")?;
-        let _cleanup = Cleanup { partial: partial.clone(), scratch: scratch.clone() };
+        let _cleanup = Cleanup { partial: partial.clone(), scratch: Some(scratch.clone()) };
 
         sink.emit(JobEvent::Started {
             id: id.to_string(),
@@ -648,13 +699,15 @@ struct Span {
 /// Removes the partial output and scratch folder however the job ends.
 struct Cleanup {
     partial: PathBuf,
-    scratch: PathBuf,
+    scratch: Option<PathBuf>,
 }
 
 impl Drop for Cleanup {
     fn drop(&mut self) {
         patiently(|| std::fs::remove_file(&self.partial));
-        patiently(|| std::fs::remove_dir_all(&self.scratch));
+        if let Some(scratch) = &self.scratch {
+            patiently(|| std::fs::remove_dir_all(scratch));
+        }
     }
 }
 

@@ -311,12 +311,26 @@ export interface Capabilities {
   share: boolean;
   /** Keep history between sessions. */
   history: boolean;
+  /** Cut a finished result shorter without compressing it again. */
+  cut: boolean;
 }
 
 export const DESKTOP: Capabilities = {
   watch: true, replace: true, files: true, encoders: true, ffmpeg: true, copyFile: true, dragOut: true, updates: true,
-  download: false, share: false, history: true,
+  download: false, share: false, history: true, cut: true,
 };
+
+/** A finished cut (`sub20_core::cut::Cut`). */
+export interface Cut {
+  /** The result's own path, or a free name beside it when both were kept. */
+  output: string;
+  sizeBytes: number;
+  duration: number;
+  /** Where the cut starts in the uncut result, after snapping to a keyframe. */
+  start: number;
+  /** Why both files were kept, when they were. */
+  note: string | null;
+}
 
 export interface Backend {
   readonly demo: boolean;
@@ -367,6 +381,11 @@ export interface Backend {
   copyFile(path: string): Promise<void>;
   /** Renames a finished video, keeping its extension; returns the new path. */
   renameResult(path: string, name: string): Promise<string>;
+  /** A finished video's keyframe times: where a cut can start. Empty for sound only. */
+  keyframes(path: string): Promise<number[]>;
+  /** Cuts a finished video to `start..end` (seconds into it) without compressing it again.
+   *  The start moves back to a keyframe; the uncut file goes to the bin. */
+  cutResult(path: string, start: number, end: number): Promise<Cut>;
   /** Asks the release feed for a newer version; null when this one is the latest. */
   checkUpdate(): Promise<UpdateInfo | null>;
   /** Installs the update `checkUpdate` found and restarts the app. Running jobs are stopped. */

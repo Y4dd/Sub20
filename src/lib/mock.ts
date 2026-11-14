@@ -71,6 +71,13 @@ const DEMOS: Demo[] = [
 ];
 
 const added = new Map<string, Demo>();
+/** Finished files, for cutting them. */
+const made = new Map<string, { sizeBytes: number; duration: number }>();
+
+/** The demo a source or a finished file was made from. */
+function demoOf(path: string): Demo {
+  return added.get(path) ?? DEMOS.find((d) => path.includes(d.name.replace(/\.[^.]+$/, "")))!;
+}
 
 /** Paints a frame of invented footage: a sky, a sun that crosses it, hills. */
 function paint(demo: Demo, at: number, width: number, height: number): string {
@@ -243,6 +250,7 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
         hardware: encoder.endsWith("nvenc"), fellBackFrom: null, attempts: 1, elapsedSeconds: seconds,
         targetMb: job.options.targetMb, replacedOriginal: replace,
       };
+      made.set(result.output, { sizeBytes: result.sizeBytes, duration: result.duration });
       history = [{ id, finishedAt: Date.now() / 1000, input: job.path, trimmed: plan.trimmed, origin, result }, ...history];
       if (origin === "watch") {
         watching.inProgress--;
@@ -354,7 +362,7 @@ export const mockBackend: Backend = {
     });
   },
   filmstrip: async (path, duration, count, onThumb) => {
-    const demo = added.get(path)!;
+    const demo = demoOf(path);
     const ratio = demo.info.displayWidth / demo.info.displayHeight;
     // Arrive one at a time, as the real ones do.
     const strip: string[] = [];
@@ -367,8 +375,7 @@ export const mockBackend: Backend = {
   },
   videoUrl: () => null,
   previewFrame: async (path, at) => {
-    // A finished file is painted from the clip it was made from.
-    const demo = added.get(path) ?? DEMOS.find((d) => path.includes(d.name.replace(/\.[^.]+$/, "")))!;
+    const demo = demoOf(path);
     const ratio = demo.info.displayWidth / demo.info.displayHeight;
     return paint(demo, at, Math.round(540 * ratio), 540);
   },
@@ -434,12 +441,33 @@ export const mockBackend: Backend = {
   openFile: async () => {},
   resultUrl: async () => null,
   copyFile: () => new Promise((resolve) => setTimeout(resolve, 120)),
+  // A keyframe every two seconds, as the real results have.
+  keyframes: async (path) => {
+    const duration = made.get(path)?.duration ?? 0;
+    return Array.from({ length: Math.ceil(duration / 2) }, (_, i) => i * 2);
+  },
+  cutResult: async (path, start, end) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const uncut = made.get(path);
+    if (!uncut) throw "That file is no longer there.";
+    const from = Math.floor(start / 2 + 0.0005) * 2;
+    const duration = Math.min(end, uncut.duration) - from;
+    const sizeBytes = Math.round((uncut.sizeBytes * duration) / uncut.duration);
+    made.set(path, { sizeBytes, duration });
+    return { output: path, sizeBytes, duration, start: from, note: null };
+  },
   renameResult: async (path, name) => {
     const extension = path.slice(path.lastIndexOf("."));
     let clean = name.trim().replace(/[<>:"/\\|?*]/g, "");
     if (clean.toLowerCase().endsWith(extension.toLowerCase())) clean = clean.slice(0, -extension.length);
     if (!clean) throw "That name has no letters a file name can use.";
-    return path.slice(0, path.lastIndexOf("/") + 1) + clean + extension;
+    const renamed = path.slice(0, path.lastIndexOf("/") + 1) + clean + extension;
+    const facts = made.get(path);
+    if (facts) {
+      made.delete(path);
+      made.set(renamed, facts);
+    }
+    return renamed;
   },
   // `?update` pretends a newer release is out, to show how that looks.
   checkUpdate: async () =>

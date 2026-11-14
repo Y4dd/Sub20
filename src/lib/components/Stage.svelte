@@ -9,7 +9,9 @@
 
   let { clip }: { clip: Clip } = $props();
 
+  /** The original's player, and the result's. */
   let video = $state<HTMLVideoElement | null>(null);
+  let resultVideo = $state<HTMLVideoElement | null>(null);
   /** The window cannot play this format; show still frames instead. */
   let stills = $state(false);
   let still = $state<string | null>(null);
@@ -21,26 +23,89 @@
 
   const url = $derived(backend.videoUrl(clip.path));
 
-  // A different clip: start over at its in point.
+  // A finished clip opens on its result: that is what is about to be sent.
+  let view = $state<"original" | "result">("original");
+  let resultSrc = $state<string | null>(null);
+  /** The result can't play here; show still frames of it. */
+  let resultStills = $state(false);
+
+  const onResult = $derived(view === "result" && !!clip.result);
+  /** What the player and the timeline show: the original and its trim, or
+   *  the finished result and the part of it to keep. */
+  const track = $derived(
+    onResult && clip.result
+      ? { path: clip.result.output, duration: clip.result.duration, start: clip.cutStart, end: clip.cutEnd }
+      : { path: clip.path, duration: clip.duration, start: clip.start, end: clip.end },
+  );
+  const player = $derived(onResult ? resultVideo : video);
+  const showingStills = $derived(onResult ? resultStills : stills);
+
+  // A different clip.
   $effect(() => {
     void clip.key;
     untrack(() => {
-      playing = false;
       showLog = false;
-      still = null;
       stills = url === null;
-      playhead = clip.start;
-      if (stills) loadStill(clip.start, 0);
     });
+  });
+
+  // A result appears or goes: show it, or the original.
+  $effect(() => {
+    void clip.key;
+    const finished = !!clip.result;
+    untrack(() => (view = finished ? "result" : "original"));
+  });
+
+  // A different clip or view: stop, and start over at the kept part's start.
+  $effect(() => {
+    void clip.key;
+    void view;
+    untrack(() => {
+      video?.pause();
+      resultVideo?.pause();
+      playing = false;
+      still = null;
+      playhead = track.start;
+      if (showingStills) loadStill(playhead, 0);
+    });
+  });
+
+  // Where the result plays from. A cut keeps the file's name but changes the
+  // file, so it loads again; while cutting, the file is let go.
+  $effect(() => {
+    const output = clip.result?.output ?? null;
+    const cutting = clip.cutting;
+    untrack(() => {
+      resultSrc = null;
+      resultStills = false;
+    });
+    if (!output || cutting) return;
+    const target = clip;
+    void backend
+      .resultUrl(output)
+      .then((src) => {
+        if (target !== clip || clip.result?.output !== output) return;
+        resultSrc = src;
+        if (src) return;
+        resultStills = true;
+        if (onResult) loadStill(playhead, 0);
+      })
+      .catch(() => (view = "original"));
+  });
+
+  // The result's own filmstrip and keyframes, the first time it is shown.
+  $effect(() => {
+    if (onResult && clip.result) void app.loadResultTrack(clip);
   });
 
   function loadStill(time: number, delay = 90) {
     window.clearTimeout(stillTimer);
     const ticket = ++stillTicket;
     const target = clip;
+    const path = track.path;
     stillTimer = window.setTimeout(async () => {
       try {
-        const frame = await backend.previewFrame(target.path, time);
+        const frame = await backend.previewFrame(path, time);
         if (ticket === stillTicket && target === clip) still = frame;
       } catch {
         /* Keep the previous frame. */
@@ -49,28 +114,39 @@
   }
 
   export function seek(time: number, scrubbing = false) {
-    time = Math.min(clip.duration, Math.max(0, time));
+    time = Math.min(track.duration, Math.max(0, time));
     playhead = time;
-    if (scrubbing && playing) video?.pause();
-    if (stills) loadStill(time);
-    else if (video && Math.abs(video.currentTime - time) > 0.01) video.currentTime = time;
+    if (scrubbing && playing) player?.pause();
+    if (showingStills) loadStill(time);
+    else if (player && Math.abs(player.currentTime - time) > 0.01) player.currentTime = time;
   }
 
   export function toggle() {
-    if (stills || !video || clip.busy) return;
-    if (video.paused) {
+    if (showingStills || !player || clip.busy || clip.cutting) return;
+    if (player.paused) {
       // Play the part that will be kept, from wherever the playhead is in it.
-      if (playhead < clip.start || playhead >= clip.end - 0.05) video.currentTime = clip.start;
-      void video.play();
+      if (playhead < track.start || playhead >= track.end - 0.05) player.currentTime = track.start;
+      void player.play();
     } else {
-      video.pause();
+      player.pause();
     }
+  }
+
+  /** Moves the original's trim, or the result's cut. */
+  function trim(start: number, end: number) {
+    if (onResult) app.setCut(clip, start, end);
+    else app.setTrim(clip, start, end);
   }
 
   /** Moves the nearer trim edge to the playhead. */
   export function mark(edge: "start" | "end") {
-    if (edge === "start") app.setTrim(clip, Math.min(playhead, clip.end), clip.end);
-    else app.setTrim(clip, clip.start, Math.max(playhead, clip.start));
+    if (edge === "start") trim(Math.min(playhead, track.end), track.end);
+    else trim(track.start, Math.max(playhead, track.start));
+  }
+
+  /** Puts the playhead on the kept part's start or end. */
+  export function edge(which: "start" | "end") {
+    seek(which === "start" ? track.start : track.end, true);
   }
 
   export function nudge(seconds: number) {
@@ -79,11 +155,11 @@
 
   // While playing, follow the video and loop inside the kept part.
   $effect(() => {
-    if (!playing || !video) return;
-    const element = video;
+    if (!playing || !player) return;
+    const element = player;
     let frame = requestAnimationFrame(function follow() {
       playhead = element.currentTime;
-      if (element.currentTime >= clip.end) element.currentTime = clip.start;
+      if (element.currentTime >= track.end) element.currentTime = track.start;
       frame = requestAnimationFrame(follow);
     });
     return () => cancelAnimationFrame(frame);
@@ -120,36 +196,6 @@
     rough: "Rough: trim it shorter or raise the size",
   } as const;
 
-  // A finished clip opens on its result: that is what is about to be sent.
-  let view = $state<"original" | "result">("original");
-  let resultSrc = $state<string | null>(null);
-  let resultStill = $state<string | null>(null);
-
-  $effect(() => {
-    const output = clip.result?.output ?? null;
-    untrack(() => {
-      view = output ? "result" : "original";
-      resultSrc = null;
-      resultStill = null;
-    });
-    if (!output) return;
-    const target = clip;
-    void backend
-      .resultUrl(output)
-      .then((src) => {
-        if (target !== clip) return;
-        resultSrc = src;
-        // No playable URL: show a frame from the middle of the result.
-        if (!src) return backend.previewFrame(output, clip.kept / 2).then((frame) => (resultStill = frame));
-      })
-      .catch(() => (view = "original"));
-  });
-
-  // Showing the result pauses the original.
-  $effect(() => {
-    if (view === "result") untrack(() => video?.pause());
-  });
-
   const thumb = $derived(clip.thumbs[Math.floor(clip.thumbs.length / 2)] || null);
   const copyKey = navigator.platform.toLowerCase().includes("mac") ? "⌘C" : "Ctrl+C";
   // Where there is no clipboard for files (Sub20 Lite), the same button
@@ -161,6 +207,13 @@
   } as const;
   const hand = $derived(handOff[app.handOff]);
 </script>
+
+{#snippet transport()}
+  <button type="button" class="transport" onclick={toggle} aria-label={playing ? "Pause" : "Play the kept part"} title="Play or pause (Space)">
+    <Icon name={playing ? "pause" : "play"} size={16} />
+    <span>{clock(playhead)}</span>
+  </button>
+{/snippet}
 
 <!-- Keeps the clip on the bench but out of the next Compress, or back in. -->
 {#snippet leaveOut()}
@@ -183,12 +236,31 @@
   <div class="well">
     {#if showLog}
       <pre class="log" aria-label="FFmpeg log">{clip.log.join("\n") || "Nothing logged yet."}</pre>
-    {:else if view === "result" && clip.result}
-      {#if resultSrc}
+    {:else if onResult}
+      <!-- The result plays in the same player as the original, over its own
+           timeline, so it can be sought and cut. -->
+      {#if resultStills}
+        {#if still}
+          <img class="picture" src={still} alt="" draggable="false" />
+        {/if}
+      {:else if resultSrc}
         <!-- svelte-ignore a11y_media_has_caption -->
-        <video class="picture" src={resultSrc} controls preload="metadata" playsinline></video>
-      {:else if resultStill}
-        <img class="picture" src={resultStill} alt="" draggable="false" />
+        <video
+          class="picture"
+          bind:this={resultVideo}
+          src={resultSrc}
+          preload="auto"
+          playsinline
+          onclick={toggle}
+          onplay={() => (playing = true)}
+          onpause={() => (playing = false)}
+          onloadedmetadata={() => seek(playhead)}
+          onerror={() => {
+            resultStills = true;
+            loadStill(playhead, 0);
+          }}
+        ></video>
+        {@render transport()}
       {/if}
     {:else if stills}
       {#if still}
@@ -214,10 +286,7 @@
           loadStill(playhead, 0);
         }}
       ></video>
-      <button type="button" class="transport" onclick={toggle} aria-label={playing ? "Pause" : "Play the kept part"} title="Play or pause (Space)">
-        <Icon name={playing ? "pause" : "play"} size={16} />
-        <span>{clock(playhead)}</span>
-      </button>
+      {@render transport()}
     {/if}
     {#if clip.result && !clip.result.replacedOriginal && !showLog}
       <div class="views" role="group" aria-label="Preview">
@@ -227,7 +296,35 @@
     {/if}
   </div>
 
-  <Timeline {clip} {playhead} onseek={seek} />
+  {#if onResult && clip.result}
+    <!-- The result's own handles: a cut keeps the part between them. -->
+    <Timeline
+      duration={clip.result.duration}
+      start={clip.cutStart}
+      end={clip.cutEnd}
+      thumbs={clip.resultThumbs}
+      {playhead}
+      settled={!backend.can.cut}
+      locked={!backend.can.cut || clip.keyframes === null || clip.cutting}
+      stops={clip.keyframes}
+      onseek={seek}
+      ontrim={(start, end) => app.setCut(clip, start, end)}
+    />
+  {:else}
+    <Timeline
+      duration={clip.duration}
+      start={clip.start}
+      end={clip.end}
+      thumbs={clip.thumbs}
+      {playhead}
+      busy={clip.busy}
+      percent={clip.percent}
+      settled={clip.status === "done"}
+      locked={!!clip.result?.replacedOriginal}
+      onseek={seek}
+      ontrim={(start, end) => app.setTrim(clip, start, end)}
+    />
+  {/if}
 
   <!-- Once done, the trim is settled and the result needs the room. -->
   <div class="under" class:done={clip.status === "done"}>
@@ -265,6 +362,23 @@
           <span class="muted">The graphics card could not do this one, so the CPU took over.</span>
         {/if}
         <button type="button" class="link" onclick={() => app.cancel(clip)}>Cancel</button>
+      {:else if clip.status === "done" && clip.result && onResult && (clip.cutPending || clip.cutting)}
+        {@const result = clip.result}
+        {@const kept = clip.cutEnd - clip.cutStart}
+        <!-- What the cut keeps. It copies the file, so nothing is lost. -->
+        <ul class="plan" aria-label="What the cut keeps">
+          <li><b>{span(kept)}</b><span class="muted"> of {span(result.duration)}</span></li>
+          <li>About <b>{megabytes((result.sizeBytes * kept) / Math.max(0.001, result.duration))}</b></li>
+          <li class="muted">Same quality</li>
+        </ul>
+        <p class="after">
+          {#if clip.cutting}
+            <span class="muted">Cutting the result…</span>
+          {:else}
+            <button type="button" class="link" onclick={() => app.cut(clip)}>Cut</button>
+            <button type="button" class="link quiet" onclick={() => app.setCut(clip, 0, result.duration)}>Keep all of it</button>
+          {/if}
+        </p>
       {:else if clip.status === "done" && clip.result}
         {@const result = clip.result}
         <div class="result">

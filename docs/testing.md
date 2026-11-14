@@ -58,26 +58,31 @@ sheet says.
    percentage and the time left, and "Compressing on the NVIDIA GPU" (or
    your card's maker; "CPU" when no card can do it).
 4. When a clip is done, switch between **Original** and **Result**.
-   *Expected:* the result plays, and its size is under 20 MB.
-5. Press **Copy** (or Ctrl+C), then paste into Discord with Ctrl+V.
+   *Expected:* the result plays, you can click anywhere on its filmstrip to
+   jump there, and its size is under 20 MB.
+5. On **Result**, drag the yellow handles in a little, then press **Cut**.
+   *Expected:* the line under the filmstrip says how long and about how big
+   the cut will be; after **Cut**, the result is shorter and smaller, and
+   plays from where the start handle sat.
+6. Press **Copy** (or Ctrl+C), then paste into Discord with Ctrl+V.
    *Expected:* Discord attaches the video, and it plays in the chat after
    sending.
-6. Drag the file chip (the file's name under the timeline) into a Discord
+7. Drag the file chip (the file's name under the timeline) into a Discord
    channel, and once into a folder.
    *Expected:* the video is attached, and the folder gets a copy.
-7. Rename a finished clip: double-click its name in the list (or F2),
+8. Rename a finished clip: double-click its name in the list (or F2),
    type a new name and press Enter.
    *Expected:* the file on disk has the new name; **Show in folder** finds
    it.
-8. Drop a folder that has videos in it and in folders inside it, or use
+9. Drop a folder that has videos in it and in folders inside it, or use
    **Or choose a folder of videos** on the first screen.
    *Expected:* the list fills in by name as the videos are read, with
    Sub20's own results left out.
-9. Press **Compress** on several clips at once, then **Cancel** one of them
+10. Press **Compress** on several clips at once, then **Cancel** one of them
    while it runs.
    *Expected:* the canceled one stops and says **Canceled**; the others
    finish.
-10. In Settings, under **Where results go**, choose **Replace the original**,
+11. In Settings, under **Where results go**, choose **Replace the original**,
    then compress a copy of a clip (not one you want to keep).
    *Expected:* the original goes to the recycle bin or trash, and the result
    takes its name.

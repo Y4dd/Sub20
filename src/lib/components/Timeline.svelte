@@ -1,44 +1,70 @@
 <script lang="ts">
-  // The filmstrip with its two trim handles. The yellow bracket marks what
-  // is kept; while a job runs, the kept part fills in from the left.
-  import { app, type Clip } from "../app.svelte";
+  // A filmstrip with its two trim handles: the original's trim, or the part
+  // of a finished result to keep. The yellow bracket marks what is kept;
+  // while a job runs, the kept part fills in from the left.
   import { clock, span } from "../format";
 
   let {
-    clip,
+    duration,
+    start,
+    end,
+    thumbs,
     playhead,
+    busy = false,
+    percent: progress = 0,
+    settled = false,
+    locked = false,
+    stops = null,
     onseek,
-  }: { clip: Clip; playhead: number; onseek: (time: number, scrubbing: boolean) => void } = $props();
+    ontrim,
+  }: {
+    duration: number;
+    start: number;
+    end: number;
+    thumbs: string[];
+    playhead: number;
+    /** Queued or encoding: the progress shows and the handles are locked. */
+    busy?: boolean;
+    percent?: number;
+    /** Finished: the handles are drawn faded. */
+    settled?: boolean;
+    /** The handles can't be moved. */
+    locked?: boolean;
+    /** Where the start may land (a result's keyframes); arrow keys step between them. */
+    stops?: number[] | null;
+    onseek: (time: number, scrubbing: boolean) => void;
+    ontrim: (start: number, end: number) => void;
+  } = $props();
 
   let rail: HTMLElement;
   let dragging = $state<"start" | "end" | "playhead" | null>(null);
   let grabOffset = 0;
 
-  const percent = (time: number) => (clip.duration > 0 ? (time / clip.duration) * 100 : 0);
-  const startAt = $derived(percent(clip.start));
-  const endAt = $derived(percent(clip.end));
+  const percent = (time: number) => (duration > 0 ? (time / duration) * 100 : 0);
+  const startAt = $derived(percent(start));
+  const endAt = $derived(percent(end));
 
   function timeAt(clientX: number): number {
     const box = rail.getBoundingClientRect();
     const fraction = (clientX - box.left) / Math.max(1, box.width);
-    return Math.min(clip.duration, Math.max(0, fraction * clip.duration));
+    return Math.min(duration, Math.max(0, fraction * duration));
   }
 
   function move(which: "start" | "end", time: number) {
-    if (which === "start") app.setTrim(clip, Math.min(time, clip.end), clip.end);
-    else app.setTrim(clip, clip.start, Math.max(time, clip.start));
+    if (which === "start") ontrim(Math.min(time, end), end);
+    else ontrim(start, Math.max(time, start));
     // Show the frame the handle sits on.
-    onseek(which === "start" ? clip.start : clip.end, true);
+    onseek(which === "start" ? start : end, true);
   }
 
   function grab(which: "start" | "end", event: PointerEvent) {
-    if (clip.busy || event.button !== 0) return;
+    if (busy || locked || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     dragging = which;
     // Keep the edge under the pointer where it was grabbed.
-    grabOffset = timeAt(event.clientX) - (which === "start" ? clip.start : clip.end);
+    grabOffset = timeAt(event.clientX) - (which === "start" ? start : end);
   }
 
   function drag(event: PointerEvent) {
@@ -64,15 +90,20 @@
   function nudge(which: "start" | "end", event: KeyboardEvent) {
     const step = event.shiftKey ? 1 : 0.1;
     // A twentieth of the video, so a long recording is crossed in a few presses.
-    const page = Math.max(5, clip.duration / 20);
-    const now = which === "start" ? clip.start : clip.end;
+    const page = Math.max(5, duration / 20);
+    const now = which === "start" ? start : end;
+    const back = event.key === "ArrowLeft" || event.key === "ArrowDown";
+    const ahead = event.key === "ArrowRight" || event.key === "ArrowUp";
     let next: number | null = null;
-    if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = now - step;
-    else if (event.key === "ArrowRight" || event.key === "ArrowUp") next = now + step;
+    if (which === "start" && stops?.length && (back || ahead)) {
+      // The start lands on a stop, so a step goes to the next one.
+      next = back ? Math.max(0, ...stops.filter((s) => s < now - 0.001)) : (stops.find((s) => s > now + 0.001) ?? now);
+    } else if (back) next = now - step;
+    else if (ahead) next = now + step;
     else if (event.key === "PageDown") next = now - page;
     else if (event.key === "PageUp") next = now + page;
-    else if (event.key === "Home") next = which === "start" ? 0 : clip.start;
-    else if (event.key === "End") next = which === "start" ? clip.end : clip.duration;
+    else if (event.key === "Home") next = which === "start" ? 0 : start;
+    else if (event.key === "End") next = which === "start" ? end : duration;
     if (next === null) return;
     event.preventDefault();
     event.stopPropagation();
@@ -80,11 +111,11 @@
   }
 </script>
 
-<div class="timeline" class:busy={clip.busy} class:done={clip.status === "done"} class:dragging={dragging !== null}>
+<div class="timeline" class:busy class:done={settled} class:locked class:dragging={dragging !== null}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="rail" bind:this={rail} onpointerdown={scrub} onpointermove={drag} onpointerup={release} onpointercancel={release}>
-    <div class="strip" class:loading={clip.thumbs.length === 0 || clip.thumbs.includes("")}>
-      {#each clip.thumbs as thumb, index (index)}
+    <div class="strip" class:loading={thumbs.length === 0 || thumbs.includes("")}>
+      {#each thumbs as thumb, index (index)}
         {#if thumb}
           <img src={thumb} alt="" draggable="false" />
         {:else}
@@ -95,11 +126,11 @@
 
     <div class="cut" style:left="0" style:width="{startAt}%"></div>
     <div class="cut" style:left="{endAt}%" style:right="0"></div>
-    {#if clip.busy}
+    {#if busy}
       <!-- The part not encoded yet slides off to the right, led by a bright
            edge. It moves by transform alone, so progress costs no layout. -->
       <div class="run" style:left="{startAt}%" style:width="{endAt - startAt}%">
-        <div class="veil" style:transform="translateX({clip.percent}%)"></div>
+        <div class="veil" style:transform="translateX({progress}%)"></div>
       </div>
     {/if}
 
@@ -110,11 +141,11 @@
         role="slider"
         aria-label="Start of the part to keep"
         aria-valuemin={0}
-        aria-valuemax={clip.end}
-        aria-valuenow={clip.start}
-        aria-valuetext={clock(clip.start)}
+        aria-valuemax={end}
+        aria-valuenow={start}
+        aria-valuetext={clock(start)}
         aria-orientation="horizontal"
-        disabled={clip.busy || !!clip.result?.replacedOriginal}
+        disabled={busy || locked}
         onpointerdown={(event) => grab("start", event)}
         onpointermove={drag}
         onpointerup={release}
@@ -126,12 +157,12 @@
         class="handle end"
         role="slider"
         aria-label="End of the part to keep"
-        aria-valuemin={clip.start}
-        aria-valuemax={clip.duration}
-        aria-valuenow={clip.end}
-        aria-valuetext={clock(clip.end)}
+        aria-valuemin={start}
+        aria-valuemax={duration}
+        aria-valuenow={end}
+        aria-valuetext={clock(end)}
         aria-orientation="horizontal"
-        disabled={clip.busy || !!clip.result?.replacedOriginal}
+        disabled={busy || locked}
         onpointerdown={(event) => grab("end", event)}
         onpointermove={drag}
         onpointerup={release}
@@ -140,13 +171,13 @@
       ></button>
       {#if dragging === "start" || dragging === "end"}
         <output class="readout" class:at-end={dragging === "end"}>
-          {clock(dragging === "start" ? clip.start : clip.end)}
-          <span>{span(clip.kept)} kept</span>
+          {clock(dragging === "start" ? start : end)}
+          <span>{span(end - start)} kept</span>
         </output>
       {/if}
     </div>
 
-    {#if !clip.busy}
+    {#if !busy}
       <div class="playhead" style:left="{percent(playhead)}%"></div>
     {/if}
   </div>
@@ -303,7 +334,8 @@
     background: color-mix(in srgb, var(--trim) 45%, var(--bench));
   }
 
-  .busy .handle {
+  .busy .handle,
+  .locked .handle {
     cursor: default;
   }
 

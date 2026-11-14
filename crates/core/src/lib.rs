@@ -13,12 +13,14 @@
 //! * remember settings, profiles and history ([`settings`], [`history`]),
 //! * watch a folder and compress whatever appears in it ([`watch`]),
 //! * cut thumbnails for the trim timeline ([`thumbs`]),
+//! * cut a finished result shorter without encoding it again ([`cut`]),
 //! * write a bug report's diagnostics ([`diagnostics`]),
 //! * say what went wrong in words that name the fix ([`advice`]),
 //! * download FFmpeg for the lean build ([`fetch`]).
 
 // The planner and its types: no FFmpeg, no runtime, builds for WebAssembly.
 pub mod command;
+pub mod cut;
 pub mod encoders;
 pub mod error;
 pub mod history;

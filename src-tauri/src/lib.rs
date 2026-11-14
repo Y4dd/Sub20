@@ -15,6 +15,7 @@ use std::time::Duration;
 use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use sub20_core::crawl::{self, Found};
+use sub20_core::cut::Cut;
 use sub20_core::hardware::Report;
 use sub20_core::history::Entry;
 use sub20_core::job::{EncodeOptions, JobEvent, JobId, JobSpec, Origin, Trim};
@@ -463,6 +464,34 @@ fn rename_result(app: AppHandle, state: State<'_, AppState>, path: PathBuf, name
     Ok(renamed)
 }
 
+/// A finished video's keyframe times, where a cut of it can start.
+#[tauri::command]
+async fn keyframes(state: State<'_, AppState>, path: PathBuf) -> CommandResult<Vec<f64>> {
+    produced(&state, &path)?;
+    state.engine.keyframes(&path).await.map_err(text)
+}
+
+/// Cuts a finished video shorter by copying its packets; the uncut file
+/// goes to the bin.
+#[tauri::command]
+async fn cut_result(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    path: PathBuf,
+    start: f64,
+    end: f64,
+) -> CommandResult<Cut> {
+    produced(&state, &path)?;
+    let cut = state.engine.cut_result(&path, start, end).await.map_err(text)?;
+    let mut results = state.results.lock().expect("results lock");
+    if !path.exists() {
+        results.remove(&path);
+    }
+    results.insert(cut.output.clone());
+    let _ = app.asset_protocol_scope().allow_file(&cut.output);
+    Ok(cut)
+}
+
 /// Puts a finished video on the clipboard as a file, so pasting into Discord
 /// (or a folder) attaches it.
 #[tauri::command]
@@ -885,6 +914,8 @@ pub fn run() {
             result_url,
             copy_file,
             rename_result,
+            keyframes,
+            cut_result,
             check_update,
             install_update,
             copy_diagnostics,

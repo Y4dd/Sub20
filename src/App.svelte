@@ -117,10 +117,10 @@
         return true;
       case "0":
       case "^":
-        stage?.seek(clip.start, true);
+        stage?.edge("start");
         return true;
       case "$":
-        stage?.seek(clip.end, true);
+        stage?.edge("end");
         return true;
       case " ":
         stage?.toggle();

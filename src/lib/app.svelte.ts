@@ -56,6 +56,17 @@ export class Clip {
   planError = $state<string | null>(null);
   /** Kept on the bench but skipped by "Compress". */
   leftOut = $state(false);
+  /** The part of a finished result to keep, in seconds into the result. */
+  cutStart = $state(0);
+  cutEnd = $state(0);
+  /** The result's own filmstrip and keyframes, loaded when it is first shown;
+   *  null keyframes means not known yet, so it can't be cut. */
+  resultThumbs = $state.raw<string[]>([]);
+  keyframes = $state.raw<number[] | null>(null);
+  /** The result file those were loaded for. */
+  resultTrack: string | null = null;
+  /** A cut is being made. */
+  cutting = $state(false);
 
   constructor(path: string, name: string, info: MediaInfo) {
     this.path = path;
@@ -94,6 +105,31 @@ export class Clip {
   get pending(): boolean {
     return this.compressible && !this.leftOut;
   }
+
+  /** The handles on the result have been moved in from its ends. */
+  get cutPending(): boolean {
+    return !!this.result && (this.cutStart > 0.02 || this.result.duration - this.cutEnd > 0.02);
+  }
+
+  /** Shows a finished result, all of it kept. */
+  finish(result: JobResult) {
+    this.status = "done";
+    this.percent = 100;
+    this.result = result;
+    this.cutStart = 0;
+    this.cutEnd = result.duration;
+    this.resultThumbs = [];
+    this.keyframes = null;
+    this.resultTrack = null;
+  }
+}
+
+/** The keyframe at or before `time`, where a cut of a result can start; with
+ *  none (sound only) the time stays. The engine snaps the same way
+ *  (`sub20_core::cut::snap_start`): change them together. */
+export function snapStart(keyframes: number[], time: number): number {
+  if (!keyframes.length) return Math.max(0, time);
+  return keyframes.reduce((best, k) => (k <= time + 0.001 && k > best ? k : best), 0);
 }
 
 export type Sheet = "options" | "settings" | "history" | "keys" | null;
@@ -265,10 +301,8 @@ class App {
       this.replan(clip, 0);
       this.#queueThumbs(clip);
     }
-    clip.status = "done";
-    clip.result = job.result;
+    clip.finish(job.result);
     clip.jobId = null;
-    clip.percent = 100;
     clip.error = null;
     this.selectedKey = clip.key;
     this.sheet = null;
@@ -577,6 +611,74 @@ class App {
     this.replan(clip);
   }
 
+  /** Loads a finished result's filmstrip and keyframes, once per file. */
+  async loadResultTrack(clip: Clip) {
+    const result = clip.result;
+    if (!result || clip.resultTrack === result.output) return;
+    clip.resultTrack = result.output;
+    const current = () => clip.result === result;
+    if (backend.can.cut) {
+      backend
+        .keyframes(result.output)
+        .then((keyframes) => current() && (clip.keyframes = keyframes))
+        .catch(() => {}); // Unknown keyframes: the handles stay put.
+    }
+    const ratio = result.width / Math.max(1, result.height);
+    const count = Math.round(Math.min(32, Math.max(10, 22 / ratio)));
+    clip.resultThumbs = Array(count).fill("");
+    try {
+      const strip = await backend.filmstrip(result.output, result.duration, count, (index, url) => {
+        if (!current()) return;
+        const next = [...clip.resultThumbs];
+        next[index] = url;
+        clip.resultThumbs = next;
+      });
+      if (current()) clip.resultThumbs = strip;
+    } catch {
+      if (current()) clip.resultThumbs = [];
+    }
+  }
+
+  /** Sets the part of a finished result to keep. The start moves back to a
+   *  keyframe, because the cut copies the file and can only start on one. */
+  setCut(clip: Clip, start: number, end: number) {
+    const result = clip.result;
+    if (!result || clip.cutting || !clip.keyframes) return;
+    const least = Math.min(MIN_KEEP, result.duration);
+    end = Math.max(Math.min(result.duration, end), least);
+    clip.cutStart = snapStart(clip.keyframes, Math.min(Math.max(0, start), end - least));
+    clip.cutEnd = end;
+  }
+
+  /** Cuts the finished result to what its handles keep, without compressing
+   *  it again. The original's trim moves with it, so Compress again starts
+   *  from the same part. */
+  async cut(clip: Clip) {
+    const result = clip.result;
+    if (!result || !clip.cutPending || clip.cutting) return;
+    const { cutStart, cutEnd } = clip;
+    clip.cutting = true;
+    try {
+      const cut = await backend.cutResult(result.output, cutStart, cutEnd);
+      if (clip.result !== result) return;
+      const offset = clip.start;
+      clip.start = Math.min(clip.duration, offset + cut.start);
+      clip.end = Math.min(clip.duration, offset + cutEnd);
+      clip.result = { ...$state.snapshot(result), output: cut.output, sizeBytes: cut.sizeBytes, duration: cut.duration };
+      clip.cutStart = 0;
+      clip.cutEnd = cut.duration;
+      clip.resultThumbs = [];
+      clip.keyframes = null;
+      clip.resultTrack = null;
+      this.replan(clip, 0);
+      if (cut.note) this.notify(cut.note);
+    } catch (error) {
+      this.notify(String(error));
+    } finally {
+      clip.cutting = false;
+    }
+  }
+
   /** Puts a finished or failed clip back in line. */
   reset(clip: Clip) {
     clip.status = "ready";
@@ -790,9 +892,7 @@ class App {
         clip.eta = null;
         break;
       case "done":
-        clip.status = "done";
-        clip.percent = 100;
-        clip.result = event.result;
+        clip.finish(event.result);
         this.#byJob.delete(event.id);
         break;
       case "failed":

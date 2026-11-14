@@ -213,6 +213,20 @@ fn rate_flags(encoder: Encoder, kbps: u32) -> Vec<String> {
     flags
 }
 
+/// Seconds between keyframes in a result. A result is cut by copying its
+/// packets (`cut`), and a copy can only start on a keyframe; the encoders'
+/// own default (250 frames, over 8 seconds at 30 fps) made that cut too
+/// coarse. Players also seek to keyframes, Discord's among them.
+pub const KEYFRAME_SECONDS: f64 = 2.0;
+
+/// Frames between keyframes: [`KEYFRAME_SECONDS`] at the output frame rate
+/// (60 when the source doesn't say).
+fn keyframe_interval(args: &EncodeArgs) -> u32 {
+    let source = args.info.fps.filter(|fps| *fps > 0.0).unwrap_or(60.0);
+    let fps = args.plan.fps_cap.map_or(source, |cap| cap.min(source));
+    (fps * KEYFRAME_SECONDS).round().max(1.0) as u32
+}
+
 /// Where the sound comes from: every audio track mixed into one, or the first.
 ///
 /// Each track is made stereo first (a mono microphone lands in the middle),
@@ -307,6 +321,7 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
         a.extend(["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709"]);
     }
     a.extend(rate_flags(args.encoder, args.video_kbps));
+    a.push("-g").push(keyframe_interval(args).to_string());
     a.extend(effort_flags(args.encoder, args.options));
 
     match (args.pass, args.encoder.name) {
@@ -435,6 +450,20 @@ mod tests {
         assert!(cmd.contains("-preset faster -tune film"), "{cmd}");
         assert!(cmd.contains("-map 0:a:0? -c:a aac -b:a 128k"), "{cmd}");
         assert!(cmd.ends_with("-movflags +faststart -progress pipe:1 -nostats /out/clip.mp4"), "{cmd}");
+    }
+
+    #[test]
+    fn a_keyframe_comes_every_two_seconds_at_the_output_rate() {
+        let at = |info: &MediaInfo, options: &EncodeOptions, encoder: &str| {
+            render(info, None, options, encoder, Pass::Single)
+        };
+        let capped = EncodeOptions { max_fps: Some(30.0), ..Default::default() };
+        assert!(at(&source(), &EncodeOptions::default(), "libx264").contains(" -g 120 "));
+        assert!(at(&source(), &capped, "h264_nvenc").contains(" -g 60 "));
+        let unknown = MediaInfo { fps: None, ..source() };
+        assert!(at(&unknown, &EncodeOptions::default(), "libsvtav1").contains(" -g 120 "));
+        let slow = MediaInfo { fps: Some(23.976), ..source() };
+        assert!(at(&slow, &capped, "libx265").contains(" -g 48 "));
     }
 
     #[test]

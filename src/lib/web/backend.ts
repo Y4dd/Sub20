@@ -15,7 +15,7 @@ import { loadPlanner } from "./planner";
 
 const LITE: Capabilities = {
   watch: false, replace: false, files: false, encoders: false, ffmpeg: false, copyFile: false, dragOut: false,
-  updates: false, download: true, history: false,
+  updates: false, download: true, history: false, cut: false,
   // Phones and tablets hand a file straight to the Discord app. A computer
   // downloads it instead, and the file drags into Discord from there.
   share: matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function" && navigator.canShare({ files: [new File([], "x.mp4", { type: "video/mp4" })] }),
@@ -386,6 +386,8 @@ export const webBackend: Backend = {
     }
     return renamed;
   },
+  keyframes: async () => [],
+  cutResult: desktopOnly,
   checkUpdate: async () => null,
   installUpdate: desktopOnly,
   copyDiagnostics: async (log) => {

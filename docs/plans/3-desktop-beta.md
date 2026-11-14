@@ -83,8 +83,17 @@ fix what comes back (3.6).
         unfinished files, up to 1,000 videos; "Choose a folder" beside
         "Choose videos".
       - The result can't be sought, plays in another player, and people
-        trimmed it after compressing. Being discussed with the owner;
-        nothing built yet.
+        trimmed it after compressing. The owner chose to cut the result
+        itself rather than compress again. Fix: the Result view plays in
+        Sub20's own player, over a timeline of the result with its own
+        handles, and **Cut** shortens the file by copying its packets (quick,
+        no loss, always smaller). A copy can only start on a keyframe, so
+        the start handle snaps to the result's keyframes and the cut is what
+        was shown; results now get a keyframe every 2 seconds (`-g`), which
+        also makes them seek better in Discord. The uncut file goes to the
+        bin, the history entry follows the cut, and the original's trim
+        moves with it, so Compress again starts from what is kept. Not in
+        Lite yet (`can.cut`).
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so

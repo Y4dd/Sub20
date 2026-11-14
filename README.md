@@ -37,7 +37,8 @@ account, no upload and no ads.
 - **Straight into Discord.** A finished video is one Ctrl+C away from the
   clipboard, so Ctrl+V in Discord attaches it, or drag it from the window
   straight into a channel. The preview switches to the result so you can
-  check it first.
+  check it first, and its own handles cut it shorter without compressing it
+  again.
 - **Sizes named after Discord's limits**: 20 MB (free, the default), 50 MB
   (Nitro Basic), 500 MB (a server boost) and 1 GB (Nitro), or any size you
   type.
@@ -194,7 +195,8 @@ repeats one (`5l`, `3j`, `2G`). Press `?` in the app for this list.
 
 With a trim handle focused, the arrow keys move it a tenth of a second
 (a second with Shift), Page Up and Page Down a twentieth of the video, and
-Home and End to the furthest it can go.
+Home and End to the furthest it can go. On a finished result, the start
+handle steps from keyframe to keyframe.
 
 ## How it is put together
 

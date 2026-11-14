@@ -79,6 +79,24 @@ impl History {
         }
     }
 
+    /// Points entries for a result that was cut shorter at the cut file.
+    pub fn cut(&self, from: &Path, cut: &crate::cut::Cut) -> Result<()> {
+        let mut entries = self.entries.lock().expect("history lock");
+        let mut changed = false;
+        for entry in entries.iter_mut().filter(|e| e.result.output == from) {
+            entry.result.output = cut.output.clone();
+            entry.result.size_bytes = cut.size_bytes;
+            entry.result.duration = cut.duration;
+            entry.trimmed = true;
+            changed = true;
+        }
+        if changed {
+            self.save(&entries)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn remove(&self, id: &str) -> Result<()> {
         let mut entries = self.entries.lock().expect("history lock");
         entries.retain(|e| e.id != id);

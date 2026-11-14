@@ -75,8 +75,19 @@ What changed in each release. The format follows
   starting a second copy.
 - Settings offers to watch the NVIDIA app's and Xbox Game Bar's clip folders
   in one click when they are found, compressing new clips as they are saved.
+- Cut a finished video shorter without compressing it again: on Result, move
+  its handles and press Cut. The file is copied rather than encoded again,
+  so it takes a moment, loses nothing and only gets smaller. The start lands
+  on the nearest keyframe before it, at most two seconds earlier.
+- Drop or choose a folder, and the videos in it and in its subfolders are
+  added, in name order, without Sub20's own results.
 
 ### Changed
+
+- The result plays in the same player as the original, over a filmstrip of
+  its own, so it can be sought.
+- Results have a keyframe every two seconds, so they can be cut close to
+  any point and seek better in Discord.
 
 - Sub20 is now open source under the MIT licence (`LICENSE`).
 - The size presets follow Discord's limits: 20 MB (free), 50 MB (Nitro
@@ -91,6 +102,9 @@ What changed in each release. The format follows
   older Notepad save them) no longer resets every setting.
 - The folder watch costs a tenth of what it did on a folder with thousands
   of clips, and the window does less work while compressing.
+- Adding many videos no longer leaves the list empty until the last one is
+  read: they appear as they are read, six at a time, and filmstrips are made
+  two at a time, the selected video's first.
 
 ## [0.1.0] - not released
 
