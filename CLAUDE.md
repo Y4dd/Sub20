@@ -115,6 +115,17 @@ Sub20 Lite is the same window on a third backend, `src/lib/web/backend.ts`: WebC
 - **Phone layout** is CSS only: under 720 px the clip list is a strip, the dock wraps, Options stacks its labels at 480 px. The stage clips its overflow there, because the trim handles' grab areas reach past the screen and a phone widens the page to show them.
 - **Not in Lite yet**: HDR tone mapping (`info.hdr` is set to null so the stage doesn't claim it), mixing several sound tracks, results in the origin private file system, VP9/AV1 fallbacks.
 
+## Site decisions
+
+The website lives in `site/`, a project of its own (`cd site && npm ci`), built by `.github/workflows/pages.yml` (by hand, and when a release is published) and served from GitHub Pages with Sub20 Lite copied to `/app`. CI skips `site/**`.
+
+- **Stack:** Astro 7, static, `@astrojs/sitemap`. The address is two variables: `SITE_URL` (default `https://y4dd.github.io`) and `BASE` (default `/Sub20`); every internal link goes through `u()` in `src/lib/site.ts`, so a domain later changes only those. No canonical link until there is a domain. No analytics, cookies or third-party requests.
+- **The kit:** `site/public/assets` is the taste skill's design system (MIT, its licence beside it), copied in and never edited; `src/styles/site.css` holds only what it lacks. Palette and fonts are the app's (`src/app.css`), so the site and the app read as one. `backgrounds.css`/`.js` are not linked: no ground is used, and they blocked the first paint.
+- **Pictures** are screenshots of the app on the mock backend in `src/assets/img/`, always through `Shot.astro` (`getImage` with a width ladder and `sizes`), never a bare `<img>`. The hero is a collage of the app's own pieces, two of them drawn live in CSS (`.live-size`, `.live-result`).
+- **Downloads** come from `src/lib/release.ts`, which reads the latest release at build time (`GITHUB_TOKEN` if set); without one every link goes to the releases page. `ROWS` mirrors `scripts/collect-release.mjs`'s table: change them together. A head script in `Base.astro` sets `data-os` on `<html>` (none on phones and tablets) and CSS marks that system's rows.
+- **Text pages** (download, guides, compare, privacy, changelog) use `Doc.astro`; the changelog renders `../CHANGELOG.md`. Guide claims come from this file; when the app changes behaviour a guide describes, change the guide.
+- **Checks:** the skill's `consistency.mjs`, `check.mjs`, `copy-lint.mjs` and `perf.mjs` on a `BASE=/` build (`MSYS_NO_PATHCONV=1 BASE=/ npx astro build` in Git Bash), with Chrome from `CHROME_PATH`; commands and results are in `docs/plans/1-website.md`. Three findings about the dealt marquee are waived in `site/.taste-skill/waivers.json` (git-ignored, so the waivers are listed in the plan too). Lighthouse on a phone, November 2026: guide 96, home 93 (the hero's entrance holds its LCP).
+
 ## Interface decisions
 
 The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was answered so far:

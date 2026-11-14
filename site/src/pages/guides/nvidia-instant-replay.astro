@@ -1,0 +1,37 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="Send an NVIDIA Instant Replay clip on Discord | Sub20"
+  description="Instant Replay clips are recorded at a high bitrate, so most are over Discord's 20 MB limit. Where the NVIDIA app saves them, and how to send one with your microphone in it."
+  current="guides"
+  heading="Send an NVIDIA Instant Replay clip on Discord"
+  lead="Instant Replay records at a high bitrate so the moment looks sharp, which puts most clips well over Discord's 20 MB limit. Trim it and compress it to the limit, and it sends."
+>
+  <h2>Where the clips are</h2>
+  <p>The NVIDIA app saves clips in your Videos folder, under <code>NVIDIA</code>, in a folder per game: <code>Videos\NVIDIA\Game name</code>. The app's own settings say where, if you changed it.</p>
+
+  <h2>Send one clip</h2>
+  <ol>
+    <li>Open <a href={u("download/")}>Sub20</a> and drop the clip on its window, or right-click the clip in Explorer and choose <b>Compress with Sub20</b> (under <b>Show more options</b> on Windows 11).</li>
+    <li>An Instant Replay clip is the last stretch of play before you pressed the shortcut. Drag the yellow handles in to the moment itself.</li>
+    <li>Keep the size at 20 MB for a free account, or pick your Nitro limit.</li>
+    <li>Press <b>Compress</b>. On an NVIDIA card, the card does the encoding.</li>
+    <li>Press Ctrl+C and paste into Discord, or drag the file from under the timeline into the channel.</li>
+  </ol>
+  <p>The result is saved next to the clip as <code>name-20mb.mp4</code>. Nine Instant Replay clips of up to 1 minute 40 seconds, all over 20 MB, came out between 88% and 99.7% of the limit, every one under it.</p>
+
+  <h2>Keep your microphone</h2>
+  <p>The NVIDIA app can record your microphone on a sound track of its own, apart from the game. Sub20 mixes every track into one, so your voice is in the clip you send. The stage says so ("2 sound tracks, mixed"). <b>Mix all sound tracks</b> in Options turns it off.</p>
+
+  <h2>Compress every new clip by itself</h2>
+  <p>In Sub20's Settings, <b>Watch NVIDIA app clips</b> appears when the folder exists. From then on, each new clip is compressed as it lands, while Sub20 is open. Clips already there are left alone.</p>
+  <ul>
+    <li>The title bar says "Watching", and what it is doing.</li>
+    <li>History lists the watched clips with <b>Open</b> and <b>Copy</b>.</li>
+    <li>Windows tells you when one is ready, but never while a game fills the screen: the notices wait and arrive together afterwards.</li>
+  </ul>
+  <p>Xbox Game Bar's clips get the same: <b>Watch Xbox Game Bar clips</b>, for <code>Videos\Captures</code>.</p>
+</Doc>

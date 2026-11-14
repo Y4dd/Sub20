@@ -1,0 +1,173 @@
+---
+// Every page's frame: the head, the fixed nav, the page, and the closing
+// screen (the close and the footer). The kit in public/assets is the design
+// system (tasteskill, MIT, its licence beside it); the palette and fonts are
+// the app's own (src/app.css), so the site and the app read as one thing.
+import "@fontsource-variable/bricolage-grotesque/wdth.css";
+import "@fontsource-variable/hanken-grotesk/wght.css";
+import "../styles/site.css";
+// The same files the two imports above point to, preloaded so the first
+// screen's text paints in its own fonts without waiting for the CSS
+// (Lighthouse on a phone: first paint 1.7 s with both, 2.2 s with one).
+import displayFont from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2?url";
+import textFont from "@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url";
+import Shot from "../components/Shot.astro";
+import { u, GITHUB } from "../lib/site";
+
+interface Props {
+  title: string;
+  description: string;
+  /** The nav word of the page you are on. */
+  current?: "lite" | "guides" | "compare" | "download";
+  /** The home page loads the dealt moment. */
+  moments?: boolean;
+  /** A document page (guides, privacy): the sections grow with their text. */
+  doc?: boolean;
+}
+const { title, description, current, moments = false, doc = false } = Astro.props;
+const share = new URL(u("share.jpg"), Astro.site).href;
+const here = (word: string) => (current === word ? { "aria-current": "page" } : {});
+---
+
+<!doctype html>
+<html lang="en" data-type="software" data-radius="soft" data-buttons="tonal" data-motion class:list={[{ "is-doc": doc }]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={share} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Sub20's window in pieces: the trim bar, the clip list, Discord's four size limits and a finished 19.4 MB clip with Copy" />
+    <meta property="og:site_name" content="Sub20" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={share} />
+    <link rel="icon" href={u("icon.svg")} type="image/svg+xml" />
+    <meta name="theme-color" content="#15171c" />
+    <!-- <link rel="canonical"> waits for the project's own domain. -->
+    <meta name="site-kind" content="software" />
+    <meta name="page-type" content="software" />
+    <link rel="preload" href={textFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={displayFont} as="font" type="font/woff2" crossorigin />    <link rel="stylesheet" href={u("assets/system.css")} />
+    <link rel="stylesheet" href={u("assets/ui/cards.css")} />
+    <link rel="stylesheet" href={u("assets/motion/motion.css")} />
+    <!-- No backgrounds.css or backgrounds.js: the site uses none of the kit's CSS grounds, and both blocked the first paint. -->
+    <link rel="stylesheet" href={u("assets/layout/layout.css")} />
+    <link rel="stylesheet" href={u("assets/icons/icon.css")} />
+    <!-- The palette from the app (src/app.css: --bench, --surface, --text, --muted, --trim), through start.mjs brand. -->
+    <style is:inline>
+      :root {
+        --p-bg: #15171c; --p-surface: #1c1f26; --p-ink: #eceef2; --p-muted: #9aa1ae;
+        --p-accent: #ffd02b; --p-accent-ink: #15171c; --p-action: #ffd02b; --p-action-ink: #15171c;
+        --p-inv-bg: #eceef2; --p-inv-surface: #dbdde1; --p-inv-ink: #15171c; --p-inv-muted: #5d6065;
+        --p-inv-accent: #15171c; --p-inv-accent-ink: #eceef2; --p-inv-action: #15171c; --p-inv-action-ink: #eceef2;
+        --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+        --font-text: "Hanken Grotesk Variable", system-ui, sans-serif;
+        --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        --display-weight: 400;
+        --display-tracking: -0.03em;
+        --display-tracking-xl: -0.04em;
+        --display-stretch: 85%; /* the app's headings (Sheet, Dock, DropStage) */
+      }
+    </style>
+    <script is:inline>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+    <!-- The visitor's system, for marking its rows in the download lists. Phones and tablets get none. -->
+    <script is:inline>(()=>{const n=navigator,p=(n.userAgentData&&n.userAgentData.platform)||n.platform||"";if(/Android|iPhone|iPad|iPod/.test(n.userAgent)||(/Mac/.test(p)&&n.maxTouchPoints>1))return;const os=/Win/.test(p)?"windows":/Mac/.test(p)?"mac":/Linux|X11/.test(p)?"linux":"";if(os)document.documentElement.dataset.os=os})()</script>
+    <slot name="head" />
+    {moments && (
+      <>
+        <script is:inline>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+        <link rel="modulepreload" href={u("assets/moments/moments.js")} />
+        <link rel="modulepreload" href={u("assets/moments/lib.js")} />
+        <link rel="modulepreload" href={u("assets/moments/marquee-row/moment.js")} />
+      </>
+    )}
+  </head>
+  <body>
+    <!-- type: software
+         deal: hero triptych, nav nav-cards, close close-type, footer footer-dark, rhythm surface-pairs,
+         buttons tonal, mark: the client's own logo (public/icon.svg); palette and type: the app's own
+         (start.mjs brand with src/app.css's colours; Bricolage Grotesque, the wordmark's face, and Hanken
+         Grotesk, the app's interface face); effect: none, the app's own window leads.
+         moments: marquee-row, the formats Sub20 opens, as the last row of #features. -->
+    <header class="nav">
+      <div class="wrap nav__bar">
+        <a class="skip-link" href="#top">Skip to content</a>
+        <a class="nav__logo" href={u()}><img class="logo" src={u("icon.svg")} alt="" width="28" height="28" />Sub20</a>
+        <nav class="nav__links" aria-label="Main">
+          <div class="nav__item">
+            <a class="nav__link" href={u("#features")}>Features <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+            <div class="nav__menu">
+              <div class="wrap grid">
+                <a class="menu-card span-4" href={u("#app")}>
+                  <div class="panel"><Shot class="frame__img" name="trim" alt="The trim bar with its two yellow handles" sizes="1260px" /></div>
+                  <span class="t-card">Trim with two handles</span>
+                  <span class="t-small muted">Keep the part you want, cut to the frame</span>
+                </a>
+                <a class="menu-card span-4" href={u("#features")}>
+                  <div class="panel"><Shot class="frame__img" name="size" alt="The size picker with Discord's four limits" sizes="410px" /></div>
+                  <span class="t-card">Fit any size limit</span>
+                  <span class="t-small muted">Every result checked, redone if it's over</span>
+                </a>
+                <a class="menu-card span-4" href={u("#features")}>
+                  <div class="panel"><Shot class="frame__img" name="watch" alt="History listing a clip from the watched NVIDIA folder" sizes="410px" /></div>
+                  <span class="t-card">Watch your clip folders</span>
+                  <span class="t-small muted">New clips compressed as they arrive</span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="nav__item"><a class="nav__link" href={u("#lite")} {...here("lite")}>Lite</a></div>
+          <div class="nav__item"><a class="nav__link" href={u("guides/")} {...here("guides")}>Guides</a></div>
+          <div class="nav__item"><a class="nav__link" href={u("compare/")} {...here("compare")}>Compare</a></div>
+        </nav>
+        <div class="nav__actions">
+          <a class="btn btn--primary" href={u("#download")}>Download Sub20</a>
+        </div>
+        <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="top">
+      <slot />
+    </main>
+
+    <footer class="footer closing footer--dark ground-inverse" id="contact" aria-labelledby="close-h">
+      <div class="wrap">
+        <div class="closing__cta close--type">
+          <div class="section-head">
+            <h2 id="close-h">Fit your next clip under 20 MB</h2>
+            <p class="t-small muted">Free for Windows, macOS and Linux. No account, MIT licence.</p>
+          </div>
+          <a class="btn btn--primary btn--xl btn--wide" href={u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
+        </div>
+        <div class="closing__links">
+          <div class="grid">
+            <div class="span-4 stack-4">
+              <a class="nav__logo" href={u()}><img class="logo" src={u("icon.svg")} alt="" width="28" height="28" loading="lazy" />Sub20</a>
+              <p class="footer__lede">Trims clips and compresses them to fit Discord's upload limit, on your own computer.</p>
+            </div>
+            <div class="span-2 footer__col"><h3>Sub20</h3><ul><li><a href={u("#features")}>Features</a></li><li><a href={u("download/")}>Download</a></li><li><a href={u("changelog/")}>Changelog</a></li></ul></div>
+            <div class="span-2 footer__col"><h3>Lite</h3><ul><li><a href={u("#lite")}>In your browser</a></li><li><a href={u("app/")}>Open Sub20 Lite</a></li></ul></div>
+            <div class="span-2 footer__col"><h3>Guides</h3><ul><li><a href={u("guides/")}>All guides</a></li><li><a href={u("compare/")}>Compare</a></li><li><a href={u("#faq")}>Questions</a></li></ul></div>
+            <div class="span-2 footer__col"><h3>Project</h3><ul><li><a href={GITHUB}>Source code</a></li><li><a href={`${GITHUB}/issues`}>Report a problem</a></li><li><a href={u("privacy/")}>Privacy</a></li></ul></div>
+          </div>
+          <div class="footer__legal">
+            <span>&copy; 2026 Sub20 &nbsp; <a href={u("privacy/")}>Privacy</a> &nbsp; Not affiliated with Discord.</span>
+            <div class="socials"></div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script is:inline type="module" src={u("assets/system.js")}></script>
+    <script is:inline type="module" src={u("assets/motion/motion.js")}></script>
+    <script is:inline type="module" src={u("assets/layout/layout.js")}></script>
+  </body>
+</html>

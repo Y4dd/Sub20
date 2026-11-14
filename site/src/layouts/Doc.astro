@@ -1,0 +1,26 @@
+---
+// A text page (download, guides, compare, privacy, changelog): the site's
+// frame with one column of words that grows with them.
+import Base from "./Base.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  current?: "lite" | "guides" | "compare" | "download";
+  /** The page's h1; the title tag carries the site's name as well. */
+  heading: string;
+  /** One or two sentences under the h1. */
+  lead?: string;
+}
+const { title, description, current, heading, lead } = Astro.props;
+---
+
+<Base title={title} description={description} current={current} doc>
+  <article class="doc" aria-labelledby="doc-h">
+    <div class="wrap">
+      <h1 id="doc-h">{heading}</h1>
+      {lead && <p class="doc__lead">{lead}</p>}
+      <slot />
+    </div>
+  </article>
+</Base>

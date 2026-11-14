@@ -1,0 +1,19 @@
+---
+// The repository's CHANGELOG.md, without its own title and opening lines,
+// which the page's heading and lead replace.
+import Doc from "../../layouts/Doc.astro";
+import { Content } from "../../../../CHANGELOG.md";
+import { RELEASES } from "../../lib/site";
+---
+
+<Doc
+  title="Changelog | Sub20"
+  description="What changed in each version of Sub20."
+  heading="Sub20 changelog"
+  lead="What changed in each version, newest first."
+>
+  <div class="changelog">
+    <Content />
+  </div>
+  <p class="muted">Every version and its downloads are on the <a href={RELEASES}>releases page</a>.</p>
+</Doc>

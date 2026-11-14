@@ -15,3 +15,9 @@ src-tauri/ffmpeg-notice/
 # Built by scripts/build-plan-wasm.mjs.
 src/lib/web/plan.wasm
 dist-web/
+
+# The website (site/): its build, Astro's cache and the design kit's check output.
+site/dist/
+site/node_modules/
+site/.astro/
+site/.taste-skill/

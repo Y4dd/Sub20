@@ -1,0 +1,18 @@
+{
+  "name": "sub20-site",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Sub20's website: the pages people read, with Sub20 Lite served at /app.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/hanken-grotesk": "^5.3.0",
+    "astro": "^7.4.11"
+  }
+}

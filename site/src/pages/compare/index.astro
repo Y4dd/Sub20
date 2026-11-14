@@ -1,0 +1,46 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="Sub20 compared with HandBrake, LosslessCut and online compressors"
+  description="What Sub20 does that HandBrake, LosslessCut and online video compressors don't, and what each of them does better."
+  current="compare"
+  heading="Sub20 compared with HandBrake, LosslessCut and online compressors"
+  lead="Sub20 does one job: trim a clip and fit it under a size. The tools below do more, or other things. This is where each one fits."
+>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><td></td><th scope="col">Sub20</th><th scope="col">HandBrake</th><th scope="col">LosslessCut</th><th scope="col">Online compressors</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Aims at a file size</th><td>Yes, and checks the result</td><td>No: you set quality or bitrate</td><td>No</td><td>Some do</td></tr>
+        <tr><th scope="row">Trim before encoding</th><td>Two handles on a filmstrip</td><td>By time or frame numbers</td><td>Yes, its main job</td><td>Some do</td></tr>
+        <tr><th scope="row">Encodes on the graphics card</th><td>Yes</td><td>Yes</td><td>Cuts without encoding</td><td>On their servers</td></tr>
+        <tr><th scope="row">Your video leaves your computer</th><td>No</td><td>No</td><td>No</td><td>Yes, it is uploaded</td></tr>
+        <tr><th scope="row">Price</th><td>Free, open source</td><td>Free, open source</td><td>Free, open source (paid in app stores)</td><td>Often free up to a size</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>HandBrake</h2>
+  <p>HandBrake is a mature, free converter with presets for every device, filters, subtitles, chapters and a queue. If you convert films or want control over every setting, it is the better tool.</p>
+  <p>It has no setting for a file size. To get a clip under 20 MB you work out the bitrate yourself, encode, check the size, and try again if it is over. Sub20 does that sum and that check for you, and encodes again by itself when a result lands over.</p>
+
+  <h2>LosslessCut</h2>
+  <p>LosslessCut cuts video without encoding it again, so a cut is instant and loses nothing. It is the best tool for taking a part out of a long recording when the size doesn't matter.</p>
+  <p>Because it doesn't encode, a cut is as heavy per second as the source. A 30-second cut of a high-bitrate game recording can still be well over 20 MB. Sub20 encodes the part you keep, aimed at the size you need.</p>
+
+  <h2>Online compressors</h2>
+  <p>Websites that compress video work in any browser with nothing to install. You upload the video, their server encodes it, and you download the result.</p>
+  <p>The upload is the cost: a large clip takes as long to send to them as it would to Discord, and your video sits on someone else's server. Free plans often cap the size of what you can upload. <a href={u("app/")}>Sub20 Lite</a> also runs in a browser with nothing to install, but encodes on your own device and uploads nothing.</p>
+
+  <h2>When Sub20 is the wrong tool</h2>
+  <ul>
+    <li>You want the smallest file at a quality you choose, not at a size: use HandBrake's constant quality.</li>
+    <li>You want a cut with no loss at all: use LosslessCut.</li>
+    <li>You want to edit, with titles, music or several clips joined: use a video editor.</li>
+  </ul>
+</Doc>

@@ -1,0 +1,73 @@
+name: Website
+
+# Builds the website (site/) with Sub20 Lite under /app and publishes it on
+# GitHub Pages. Runs by hand, and when a release is published, so the
+# download links on the site follow the latest release.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer run waits rather than cancelling one
+# that is halfway through publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            site/package-lock.json
+      - id: pages
+        uses: actions/configure-pages@v6
+
+      # Sub20 Lite: the planner's WebAssembly, then the web build in dist-web/.
+      - run: npm ci
+      - name: Build Sub20 Lite
+        run: npm run build:web
+
+      # The site, at the address Pages gives it (/Sub20 until there is a domain).
+      - name: Build the website
+        working-directory: site
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE: ${{ steps.pages.outputs.base_path || '/' }}
+          # Read by src/lib/release.ts for the latest release's files.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          npm ci
+          npx astro build
+          cp -r ../dist-web dist/app
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

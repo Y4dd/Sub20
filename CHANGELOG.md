@@ -12,6 +12,11 @@ What changed in each release. The format follows
   browser's own GPU encoder, nothing uploaded. It can be installed, works
   offline, takes videos shared from Android's gallery, and on a phone hands
   the result straight to Discord with Share. Not published yet.
+- A website: what Sub20 does, both downloads for each system with the
+  first-launch steps, four guides (a file too large for Discord, NVIDIA
+  Instant Replay clips, iPhone videos, HEVC), a comparison with HandBrake,
+  LosslessCut and online compressors, the privacy page and this changelog,
+  with Sub20 Lite at `/app`. Not published yet.
 - A phone-sized layout: under 720 pixels the video list becomes a strip
   above the preview.
 - The folder watch shows itself: the title bar says "Watching" and what it

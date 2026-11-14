@@ -1,0 +1,42 @@
+---
+// One of the app's screenshots (src/assets/img), served through a srcset of widths up to its own,
+// so the browser takes the smallest that covers the slot named in `sizes`. Astro writes the width
+// and height, so nothing shifts while it loads.
+import { getImage } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import type { HTMLAttributes } from "astro/types";
+
+const files = import.meta.glob<{ default: ImageMetadata }>("../assets/img/*.webp", { eager: true });
+
+interface Props extends Omit<HTMLAttributes<"img">, "src" | "srcset" | "width" | "height"> {
+  name: string;
+  alt: string;
+  /** The slot's width at each breakpoint, as measured on the page. */
+  sizes: string;
+  /** In the first screen: load at once, and first. */
+  eager?: boolean;
+}
+
+const { name, alt, sizes, eager = false, ...rest } = Astro.props;
+const file = files[`../assets/img/${name}.webp`];
+if (!file) throw new Error(`No screenshot named ${name} in src/assets/img`);
+const src = file.default;
+
+// Steps of at most a third, so the width picked is never far over the slot.
+const LADDER = [160, 200, 240, 300, 360, 440, 520, 640, 800, 1000, 1280, 1600, 1920, 2560];
+const widths = [...LADDER.filter((w) => w < src.width * 0.95), src.width];
+const image = await getImage({ src, widths, sizes, format: "webp" });
+---
+
+<img
+  src={image.src}
+  srcset={image.srcSet.attribute}
+  sizes={sizes}
+  width={src.width}
+  height={src.height}
+  alt={alt}
+  loading={eager ? "eager" : "lazy"}
+  decoding={eager ? "sync" : "async"}
+  fetchpriority={eager ? "high" : undefined}
+  {...rest}
+/>

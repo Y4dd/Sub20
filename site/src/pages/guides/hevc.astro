@@ -1,0 +1,33 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="Why your HEVC video won't play on Discord | Sub20"
+  description="Discord's chat doesn't play HEVC (H.265) video, so people have to download it. Which format plays, and how to convert a video to it."
+  current="guides"
+  heading="Why your HEVC video won't play on Discord"
+  lead="Discord's chat doesn't play HEVC video. The upload works, but people have to download the file to watch it. Converting it to H.264 makes it play in the chat on every device."
+>
+  <h2>What HEVC is</h2>
+  <p>HEVC, also called H.265, is a video format that keeps about the same picture in a smaller file than the older H.264. Phones and capture tools use it to save space:</p>
+  <ul>
+    <li>iPhones, with <b>High Efficiency</b> chosen in the camera's formats (the default).</li>
+    <li>Many Android phones, when set to save space.</li>
+    <li>The NVIDIA app, OBS and other recorders, when set to H.265 or HEVC.</li>
+  </ul>
+  <p>The file's name doesn't say which format is inside: an <code>.mp4</code> or <code>.mov</code> can be either.</p>
+
+  <h2>Which formats play in the chat</h2>
+  <ul>
+    <li><b>H.264</b> plays in the chat on every device. It is the safe choice.</li>
+    <li><b>AV1</b> plays in the chat too, and keeps more detail at the same size, but older devices may struggle to play it.</li>
+    <li><b>HEVC</b> doesn't play in the chat.</li>
+  </ul>
+
+  <h2>Convert it</h2>
+  <p><a href={u()}>Sub20</a> encodes H.264 unless you choose otherwise, so dropping the video on it and pressing <b>Compress</b> is enough. It fits the result under the size you pick (20 MB to start), so it sends on a free account too.</p>
+  <p>Sub20 offers HEVC for people who want it elsewhere, and says where you pick it that Discord won't play it in the chat.</p>
+  <p>Without installing anything, <a href={u("app/")}>Sub20 Lite</a> converts to H.264 in the browser. Nothing is uploaded.</p>
+</Doc>

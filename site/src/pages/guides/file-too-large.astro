@@ -1,0 +1,48 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="Discord says your file is too large: what to do | Sub20"
+  description="Discord's upload limits are 20 MB free, 50 MB with Nitro Basic, 500 MB in a boosted server and 1 GB with Nitro. Three ways to get a clip under them."
+  current="guides"
+  heading="Discord says your file is too large: what to do"
+  lead="Discord refuses an upload over your account's limit. Make the file smaller than the limit, by keeping less of it, by compressing it, or both."
+>
+  <h2>Discord's limits</h2>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th scope="col">Your account</th><th scope="col">Largest upload</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Free</th><td>20 MB</td></tr>
+        <tr><th scope="row">Nitro Basic</th><td>50 MB</td></tr>
+        <tr><th scope="row">In a server with boosts</th><td>500 MB</td></tr>
+        <tr><th scope="row">Nitro</th><td>1 GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The free limit is exact. A file of 20,971,000 bytes uploaded from a free account; one of 20,972,000 bytes was refused (tried in November 2026). So "20 MB" means 20 × 1024 × 1024 bytes, and a file your computer shows as 20.1 MB is already too big.</p>
+
+  <h2>1. Keep only the part worth sending</h2>
+  <p>A clip of the last 30 seconds of a match is often 25 seconds of waiting and 5 of the moment. Cutting the waiting makes the file smaller and the clip better. At the same quality, half the length is half the size.</p>
+
+  <h2>2. Compress it to a size</h2>
+  <p>Video can be encoded at a lower bitrate: fewer bits each second, so a smaller file with some loss of detail. The trick is to aim the bitrate at the size you need. Too high and the file is still over; too low and it looks worse than it had to.</p>
+  <p>The bitrate that fits is the size divided by the length. A 20 MB file holds a minute of video at about 2.7 megabits a second, which looks fine at 1080p for most game clips and phone videos. A long clip gets a lower bitrate, and below a point a smaller picture looks better than a blurry large one.</p>
+
+  <h2>3. Do both in one step</h2>
+  <p><a href={u()}>Sub20</a> is a free app for exactly this:</p>
+  <ol>
+    <li>Drop the video on the window.</li>
+    <li>Drag the two yellow handles to keep the part you want.</li>
+    <li>Pick the size: 20 MB, 50 MB, 500 MB or 1 GB, named after Discord's limits.</li>
+    <li>Press <b>Compress</b>. It works out the bitrate and the picture size, encodes on your graphics card, and measures the result. If it lands even a byte over, it encodes again lower.</li>
+    <li>Press Ctrl+C (⌘C on a Mac) and paste into Discord.</li>
+  </ol>
+  <p>Before you compress, the line under the timeline says how the result should look. If the size is too small for the length you kept, it says how long a clip that size can hold.</p>
+  <p>On a phone, or where you can't install anything, <a href={u("app/")}>Sub20 Lite</a> does the same in the browser. Nothing is uploaded.</p>
+
+  <h2>Why not just zip it?</h2>
+  <p>Video files are already compressed, so a zip barely shrinks them, and Discord can't play a zip in the chat.</p>
+</Doc>

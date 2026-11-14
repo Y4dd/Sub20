@@ -1,0 +1,39 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="Send an iPhone video on Discord | Sub20"
+  description="iPhone videos are often over Discord's limit, recorded in HEVC that the chat won't play, and in HDR. How to send one that plays, in ordinary colour."
+  current="guides"
+  heading="Send an iPhone video on Discord"
+  lead="An iPhone video has three things against it on Discord: it is big, it is usually HEVC, which the chat won't play, and newer iPhones record it in HDR. Converting it to H.264 in ordinary colour, at a size under the limit, fixes all three."
+>
+  <h2>Why it doesn't just send</h2>
+  <ul>
+    <li><b>Size.</b> A minute of 4K video is hundreds of megabytes; Discord's free limit is 20 MB.</li>
+    <li><b>HEVC.</b> With <b>High Efficiency</b> chosen in Settings, Camera, Formats (the default), the iPhone records HEVC. Discord's chat doesn't play HEVC, so people have to download the file to watch it. See <a href={u("guides/hevc/")}>why HEVC won't play</a>.</li>
+    <li><b>HDR.</b> iPhone 12 and later record HDR video by default. Converted without care, HDR comes out grey and washed out.</li>
+  </ul>
+
+  <h2>Send it from a computer</h2>
+  <ol>
+    <li>Move the video to your computer (AirDrop on a Mac, or the Photos app or a cable on Windows).</li>
+    <li>Drop it on <a href={u("download/")}>Sub20</a> and drag the yellow handles to the part worth sending.</li>
+    <li>Press <b>Compress</b>. Sub20 encodes H.264, converts HDR to ordinary colour (the stage says when a video was HDR), and keeps a portrait video upright.</li>
+    <li>Press Ctrl+C (⌘C on a Mac) and paste into Discord.</li>
+  </ol>
+
+  <h2>Send it from the phone</h2>
+  <p><a href={u("app/")}>Sub20 Lite</a> is the same app in a browser, and nothing is uploaded. It encodes H.264 at the size you pick, and on a phone <b>Share</b> hands the result to the Discord app.</p>
+  <p>Lite doesn't convert HDR yet, so an HDR video comes out with flat colours. For videos you mean to send, turn off <b>HDR Video</b> in Settings, Camera, Record Video, or use the desktop app.</p>
+
+  <h2>Record it ready to send</h2>
+  <p>If you send a lot of phone videos, two settings make them easier:</p>
+  <ul>
+    <li>Settings, Camera, Formats: <b>Most Compatible</b> records H.264, which Discord plays.</li>
+    <li>Settings, Camera, Record Video: <b>HDR Video</b> off records ordinary colour.</li>
+  </ul>
+  <p>The video still has to fit under the limit, so a long one still needs trimming and compressing.</p>
+</Doc>

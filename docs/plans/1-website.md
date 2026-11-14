@@ -4,9 +4,8 @@
 to GitHub Pages, with Sub20 Lite served at `/app`. It stays unannounced
 until the launch (plan 5): nothing links to it yet except the repository.
 
-**Status.** In progress. The home page and its layout exist and build; none
-of `site/` is committed. The last round of layout fixes has not been run
-through the checker.
+**Status.** Built, checked and committed (14 November 2026). Waits for the
+owner to enable Pages and say when to push, then 1.11 deploys it.
 
 **Needs first:** nothing. **Unblocks:** plan 2 (the README and release notes
 point to the download page), plan 4 (Lite on a phone needs HTTPS), and
@@ -28,8 +27,9 @@ SignPath later (it asks for a website).
   With no release, every link falls back to the releases page.
 - **Files:** `src/layouts/Base.astro` (head, nav, closing screen, footer;
   `doc` for text pages), `src/pages/index.astro`, `src/styles/site.css`
-  (only what the kit lacks), `public/img/*.webp` (screenshots of the app on
-  the mock backend), `public/icon.svg`.
+  (only what the kit lacks), `src/assets/img/*.webp` (screenshots of the
+  app on the mock backend, served through `Shot.astro` with a `srcset`),
+  `public/icon.svg`, `public/share.jpg`. Text pages use `Doc.astro`.
 
 Decisions already taken:
 
@@ -73,7 +73,8 @@ node <skill>/scripts/gate.mjs dist/index.html --root dist
 `shoot.mjs --url dist/index.html --root dist --w 1440 --out .taste-skill/shots/1440.png --profile .taste-skill/chrome-check`
 takes the pictures to look at, and `perf.mjs` measures weight and speed.
 The consistency report is `dist/.taste-skill/consistency/report.json`. The
-gate is armed for `dist/index.html` and allows three rounds.
+gate passed on 14 November 2026 and closed its build; a redesign arms it
+again with `gate.mjs --start dist/index.html --root dist --kind software`.
 
 The skill's rules that shaped the page: one section per screen, equal left
 and right edges, a 12-column grid, a noun or a digit in every heading,
@@ -90,7 +91,7 @@ invented.
       window, four feature cards with the formats marquee, downloads beside
       the first screen, Lite, questions, the closing screen. Built
       13 November 2026; screenshots are real ones from the mock backend.
-- [ ] **1.3 Home page passes the consistency check.** Rebuild, run
+- [x] **1.3 Home page passes the consistency check.** Rebuild, run
       `consistency.mjs`, fix what fails. The last edits aimed at: overflow
       in the feature cards, headings without a noun, the hero's first
       collage set, no visual in Downloads, text-only FAQ, contrast of the
@@ -98,15 +99,25 @@ invented.
       Warnings that are right to keep: the main action repeated in nav and
       hero, the h1's length, links to pages that don't exist until 1.6.
       *Done when:* no FAIL at 1440 and 390.
-- [ ] **1.4 The other checks.** `check.mjs` at five sizes, `copy-lint`,
+      Done 14 November 2026: 0 FAIL at 390; at 1440 one FAIL, the dealt
+      marquee's rail (`row-lines`), waived with its reason in
+      `.taste-skill/waivers.json` with the two `bleed-one-side` findings for
+      its tracks. The page had run 3063 px wide (the marquee widened the
+      `.wrap` grid) and sections ended early; both fixed.
+- [x] **1.4 The other checks.** `check.mjs` at five sizes, `copy-lint`,
       `perf.mjs`, then look at a shot of every width.
       *Done when:* all pass and the shots show nothing cut off or empty.
-- [ ] **1.5 Share image and structured data.** `public/share.jpg` from the
+      Done 14 November 2026: `check.mjs` finds only the waived marquee
+      tracks; `copy-lint` 0 FAIL, 0 WARN; `perf.mjs` 0 FAIL after every
+      picture went through `Shot.astro` (width, height, `srcset`).
+- [x] **1.5 Share image and structured data.** `public/share.jpg` from the
       hero (the head already points to it), and `SoftwareApplication`
       JSON-LD on the home page: name, the three systems, price 0, the
       licence, the download URL. No ratings: there are none.
       *Done when:* the built page has both and the JSON-LD parses.
-- [ ] **1.6 Text pages**, each on `Base` with `doc`
+      Done 14 November 2026: `share.jpg` (1200x630, cut from the hero),
+      og and Twitter image tags, and the JSON-LD in the built page parses.
+- [x] **1.6 Text pages**, each on `Base` with `doc`
       (`article.doc > .wrap`), each through `copy-lint`:
   - `download/`: both downloads per system from `release.ts`,
     `SHA256SUMS.txt`, the SmartScreen and Gatekeeper steps and the
@@ -122,11 +133,18 @@ invented.
   - `changelog/`, rendered from `../CHANGELOG.md`.
   *Done when:* every page builds, every claim in a guide was checked
   against `CLAUDE.md` or the app, and no link on the site is dead.
-- [ ] **1.7 The visitor's system first.** A few inline lines that mark the
+      Done 14 November 2026: all built, each 0 FAIL and 0 WARN in
+      `copy-lint` (the changelog keeps one WARN from `CHANGELOG.md`'s own
+      words), claims checked against `CLAUDE.md`, every internal link
+      answered under `/Sub20/`, lists and tables looked at in shots.
+- [x] **1.7 The visitor's system first.** A few inline lines that mark the
       visitor's row in the download list (Windows, macOS, Linux), with no
       layout shift and nothing changed without JavaScript.
       *Done when:* it works at 1440 and 390 and the checks still pass.
-- [ ] **1.8 Pages workflow.** `.github/workflows/pages.yml`, run by hand
+      Done 14 November 2026: an inline head script sets `data-os` on
+      `<html>` (none on phones and tablets); a yellow bar beside the rows,
+      drawn outside the flow, in the home list and the download table.
+- [x] **1.8 Pages workflow.** `.github/workflows/pages.yml`, run by hand
       and when a release is published: `npm run build:web`, copy `dist-web`
       to `site/dist/app`, build the site with the real base, deploy with
       the Pages actions. Root `.gitignore` gains `site/dist`,
@@ -136,16 +154,32 @@ invented.
       *Done when:* the workflow file passes `actionlint` or a careful read,
       and a local run of the same steps gives a `site/dist` with `/app`
       in it that opens from a static server under `/Sub20/`.
+      Done 14 November 2026: `.github/workflows/pages.yml`; CI skips
+      `site/**` and `pages.yml`. Run locally: Lite at `/Sub20/app/` loads
+      and its service worker registers, and every link on the home page and
+      a guide answers under `/Sub20/`.
 - [ ] **1.9 Finish gate and Lighthouse.** The gate's last run, and
       Lighthouse on a phone profile for the home page and one guide.
       *Done when:* the gate passes and both score 95 or more for
       performance and accessibility.
-- [ ] **1.10 Write it down and commit.** A "Site decisions" section in
+      Gate done, Lighthouse short on the home page, 14 November 2026: the
+      gate passed in round 2 (round 1 failed
+      `button-styles` at 390, the selected size tile's outline). Lighthouse
+      on a phone, behind a gzip server as Pages serves: the iPhone guide 96
+      for performance, 100 for accessibility, best practices and SEO; the
+      home page 93 and 100. Dropping the kit's unused grounds and
+      preloading both fonts took first paint from 2.4 s to 1.7 s; the home
+      page's LCP (3.2 s) is the hero lead's place in the kit's entrance,
+      which the skill requires. Measure again live in 1.11; if the home
+      page is still under 95 there, the owner decides between the score and
+      the entrance.
+- [x] **1.10 Write it down and commit.** A "Site decisions" section in
       `CLAUDE.md` (stack, the address variables, the checks, what the kit
       is), a `CHANGELOG.md` line, the plan's table. Commit `site/`, the
       workflow and the docs.
       *Done when:* `git status` is clean and fmt, clippy and svelte-check
       are still clean.
+      Done 14 November 2026.
 - [ ] **1.11 Deploy and check it live** (after the owner enables Pages and
       says to push). Run the workflow; open the live site: every page, the
       download links, `/app/` loading and compressing a clip, its service
@@ -164,6 +198,7 @@ invented.
 ## Exit criteria
 
 - [ ] The finish gate passes and Lighthouse on a phone is 95 or more.
+      (The gate passes; the home page scored 93 locally, the guide 96.)
 - [ ] The download links read the latest release at build time, and fall
       back to the releases page when there is none. (Seen with a real
       release in plan 2, task 2.8.)
