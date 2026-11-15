@@ -187,9 +187,9 @@ people, the AI works on plan 4 or on plan 5's drafts.
       Fix (0.9.3): Options lists all three with where each plays, H.264
       still the default; the dock, the guides and the FAQ say "may not
       play". Released as 0.9.3 the same day.
-- [x] **3.7 Words in one place.** Moved to plan 6 (6.5, with the
-      translations) on 15 November 2026: the beta runs long, as foreseen
-      below. Move the window's visible strings into
+- [ ] **3.7 Words in one place.** Moved to plan 6 (6.5, with the
+      translations) on 15 November 2026, not done: the beta runs long, as
+      foreseen below. Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so
       it doesn't collide with them; if the beta runs long, it moves to
@@ -235,7 +235,9 @@ Each line is ticked with who tried it, on what, and when.
 - [ ] **An Intel and an AMD card:** Quick Sync and AMF encode a clip under
       the limit; Copy diagnostics from each goes into the record. Wanted,
       not required: without a tester on one, its encoder stays
-      "unverified" in `CLAUDE.md` and the CPU fallback covers it.
+      "unverified" in `CLAUDE.md` and the CPU fallback covers it. The
+      same holds for VideoToolbox in the macOS line and VAAPI in the Linux
+      line: the rest of those lines is required, the encoder is not.
 - [ ] **The folder watch on Windows:** "Watch NVIDIA app clips" and "Watch
       Xbox Game Bar clips" in Settings, a clip saved while watching, the
       title bar's status, History's list, and the notice: shown on the
@@ -278,7 +280,8 @@ Each line is ticked with who tried it, on what, and when.
 ## Exit criteria
 
 - [ ] Every line under "By hand" is ticked, or has an issue that is closed,
-      except the Intel and AMD line, which may stay open as "unverified".
+      except the hardware encoders other than NVENC (the Intel and AMD
+      line, VideoToolbox, VAAPI), which may stay "unverified".
 - [ ] Three to five testers, at least one not on NVIDIA and one on a Mac,
       over a week or more, with no open bug that loses data and no open
       crash.

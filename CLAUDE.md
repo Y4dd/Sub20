@@ -169,7 +169,7 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 Verified on Linux x86-64 with FFmpeg 6.1 and no GPU (before the rename): 56 tests, and the real app launched in both dev and release-style builds, trimmed with a mouse, previewed, and compressed files under the limit.
 
-Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 98 tests pass (77 unit, 17 e2e, 4 shell; the read-only-folder e2e test runs on Linux and macOS only), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The real app window, Copy into Discord, drag-out and the custom title bar have not been tried by hand on Windows yet.
+Verified on Windows 11 with FFmpeg 9.0 and an RTX 5070 Ti laptop GPU: `cargo fmt`, `clippy` and `svelte-check` clean; 98 tests pass (77 unit, 17 e2e, 4 shell; the read-only-folder e2e test runs on Linux and macOS only), including NVENC jobs that start on the GPU. The interface was checked on the mock backend at 1180×780 and 900×620 in both schemes. The owner then used the installed app on Windows by hand (15 November 2026, plan 3's "By hand"): Copy then paste into Discord, drag-out, the custom title bar (snap, maximise, a second monitor), Replace the original, renaming a finished file, cancel, quit, Open with, the update from one release to the next, and cutting a result (it starts where the handle is).
 
 E2e tests that check a particular encoder name it in `options.encoder`, and tests that depend on queue order set `parallel_jobs = 1`; a machine with a GPU or many cores otherwise changes what they observe. `a_hardware_encoder_that_misses_hands_over_to_the_cpu` covers the GPU path and skips itself without one.
 
@@ -177,9 +177,9 @@ Windows keeps a killed FFmpeg's output locked for a moment (error 32), so `Clean
 
 Unverified, so check these first on a new machine:
 - Hardware encoder success paths other than NVENC (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI). Their flags are the common FFmpeg settings for each; only fail-and-fall-back has run.
-- Windows and macOS app runs, including asset-protocol video playback and the `CREATE_NO_WINDOW` flag on FFmpeg children.
+- macOS and Linux app runs in an installed build, including preview playback (asset protocol on macOS, the loopback server on Linux).
 
 ## Loose ends
 
-- The quit dialog, Copy diagnostics and the crash log have only been built and type-checked, not tried in the real window.
-- Cutting a result has run in the engine (e2e) and on the mock, not in the real window. Unverified there: seeking the result through the asset protocol (the report that it couldn't be sought was never reproduced), and whether WebView2 or WebKitGTK shows the uncut file from cache after a cut keeps its name.
+- The quit question and Copy diagnostics have been tried on Windows only; the crash log has only been built and type-checked.
+- Cutting a result has run in the real window on Windows (owner, 15 November 2026). Unverified: whether WebView2 or WebKitGTK shows the uncut file from cache after a cut keeps its name, and whether Discord's phone apps honour an MP4 cut's edit list.

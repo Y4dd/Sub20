@@ -6,11 +6,13 @@ see it.
 
 **Status.** Not started. The drafts (5.3, 5.7 to 5.10) may start now.
 
-**Needs first:** for 5.1, 5.2, 5.4 to 5.6 and the posts going out, plan 3
-finished. Lite doesn't hold this plan up: if plan 4's gate is still open,
+**Needs first:** for 5.1, 5.2, 5.5, 5.6 and the posts going out, plan 3
+finished. 5.4 (the address) needs only the owner's CNAME record and is
+best done soon: before the beta post, so testers get the final address,
+and before more people install Lite on the old one. Lite doesn't hold this plan up: if plan 4's gate is still open,
 everything below leaves Lite out (plan 4, "Lite doesn't hold up the
-launch"). **May start now** (owner, 15 November 2026): 5.3, 5.7, 5.8, 5.9
-and 5.10, which need nothing from the beta, so the AI's time isn't idle
+launch"). **May start now** (owner, 15 November 2026): 5.3, 5.4 once the
+CNAME exists, 5.7, 5.8, 5.9 and 5.10, which need nothing from the beta, so the AI's time isn't idle
 while plan 3 waits on people. 5.7's beta post comes first, because plan 3
 uses it to find testers. **Unblocks:** plan 6.
 

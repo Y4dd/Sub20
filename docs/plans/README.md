@@ -32,14 +32,10 @@ finished. What was built and measured before the split is in
 - **The beta third, Lite beside it.** Both wait on people and machines the
   AI can't reach. Plans 3 and 4 run side by side: when one is waiting on
   the owner or testers, work on the other, or on plan 5's drafts.
-- **A small beta, not a big one** (owner, 15 November 2026). Ten testers
-  for two weeks would have needed the launch to find them. Three to five
-  are enough because a file over the limit is never saved and a failing
-  hardware encoder hands over to the CPU; what's untested is labelled
-  unverified.
+- **A small beta, not a big one** (owner, 15 November 2026): why is in
+  plan 3's goal.
 - **Launch last,** once the beta has no open crash or data-loss bug. Lite
-  launches with it only if it has passed its gate; otherwise it gets its
-  own announcement later.
+  doesn't hold it up (plan 4, "Lite doesn't hold up the launch").
 - **Plan 6 holds everything that isn't needed for 1.0,** so the plans
   before it stay small.
 

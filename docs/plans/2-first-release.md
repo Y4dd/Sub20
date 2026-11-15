@@ -64,8 +64,8 @@ test of the download without FFmpeg.
       installs without updates, so the choice is made now: it stays,
       unless the owner says otherwise before the tag.
       *Done when:* the owner has seen this line.
-      Kept: v0.9.0 to v0.9.3 all shipped it, and the owner raised no
-      objection before the tag.
+      Kept: v0.9.0 to v0.9.3 all shipped it. The owner read a list naming
+      2.3 on 15 November 2026 and answered "Apply them".
 - [x] **2.4 Version and changelog.** `npm run set-version -- 0.9.0`; turn
       "Unreleased" into `## [0.9.0]` with the date, written for people who
       use the app, with a fresh empty "Unreleased" above it. Run fmt,
@@ -154,5 +154,7 @@ test of the download without FFmpeg.
 - [x] Its notes, files, checksums and `latest.json` were read and are
       right. (2.6 and 2.7.)
 - [x] A Windows machine installed it from the release page and compressed
-      a clip. (A friend of the owner, "Sub20 without FFmpeg", 15 November
-      2026; see plan 3, "By hand".)
+      a clip. (A friend of the owner installed "Sub20 without FFmpeg" on
+      15 November 2026 and compressed clips; not recorded: whether from
+      the release page or a dry-run build. The owner's own install
+      updated to v0.9.0 through the updater the same morning.)
