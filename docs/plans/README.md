@@ -68,8 +68,11 @@ For the AI doing the work:
 9. **Bug reports** are written down in plan 3's task 3.6 with the date
    and who reported them; a tester's report also becomes a GitHub issue,
    so they can follow it.
-10. **Releases:** a fix for a lost file, a file over the limit or a crash
-    goes out at once; anything else waits for one release a week.
+10. **Releases:** while the only users are the owner and one tester, a
+    release goes out as soon as something is ready (owner, 15 November
+    2026). Once the beta has more testers: a fix for a lost file, a file
+    over the limit or a crash goes out at once; anything else waits for
+    one release a week.
 
 ## Rules that hold in every plan
 

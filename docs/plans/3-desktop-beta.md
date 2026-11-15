@@ -108,9 +108,10 @@ people, the AI works on plan 4 or on plan 5's drafts.
       *Done when:* the exit criteria hold.
       Reports are written down here, under the date and who reported
       them; a tester's report also becomes a GitHub issue, so they can
-      follow it. Releases (owner, 15 November 2026, after four in one day):
-      a fix for a lost file, a file over the limit or a crash goes out at
-      once; everything else waits for one release a week.
+      follow it. Releases: the rule in the plans' README (rule 10). While
+      the owner and one tester are the only users, a release goes out as
+      soon as something is ready; the weekly rhythm starts with more
+      testers.
       First reports (owner, 14 November 2026):
       - Adding many videos is slow. Cause: every file was read one after
         another and nothing showed until the last, and every video's
