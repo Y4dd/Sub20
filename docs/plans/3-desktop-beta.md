@@ -83,14 +83,16 @@ people, the AI works on plan 4 or on plan 5's drafts.
       0.9.0 says an update is out, installs it, restarts as 0.9.1, and
       stays the kind it was (with or without FFmpeg; deb stays deb, rpm
       stays rpm).
-      *Done when:* seen on Windows and on at least one deb or rpm install.
+      *Done when:* seen on Windows and on Linux (the owner's AppImage on
+      Arch; a deb or rpm install too if a tester has one).
       *Released 15 November 2026:* v0.9.1 published at 07:21 UTC as latest
       (CI and the release build green on all three systems, 24 files, ten
       signed feed entries pointing at v0.9.1, the site's links follow it).
       Seen on Windows the same morning (owner): 0.9.0 offered it, installed
       it and came back as 0.9.1, and FFmpeg worked after that restart, so
       the failure after the 0.9.0 update did not repeat (still unexplained).
-      Left: a deb or rpm install by a tester. The `github-pages`
+      Left: the owner's AppImage update on Arch (and a deb or rpm install,
+      if a tester has one). The `github-pages`
       environment now allows `v*` tags beside `main` (owner), so the next
       published release deploys the site by itself.
 - [ ] **3.6 Fix what the beta finds.** Every report becomes an issue. A bug
@@ -215,6 +217,26 @@ an hour or two. In one sitting, with `docs/testing.md` open:
   half).
 - If a game records in HDR, compress one such clip (the HDR line).
 
+### The owner's Arch sitting
+
+On the owner's Arch machine with an NVIDIA card, with the AppImage of
+Sub20 (FFmpeg included):
+
+- Install an older release's AppImage, open it, and let it update to the
+  latest (the Linux update line).
+- The Windows pass, the same lines: Copy then paste into Discord,
+  drag-out, Replace the original, renaming, cancel, quit, Copy
+  diagnostics (Linux lines below).
+- The preview plays (the loopback server, since WebKitGTK can't read the
+  asset protocol), and Copy diagnostics names NVENC as the encoder used.
+- Open a video from the file manager (the "Opening videos" line, Linux
+  half).
+- Watch for a blank or flickering window: WebKitGTK on an NVIDIA card,
+  above all under Wayland, is known to draw nothing until DMA-BUF
+  rendering is turned off (`WEBKIT_DISABLE_DMABUF_RENDERER=1`). If it
+  happens, note the compositor and whether that variable fixes it; Sub20
+  would then set it itself.
+
 From friends, without joining the beta: an OBS recording with the
 microphone on its own track, and a video from an iPhone and from an
 Android phone (3.2 and plan 4's 4.1).
@@ -232,6 +254,11 @@ Each line is ticked with who tried it, on what, and when.
       VideoToolbox doing the encode.
 - [ ] **Linux:** the same pass on Ubuntu (deb) and on Fedora (rpm) or Arch
       (AppImage), plus preview playback and VAAPI.
+      The owner takes this on Arch with an NVIDIA card (15 November 2026),
+      with the AppImage: the pass, preview playback, NVENC on Linux, and
+      an AppImage update from one release to the next. A deb or rpm
+      install is wanted from a tester on Ubuntu or Fedora; without one it
+      stays "unverified", like VAAPI.
 - [ ] **An Intel and an AMD card:** Quick Sync and AMF encode a clip under
       the limit; Copy diagnostics from each goes into the record. Wanted,
       not required: without a tester on one, its encoder stays
@@ -287,5 +314,6 @@ Each line is ticked with who tried it, on what, and when.
       crash.
 - [ ] A fresh Windows machine goes from the download to a clip in Discord
       without reading anything beyond the SmartScreen step.
-- [ ] An update from one release to the next worked on Windows and on a
-      deb or rpm install.
+- [ ] An update from one release to the next worked on Windows and on
+      Linux (the owner's AppImage on Arch; a deb or rpm install too if a
+      tester has one, else that path stays "unverified").
