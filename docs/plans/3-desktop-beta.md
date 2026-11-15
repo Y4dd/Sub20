@@ -75,6 +75,13 @@ fix what comes back (3.6).
       stays the kind it was (with or without FFmpeg; deb stays deb, rpm
       stays rpm).
       *Done when:* seen on Windows and on at least one deb or rpm install.
+      *Released 15 November 2026:* v0.9.1 published at 07:21 UTC as latest
+      (CI and the release build green on all three systems, 24 files, ten
+      signed feed entries pointing at v0.9.1, the site's links follow it).
+      Left: the owner's 0.9.0 offers it, installs it and comes back as
+      0.9.1 without FFmpeg, with FFmpeg working after the restart (if it
+      doesn't, the FFmpeg screen and Copy diagnostics now say why: send
+      them); then a deb or rpm install by a tester.
 - [ ] **3.6 Fix what the beta finds.** Every report becomes an issue. A bug
       that loses a file, saves one over the limit, or crashes is fixed
       before anything else, with a test where one can be written. Fixes go
