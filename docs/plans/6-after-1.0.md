@@ -61,8 +61,10 @@ and build it again when opened.
 - A "Send to" shortcut, if Explorer's menu turns out to behave badly with
   many files.
 - macOS Focus and Game Mode for watch notices, checked the way Windows was.
-- Lite: whatever moved here from plan 4 (HDR conversion, mixing tracks,
-  results on disk, other codecs).
+- Lite: VP9 in WebM for a browser that encodes neither H.264, AV1 nor
+  HEVC (moved from plan 4's 4.9: it needs a place in the codec picker),
+  and HDR closer to the desktop's brightness if a browser ever hands
+  over the decoded frames' values.
 
 ### 6.5 New features
 

@@ -11,6 +11,8 @@ What changed in each release. The format follows
 - Sub20 Lite writes results of 64 MB or more to the browser's own storage
   as they are made, instead of holding them in memory, so a 500 MB or 1 GB
   limit works on a phone.
+- Sub20 Lite encodes the codec picked in Options (H.264, AV1 or HEVC) where
+  the browser can, and a browser without H.264 falls back to AV1.
 
 ## [0.9.0] - 2026-11-15
 

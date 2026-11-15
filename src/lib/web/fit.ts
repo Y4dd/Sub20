@@ -7,7 +7,7 @@ import {
   ALL_FORMATS, BlobSource, BufferTarget, Conversion, Input, Mp4OutputFormat, Output, Quality, StreamTarget, canEncodeAudio,
   type AudioCodec, type VideoSample,
 } from "mediabunny";
-import type { MediaInfo, Plan } from "../types";
+import type { Codec, MediaInfo, Plan } from "../types";
 import { LADDER, gpuTakes, scaled } from "./gpu";
 import { Mixer, RATE } from "./mix";
 import { DISK_FROM_BYTES, newResult, resultsFolder } from "./store";
@@ -20,7 +20,12 @@ export interface FitSettings {
   mixAudio: boolean;
   /** Convert an HDR source (PQ or HLG) to ordinary colour. */
   toneMap: boolean;
+  /** The video codec, one this browser encodes (`gpu.ts`, `codecFor`). */
+  codec: Codec;
 }
+
+/** Mediabunny's names for the codecs. */
+const MEDIABUNNY = { h264: "avc", hevc: "hevc", av1: "av1" } as const;
 
 /**
  * Draws each frame of an HDR video into an ordinary-colour (sRGB) canvas,
@@ -83,12 +88,12 @@ const FLOOR_SHRINK = 0.95;
  * nothing then; it is the safety net for a GPU that refuses the exact
  * bitrate, or a plan made without asking.
  */
-async function onTheGpu(source: MediaInfo, plan: Plan, fps: number): Promise<{ plan: Plan; note: string | null } | null> {
-  if (await gpuTakes(plan.width, plan.height, plan.videoKbps, fps)) return { plan, note: null };
+async function onTheGpu(source: MediaInfo, plan: Plan, fps: number, codec: Codec): Promise<{ plan: Plan; note: string | null } | null> {
+  if (await gpuTakes(codec, plan.width, plan.height, plan.videoKbps, fps)) return { plan, note: null };
   const asked = Math.min(plan.width, plan.height);
   for (const side of LADDER.filter((s) => s < asked)) {
     const { width, height } = scaled(source, side);
-    if (await gpuTakes(width, height, plan.videoKbps, fps)) {
+    if (await gpuTakes(codec, width, height, plan.videoKbps, fps)) {
       return {
         plan: { ...plan, width, height, scaled: true },
         note: `Scaled to ${side}p: this GPU can't encode ${asked}p at ${Math.round(fps)} fps.`,
@@ -156,7 +161,7 @@ export async function fit(
   const notes: string[] = [];
   let hardware = settings.hardware;
   if (hardware !== "prefer-software") {
-    const gpu = await onTheGpu(source, plan, fps);
+    const gpu = await onTheGpu(source, plan, fps, settings.codec);
     if (gpu) {
       plan = gpu.plan;
       if (gpu.note) notes.push(gpu.note);
@@ -243,7 +248,7 @@ async function encode(
       tracks: "primary",
       trim: plan.trimmed ? { start: plan.start, end: plan.start + plan.duration } : undefined,
       video: {
-        codec: "avc",
+        codec: MEDIABUNNY[settings.codec],
         forceTranscode: true,
         ...(plan.scaled ? { width: plan.width, height: plan.height, fit: "fill" as const } : {}),
         // Always set: without it the encoder is told no frame rate, assumes

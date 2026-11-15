@@ -127,8 +127,19 @@ are the gate; do them before the rest.
       `createWritable` (older Safari) keep everything in memory. Checked in
       Chromium 156: the 1440p60 clip at 100 MB came out 29 MB on disk, a
       valid MP4 that decodes cleanly; a canceled attempt left no file.
-- [ ] **4.9 Other codecs.** VP9 or AV1 in WebM where H.264 can't be
+- [x] **4.9 Other codecs.** VP9 or AV1 in WebM where H.264 can't be
       encoded, Opus where AAC can't. Same standing as 4.8.
+      Done 15 November 2026, as the desktop does it rather than a hidden
+      fallback: Lite asks which of H.264, AV1 and HEVC the browser encodes
+      (`codecsHere`), reports them as its encoders, so Options offers the
+      ones that work, and encodes the one picked; a browser without it gets
+      the first it has, H.264, then AV1 (Discord plays it in the chat), then
+      HEVC, and the log says so. All in MP4; Opus where AAC can't be encoded
+      was already there. VP9 has no place in the codec picker and moved to
+      plan 6. Checked in Chromium 156 (all three encodable): an AV1 job
+      through the window gave a valid AV1 MP4 with AAC; with H.264 refused,
+      H.264 falls to AV1 and HEVC stays HEVC; with nothing encodable, Lite
+      says the browser can't do it.
 
 ## Needs the owner and testers
 

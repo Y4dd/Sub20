@@ -3,7 +3,7 @@
 // that take 1440p30 can refuse 1440p60, and when the GPU says no the browser
 // quietly uses its software encoder, which ignores low bitrates.
 
-import type { EncodeOptions, MediaInfo } from "../types";
+import type { Codec, EncodeOptions, MediaInfo } from "../types";
 
 /** Short sides the planner steps through (`LADDER` in `plan.rs`). */
 export const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
@@ -13,13 +13,40 @@ const ASK_KBPS = 4000;
 
 const even = (value: number) => Math.max(2, Math.floor(value / 2) * 2);
 
-/** Whether the GPU can encode H.264 at this size, bitrate and frame rate. */
-export async function gpuTakes(width: number, height: number, kbps: number, fps: number): Promise<boolean> {
+/** WebCodecs strings to ask about each codec with: high profiles, levels that hold 4K. */
+const PROBE: Record<Codec, string> = { h264: "avc1.640034", hevc: "hev1.1.6.L153.90", av1: "av01.0.12M.08" };
+
+/** Fallbacks in order: AV1 before HEVC, because Discord plays AV1 in the chat and not HEVC. */
+const ORDER: Codec[] = ["h264", "av1", "hevc"];
+
+let encodable: Promise<Codec[]> | null = null;
+
+/** The codecs this browser can encode at all (on the GPU or not), in fallback order. Asked once. */
+export function codecsHere(): Promise<Codec[]> {
+  encodable ??= (async () => {
+    if (!("VideoEncoder" in window)) return [];
+    const ask = (codec: Codec) =>
+      VideoEncoder.isConfigSupported({ codec: PROBE[codec], width: 1280, height: 720, bitrate: 2e6 })
+        .then((r) => r.supported ?? false, () => false);
+    const answers = await Promise.all(ORDER.map(ask));
+    return ORDER.filter((_, i) => answers[i]);
+  })();
+  return encodable;
+}
+
+/** The codec to encode with: the one asked for where this browser has it, else the first it has. */
+export async function codecFor(wanted: Codec): Promise<Codec | null> {
+  const here = await codecsHere();
+  return here.includes(wanted) ? wanted : (here[0] ?? null);
+}
+
+/** Whether the GPU can encode `codec` at this size, bitrate and frame rate. */
+export async function gpuTakes(codec: Codec, width: number, height: number, kbps: number, fps: number): Promise<boolean> {
   if (!("VideoEncoder" in window)) return false;
   try {
     // Asked of WebCodecs directly: Mediabunny's `canEncodeVideo` leaves the frame rate out.
     const { supported } = await VideoEncoder.isConfigSupported({
-      codec: "avc1.640034", width, height, bitrate: kbps * 1000, framerate: fps, hardwareAcceleration: "prefer-hardware",
+      codec: PROBE[codec], width, height, bitrate: kbps * 1000, framerate: fps, hardwareAcceleration: "prefer-hardware",
     });
     return supported ?? false;
   } catch {
@@ -47,23 +74,23 @@ const asked = new Map<string, Promise<number | null>>();
  * when it takes the source's own size, or nothing at all (the CPU encoder
  * then has no size limit to plan within). Asked once per size and rate.
  */
-export function gpuMostShortSide(source: MediaInfo, fps: number): Promise<number | null> {
-  const key = `${source.displayWidth}x${source.displayHeight}@${fps}`;
+export function gpuMostShortSide(source: MediaInfo, fps: number, codec: Codec): Promise<number | null> {
+  const key = `${codec} ${source.displayWidth}x${source.displayHeight}@${fps}`;
   let answer = asked.get(key);
   if (!answer) {
-    answer = ask(source, fps);
+    answer = ask(source, fps, codec);
     asked.set(key, answer);
   }
   return answer;
 }
 
-async function ask(source: MediaInfo, fps: number): Promise<number | null> {
+async function ask(source: MediaInfo, fps: number, codec: Codec): Promise<number | null> {
   const short = Math.min(source.displayWidth, source.displayHeight);
   if (!short) return null;
-  if (await gpuTakes(even(source.displayWidth), even(source.displayHeight), ASK_KBPS, fps)) return null;
+  if (await gpuTakes(codec, even(source.displayWidth), even(source.displayHeight), ASK_KBPS, fps)) return null;
   for (const side of LADDER.filter((s) => s < short)) {
     const { width, height } = scaled(source, side);
-    if (await gpuTakes(width, height, ASK_KBPS, fps)) return side;
+    if (await gpuTakes(codec, width, height, ASK_KBPS, fps)) return side;
   }
   return null;
 }

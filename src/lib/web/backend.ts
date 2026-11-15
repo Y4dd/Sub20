@@ -5,13 +5,14 @@
 
 import { version } from "../../../package.json";
 import {
-  type Added, type Backend, type Bootstrap, type Capabilities, type CompressRequest, type DropEvent, type EncodeOptions,
+  type Added, type Backend, type Bootstrap, type Capabilities, type Codec, type CompressRequest, type DropEvent, type EncodeOptions,
   type EncoderStatus, type HistoryEntry, type JobEvent, type JobResult, type Report, type Settings, type WatchStatus,
 } from "../types";
 
 // Mediabunny and the encode path load with the first video, not the page.
 const media = () => import("./media");
-import { gpuMostShortSide, outputFps } from "./gpu";
+import { CODEC_LABEL } from "../format";
+import { codecFor, codecsHere, gpuMostShortSide, outputFps } from "./gpu";
 import { loadPlanner } from "./planner";
 import { clearResults } from "./store";
 
@@ -49,8 +50,8 @@ const SETTINGS: Settings = {
 };
 
 /** The browser's own encoders, named so \`engineOf\` says "GPU" or "CPU". */
-const GPU = "h264_browser";
-const CPU = "h264_browsercpu";
+const gpuName = (codec: Codec) => `${codec}_browser`;
+const cpuName = (codec: Codec) => `${codec}_browsercpu`;
 
 const STORE = "sub20-lite-settings";
 
@@ -103,9 +104,9 @@ async function blocked(): Promise<string | null> {
   if (!("VideoEncoder" in window) || !("VideoDecoder" in window)) {
     return "This browser can't encode video. Use a recent Chrome, Edge or Safari, or the Sub20 desktop app.";
   }
-  const { supported } = await VideoEncoder.isConfigSupported({ codec: "avc1.640028", width: 1280, height: 720, bitrate: 2e6 })
-    .catch(() => ({ supported: false }));
-  return supported ? null : "This browser can't encode H.264. Use a recent Chrome, Edge or Safari, or the Sub20 desktop app.";
+  return (await codecsHere()).length
+    ? null
+    : "This browser can't encode H.264, AV1 or HEVC. Use a recent Chrome, Edge or Safari, or the Sub20 desktop app.";
 }
 
 async function canvasUrl(canvas: HTMLCanvasElement | OffscreenCanvas): Promise<string> {
@@ -158,16 +159,23 @@ async function run(job: Job) {
     const { fit, probe } = await media();
     const planner = await loadPlanner();
     const source = await probe(file);
-    const plan = planner.plan(source, request.trim, request.options, await gpuMostShortSide(source, outputFps(source, request.options)));
+    // The codec asked for, or the first this browser encodes (the log says so).
+    const codec = await codecFor(request.options.codec);
+    if (!codec) throw new Error("This browser can't encode video here. Use the Sub20 desktop app.");
+    if (codec !== request.options.codec) {
+      emit({ type: "log", id, line: `This browser can't encode ${CODEC_LABEL[request.options.codec]}, so the video is ${CODEC_LABEL[codec]}.` });
+    }
+    const options = { ...request.options, codec };
+    const plan = planner.plan(source, request.trim, options, await gpuMostShortSide(source, outputFps(source, options), codec));
     emit({ type: "progress", id, phase: "analyzing", percent: 0, speed: null, etaSeconds: null, outBytes: 0 });
     let started = false;
-    const settings = { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio, toneMap: true } as const;
+    const settings = { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio, toneMap: true, codec } as const;
     const fitted = await fit(file, source, plan, settings, {
       signal: job.stop.signal,
       onProgress: (_attempt, fraction) => {
         if (!started) {
           started = true;
-          emit({ type: "started", id, encoder: GPU, hardware: true, videoKbps: plan.videoKbps, width: plan.width, height: plan.height });
+          emit({ type: "started", id, encoder: gpuName(codec), hardware: true, videoKbps: plan.videoKbps, width: plan.width, height: plan.height });
         }
         const seconds = (performance.now() - began) / 1000;
         const eta = fraction > 0.02 ? (seconds / fraction) * (1 - fraction) : null;
@@ -190,7 +198,7 @@ async function run(job: Job) {
     const result: JobResult = {
       output, sizeBytes: fitted.blob.size, originalBytes: file.size, duration: fitted.plan.duration,
       width: fitted.plan.width, height: fitted.plan.height, videoKbps: last.videoKbps, audioKbps: fitted.audio ? plan.audioKbps : 0,
-      encoder: fitted.hardware ? GPU : CPU, hardware: fitted.hardware, fellBackFrom: null, attempts: fitted.attempts.length,
+      encoder: fitted.hardware ? gpuName(codec) : cpuName(codec), hardware: fitted.hardware, fellBackFrom: null, attempts: fitted.attempts.length,
       elapsedSeconds: (performance.now() - began) / 1000, targetMb: request.options.targetMb, replacedOriginal: false,
     };
     for (const note of fitted.notes) emit({ type: "log", id, line: note });
@@ -252,12 +260,13 @@ async function takeShared(): Promise<string[]> {
 }
 
 async function report(): Promise<Report> {
-  const status = (codec: "h264" | "hevc" | "av1", name: string, works: boolean): EncoderStatus => ({
-    name, label: "Browser encoder", codec, family: "cpu", familyLabel: "This browser", state: works ? "works" : "missing",
-    detail: works ? null : "Sub20 Lite encodes H.264 only", device: null,
+  const here = await codecsHere();
+  const status = (codec: Codec): EncoderStatus => ({
+    name: gpuName(codec), label: "Browser encoder", codec, family: "cpu", familyLabel: "This browser",
+    state: here.includes(codec) ? "works" : "missing", detail: here.includes(codec) ? null : "This browser can't encode it", device: null,
   });
   return {
-    encoders: [status("h264", GPU, (await blocked()) === null), status("hevc", "hevc_browser", false), status("av1", "av1_browser", false)],
+    encoders: [status("h264"), status("hevc"), status("av1")],
     ffmpegVersion: null, checkedAt: Date.now() / 1000, toneMap: true,
   };
 }
@@ -333,8 +342,11 @@ export const webBackend: Backend = {
     throw new Error("No frame there.");
   },
   // Planned within what the GPU encoder takes, so "1080p, good" is what will happen.
-  estimate: async (info, trim, options) =>
-    (await loadPlanner()).plan(info, trim, options, await gpuMostShortSide(info, outputFps(info, options))),
+  estimate: async (info, trim, options) => {
+    const codec = (await codecFor(options.codec)) ?? options.codec;
+    const planned = { ...options, codec };
+    return (await loadPlanner()).plan(info, trim, planned, await gpuMostShortSide(info, outputFps(info, planned), codec));
+  },
   compress: async (jobs) =>
     jobs.map((request) => {
       const id = `lite-job-${next++}`;
