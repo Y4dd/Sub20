@@ -99,6 +99,8 @@
       </p>
     </div>
   {:else}
+    <!-- The stage names the clip once there is one; until then the page is named for screen readers. -->
+    <h1 class="unseen">Sub20</h1>
     <button type="button" class="bracket" onclick={() => app.choose()} disabled={app.adding}>
       <span class="grip left" aria-hidden="true"></span>
       <span class="copy">
@@ -135,6 +137,15 @@
     gap: 20px;
     padding: 24px 48px 56px;
     min-height: 0;
+  }
+
+  .unseen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .bracket {

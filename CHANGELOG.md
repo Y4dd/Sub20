@@ -108,6 +108,9 @@ What changed in each release. The format follows
 - Adding many videos no longer leaves the list empty until the last one is
   read: they appear as they are read, six at a time, and filmstrips are made
   two at a time, the selected video's first.
+- The play button and the size limit are named by the time and size they
+  show, so voice control finds them by what is on screen, and the empty
+  window has a heading for screen readers.
 
 ## [0.1.0] - not released
 

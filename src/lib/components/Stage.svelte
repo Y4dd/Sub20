@@ -216,8 +216,10 @@
 </script>
 
 {#snippet transport()}
-  <button type="button" class="transport" onclick={toggle} aria-label={playing ? "Pause" : "Play the kept part"} title="Play or pause (Space)">
+  <!-- Named by its content, so the clock it shows is part of its name (label in name). -->
+  <button type="button" class="transport" onclick={toggle} title="Play or pause (Space)">
     <Icon name={playing ? "pause" : "play"} size={16} />
+    <i class="unseen">{playing ? "Pause" : "Play the kept part"},</i>
     <span>{clock(playhead)}</span>
   </button>
 {/snippet}
@@ -550,6 +552,15 @@
 
   .transport:hover {
     background: rgb(12 13 16 / 0.9);
+  }
+
+  .unseen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .caption {

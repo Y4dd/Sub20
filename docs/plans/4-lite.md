@@ -79,9 +79,21 @@ are the gate; do them before the rest.
       takes, so the stage's "1080p, good" is what will happen.
       *Done when:* the plan shown equals the encode done, on a clip that
       used to step down.
-- [ ] **4.7 Lighthouse and accessibility** on the built Lite, on a phone
+- [x] **4.7 Lighthouse and accessibility** on the built Lite, on a phone
       profile: installable, works offline, every control named.
       *Done when:* the PWA and accessibility checks pass.
+      Done 14 November 2026, on `npm run build:web` served gzipped, in a
+      phone profile. Lighthouse 12 (which has no PWA category any more):
+      accessibility 100, best practices 100, performance 93 to 96 (LCP
+      1.4 s). Installable and offline checked in headless Edge over the
+      DevTools protocol: no manifest or installability errors, the worker
+      controls the page, the page loads with the network off, and the
+      planner's wasm and Mediabunny's chunk are in its cache. axe (WCAG 2.1
+      AA and best practice) with a clip loaded, Options and Settings open,
+      and a finished result: clean, after three fixes (the empty screen
+      had no `h1`; the play button and the size limit had names that left
+      out the time and size they show, so voice control couldn't find
+      them).
 - [ ] **4.8 Large results on disk.** Results are blobs in memory, fine at
       20 MB and not at 500 MB or 1 GB on a phone. Write them to the origin
       private file system. Not needed for the gate; do it if plans 3 and 4
@@ -105,6 +117,6 @@ are the gate; do them before the rest.
 - [ ] Results stay under the limit in Chrome, Edge and Safari, on computer
       and phone, on the test clips.
 - [ ] A phone video goes from the gallery to Discord in under a minute.
-- [ ] Lighthouse's PWA and accessibility checks pass.
+- [x] Lighthouse's PWA and accessibility checks pass.
 - [ ] HDR and several sound tracks are either handled or said on the
       stage, and the site's Lite section and the iPhone guide say the same.

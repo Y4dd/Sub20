@@ -87,18 +87,19 @@
       type="button"
       class="figure"
       bind:this={figure}
-      aria-label="Size limit: {app.options.videoKbps ? `${plain(app.options.videoKbps, 0)} kbps` : spoken(app.options.targetMb)}"
       aria-haspopup="dialog"
       aria-expanded={picking}
       onclick={() => (picking = !picking)}
       title="Change the size limit"
     >
+      <!-- Named by what it shows (label in name); the spaces part the words for a screen reader, the flex gap on screen. -->
       {#if app.options.videoKbps}
-        <b>{plain(app.options.videoKbps, 0)}</b><span>kbps</span>
+        <b>{plain(app.options.videoKbps, 0)}</b> <span>kbps</span>
       {:else}
-        <b>{sizeParts(app.options.targetMb).value}</b><span>{sizeParts(app.options.targetMb).unit}</span>
+        <b>{sizeParts(app.options.targetMb).value}</b> <span>{sizeParts(app.options.targetMb).unit}</span>
         {#if discordTier(app.options.targetMb)}<small class="tier">{discordTier(app.options.targetMb)}</small>{/if}
       {/if}
+      <i class="unseen">, size limit</i>
       <Icon name="down" size={16} />
     </button>
 
@@ -189,7 +190,17 @@
   }
 
   /* The one loud piece of type: the number everything else answers to. */
+  .unseen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .figure {
+    position: relative;
     display: flex;
     align-items: baseline;
     gap: 6px;
