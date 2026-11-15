@@ -12,8 +12,8 @@ What changed in each release. The format follows
   browser's own GPU encoder, nothing uploaded. It can be installed, works
   offline, takes videos shared from Android's gallery, and on a phone hands
   the result straight to Discord with Share. It mixes every sound track as
-  the desktop app does; it doesn't convert HDR yet, and says so when a video
-  is HDR. Not published yet.
+  the desktop app does, and converts HDR to ordinary colour (a little darker
+  than the desktop app). Not published yet.
 - A website: what Sub20 does, both downloads for each system with the
   first-launch steps, four guides (a file too large for Discord, NVIDIA
   Instant Replay clips, iPhone videos, HEVC), a comparison with HandBrake,

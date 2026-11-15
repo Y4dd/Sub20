@@ -181,9 +181,7 @@
     // HDR is turned into ordinary colour, so it doesn't play grey in Discord.
     if (info.hdr && !app.options.audioOnly) {
       parts.push(
-        !backend.can.toneMap
-          ? "HDR, the colours will come out flat here (the desktop app converts them)"
-          : app.report && !app.report.toneMap
+        app.report && !app.report.toneMap
             ? "HDR (this FFmpeg can't convert it, it may look grey)"
             : "HDR, converted to ordinary colour",
       );

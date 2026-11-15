@@ -16,7 +16,7 @@ import { loadPlanner } from "./planner";
 
 const LITE: Capabilities = {
   watch: false, replace: false, files: false, encoders: false, ffmpeg: false, copyFile: false, dragOut: false,
-  updates: false, download: true, history: false, cut: false, toneMap: false, mixAudio: true,
+  updates: false, download: true, history: false, cut: false, mixAudio: true,
   // Phones and tablets hand a file straight to the Discord app. A computer
   // downloads it instead, and the file drags into Discord from there.
   share: matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function" && navigator.canShare({ files: [new File([], "x.mp4", { type: "video/mp4" })] }),
@@ -160,7 +160,8 @@ async function run(job: Job) {
     const plan = planner.plan(source, request.trim, request.options, await gpuMostShortSide(source, outputFps(source, request.options)));
     emit({ type: "progress", id, phase: "analyzing", percent: 0, speed: null, etaSeconds: null, outBytes: 0 });
     let started = false;
-    const fitted = await fit(file, source, plan, { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio }, {
+    const settings = { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio, toneMap: true } as const;
+    const fitted = await fit(file, source, plan, settings, {
       signal: job.stop.signal,
       onProgress: (_attempt, fraction) => {
         if (!started) {
@@ -255,7 +256,7 @@ async function report(): Promise<Report> {
   });
   return {
     encoders: [status("h264", GPU, (await blocked()) === null), status("hevc", "hevc_browser", false), status("av1", "av1_browser", false)],
-    ffmpegVersion: null, checkedAt: Date.now() / 1000, toneMap: false,
+    ffmpegVersion: null, checkedAt: Date.now() / 1000, toneMap: true,
   };
 }
 
@@ -305,8 +306,7 @@ export const webBackend: Backend = {
         try {
           const info = await (await media()).probe(file);
           if (!info.hasVideo) return { path, name, info: null, playUrl: null, error: "This file has no video this browser can read." };
-          // HDR is kept in the facts: the stage says Lite can't convert it
-          // yet (`can.toneMap`). Extra sound tracks are mixed (`mix.ts`).
+          // HDR is converted (`fit.ts`) and extra sound tracks mixed (`mix.ts`); the stage says so.
           return { path, name, info, playUrl: urlOf(path), error: null };
         } catch {
           return { path, name, info: null, playUrl: null, error: "This browser can't read this file." };

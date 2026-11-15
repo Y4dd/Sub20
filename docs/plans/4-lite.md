@@ -49,7 +49,7 @@ are the gate; do them before the rest.
       WebCodecs are today.
       *Done when:* Chrome, Edge and Safari hold the limit on computer and
       phone, on NVIDIA, Intel and AMD.
-- [ ] **4.4 HDR.** Lite has no tone mapping, so an iPhone HDR clip comes
+- [x] **4.4 HDR.** Lite has no tone mapping, so an iPhone HDR clip comes
       out flat. First, say it: when the source is PQ or HLG, the stage
       warns that the colours may look washed out and that the desktop app
       converts them. Then try the conversion (a WebGL or canvas step
@@ -60,7 +60,16 @@ are the gate; do them before the rest.
       Warning in, 14 November 2026: Lite keeps `info.hdr` and the stage
       says "HDR, the colours will come out flat here (the desktop app
       converts them)" (`can.toneMap`), checked on a generated PQ clip.
-      Left: the conversion.
+      Conversion in, 14 November 2026: each frame is drawn into an sRGB
+      canvas and the browser converts it (`fit.ts`). On generated PQ clips
+      (saturation, brightness): white at 203 nits, as phones and games
+      master it, Lite 80 and 95, desktop 97 and 123, original 114 and 126,
+      untreated 25; white at 100 nits, Lite 59, desktop 87. Right in hue,
+      about a fifth darker; kept, since untreated is grey. The frames are
+      opaque GPU frames, so the desktop's curve can't run on them; a
+      brightness gain would be tuned to Chrome alone. Scaled clips were
+      already converted by Mediabunny's resize. The stage now says "HDR,
+      converted to ordinary colour", and the iPhone guide says the same.
 - [x] **4.5 Several sound tracks.** Lite keeps the first only, which loses
       a microphone recorded on its own track. First, say it on the stage
       ("2 sound tracks, only the first is kept"). Then mix them (decode

@@ -118,7 +118,8 @@ Sub20 Lite is the same window on a third backend, `src/lib/web/backend.ts`: WebC
 - **Mediabunny loads with the first video** (`web/media.ts`, a dynamic import, about 570 kB); the page itself is about 155 kB.
 - **Installable**: `scripts/vite-lite.mjs` writes the manifest (share target, file handlers), the icons and `sw.js`, which precaches every built file under a cache named by their hash and keeps shared videos in `sub20-shared` until the page takes them (`?shared`). The worker registers in production builds only. The built-in browser pane can't register service workers; test them in headless Edge over the DevTools protocol.
 - **Phone layout** is CSS only: under 720 px the clip list is a strip, the dock wraps, Options stacks its labels at 480 px. The stage clips its overflow there, because the trim handles' grab areas reach past the screen and a phone widens the page to show them.
-- **Not in Lite yet**: HDR tone mapping (`can.toneMap`: the stage says "the colours will come out flat here", as the iPhone guide does), results in the origin private file system, VP9/AV1 fallbacks, cutting a result (`can.cut`; Mediabunny could copy the packets from a keyframe).
+- **HDR** is converted by drawing each frame into an sRGB canvas (`fit.ts`, `toOrdinaryColour`): the browser converts it, right in hue and about a fifth darker than the desktop's Mobius (saturation 80 against 97 on a 203-nit clip; untreated 25). The decoded frames are opaque GPU frames, so the desktop's curve can't run on their values. Mediabunny's resize draws through a canvas too, so scaled clips were converted all along.
+- **Not in Lite yet**: results in the origin private file system, VP9/AV1 fallbacks, cutting a result (`can.cut`; Mediabunny could copy the packets from a keyframe).
 
 ## Site decisions
 

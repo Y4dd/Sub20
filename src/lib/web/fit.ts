@@ -5,7 +5,7 @@
 
 import {
   ALL_FORMATS, BlobSource, BufferTarget, Conversion, Input, Mp4OutputFormat, Output, Quality, canEncodeAudio,
-  type AudioCodec,
+  type AudioCodec, type VideoSample,
 } from "mediabunny";
 import type { MediaInfo, Plan } from "../types";
 import { LADDER, gpuTakes, scaled } from "./gpu";
@@ -17,6 +17,28 @@ export interface FitSettings {
   hardware: "no-preference" | "prefer-hardware" | "prefer-software";
   /** Mix every sound track into one (`mix.ts`); off keeps the first. */
   mixAudio: boolean;
+  /** Convert an HDR source (PQ or HLG) to ordinary colour. */
+  toneMap: boolean;
+}
+
+/**
+ * Draws each frame of an HDR video into an ordinary-colour (sRGB) canvas,
+ * which makes the browser convert it on the way, and hands the canvas to
+ * the encoder in its place. Mediabunny's resize already draws through a
+ * canvas, so a scaled clip came out converted anyway; this does the same at
+ * the source's size. Measured November 2026 on a generated clip with white
+ * at 203 nits (as phones and games master it): saturation 80 against the
+ * desktop's Mobius 97 and the original's 114 (untreated 25), right in hue
+ * and about a fifth darker. The decoded frames are opaque GPU frames
+ * (`format` null), so the desktop's own curve can't be run on their values.
+ */
+function toOrdinaryColour(width: number, height: number) {
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext("2d", { colorSpace: "srgb", alpha: false })!;
+  return (sample: VideoSample) => {
+    sample.draw(context, 0, 0, width, height);
+    return canvas;
+  };
 }
 
 export interface Attempt {
@@ -146,7 +168,7 @@ export async function fit(
   let blob: Blob | null = null;
   for (let n = 0; n <= planner.sizeRetries; n++) {
     const began = performance.now();
-    blob = await encode(file, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f), signal);
+    blob = await encode(file, source, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f), signal);
     attempts.push({ videoKbps, bytes: blob.size, seconds: (performance.now() - began) / 1000 });
     if (blob.size <= target) break;
     const previous = attempts[attempts.length - 2];
@@ -165,6 +187,7 @@ export async function fit(
 
 async function encode(
   file: File,
+  source: MediaInfo,
   plan: Plan,
   fps: number,
   videoKbps: number,
@@ -184,6 +207,11 @@ async function encode(
       const start = plan.trimmed ? plan.start : 0;
       if (others.length) mixer = new Mixer(others, start, start + plan.duration);
     }
+    const width = plan.scaled ? plan.width : source.displayWidth;
+    const height = plan.scaled ? plan.height : source.displayHeight;
+    const colour = settings.toneMap && source.hdr && width && height
+      ? { process: toOrdinaryColour(width, height), processedWidth: width, processedHeight: height }
+      : {};
     const conversion = await Conversion.init({
       input,
       output,
@@ -198,6 +226,7 @@ async function encode(
         frameRate: fps,
         quality: new Quality({ bitrate: videoKbps * 1000, bitrateMode: settings.bitrateMode }),
         hardwareAcceleration: settings.hardware,
+        ...colour,
       },
       audio: audio
         ? {
