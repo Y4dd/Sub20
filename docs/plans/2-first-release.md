@@ -5,7 +5,7 @@ and Linux, signed update entries, checksums, and notes that open with
 "Which file do I need?". It is a beta in name only: a normal release, not a
 GitHub pre-release, because the updater and the site both read "latest".
 
-**Status.** Not started. Everything it needs is built: the release workflow
+**Status.** Tagged 15 November 2026; the draft waits for the owner to publish it. Everything it needs is built: the release workflow
 passed a dry run on 13 November 2026 (see [record.md](record.md)), and the
 owner installed and used the Windows build from it.
 
@@ -69,17 +69,25 @@ test of the download without FFmpeg.
       Done 15 November 2026: 0.9.0, the changelog rewritten for people who
       use the app (contributors' items last); fmt, clippy, svelte-check
       clean, 120 tests pass.
-- [ ] **2.5 Push, CI, dry run** (on the owner's word). Push `main`; when CI
+- [x] **2.5 Push, CI, dry run** (on the owner's word). Push `main`; when CI
       is green, run the release workflow by hand on `main`.
       *Done when:* CI and the dry run are green, and the dry run's
       `latest.json` has all ten keys with a signature each.
-- [ ] **2.6 Tag** (on the owner's word). `git tag v0.9.0`, push the tag.
+      Done 15 November 2026: CI green on all three systems; the dry run
+      (run 43683589199) green, its `latest.json` at 0.9.0 with ten signed keys.
+- [x] **2.6 Tag** (on the owner's word). `git tag v0.9.0`, push the tag.
       Read the draft: the notes open with the table and the sizes are
       right, every file in the table is attached, `SHA256SUMS.txt` matches
       a file checked by hand, `latest.json` points at this release's
       files.
       *Done when:* the draft is right, or fixed and tagged again before
       anyone publishes it.
+      Done 15 November 2026: `v0.9.0` on ad1d13a; the draft has 25 files,
+      notes opening with the table (sizes right), the Windows installer
+      without FFmpeg matching its `SHA256SUMS.txt` line by hand, and all ten
+      `latest.json` entries pointing at v0.9.0. The tag also started the
+      FFmpeg workflow (a new tag has no paths to compare); it was canceled,
+      and the workflow now runs on branch pushes only.
 - [ ] **2.7 After the owner publishes.** `gh release view v0.9.0`: it is
       the latest release, not a draft, not a pre-release. An installed
       dry-run build (0.1.0) offers the update in its title bar.

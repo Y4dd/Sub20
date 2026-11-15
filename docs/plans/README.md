@@ -13,7 +13,7 @@ finished. What was built and measured before the split is in
 | # | Plan | Delivers | Needs first | Status |
 | --- | --- | --- | --- | --- |
 | 1 | [Website](1-website.md) | The site under `site/`, deployed to GitHub Pages with Lite at `/app`, unannounced | nothing | Live at y4dd.github.io/Sub20 (15 November 2026); a subdomain of amjad.sh to come |
-| 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | 0.9.0 set; dry run and tag under way |
+| 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | v0.9.0 tagged, draft checked; waits for the owner to publish |
 | 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems and three GPU makers, a two-week beta, its fixes | 2 | Started: test sheet written, first beta reports fixed; the hands-on pass waits on a release |
 | 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean, warnings and mixing in; not tested outside this machine |
 | 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3, and 4 or a decision to launch without Lite | Not started |
