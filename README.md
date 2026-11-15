@@ -5,7 +5,7 @@
 Trim a clip and get it under 20 MB, ready for Discord.
 
 **[Download Sub20](https://github.com/Y4dd/Sub20/releases/latest)** for
-Windows 10 and 11, macOS 11 or newer (Apple Silicon) and Linux. It's free.
+Windows 10 and 11 and Linux. It's free.
 [Which file do I need?](#install)
 
 I kept cutting clips and re-encoding them by hand to fit under Discord's upload
@@ -30,7 +30,7 @@ account, no upload and no ads.
   timeline with a left and a right handle. Only the part between them is
   compressed, and the bitrate budget is spent on that part alone.
 - **H.264, HEVC and AV1** on NVIDIA NVENC, Intel Quick Sync, AMD AMF, Windows
-  Media Foundation, Apple VideoToolbox, Linux VAAPI, or the CPU (x264, x265,
+  Media Foundation, Linux VAAPI, or the CPU (x264, x265,
   SVT-AV1). Every encoder is tested with a real encode at startup. Jobs use
   the best one that works and fall back to the CPU if a GPU encoder fails
   mid-job.
@@ -67,7 +67,6 @@ Each release has two kinds, and its notes open with a table of the files:
 | Your system | Sub20 (most people) | Sub20 without FFmpeg |
 | --- | --- | --- |
 | Windows (64-bit) | `Sub20_…_x64-setup.exe` | `Sub20-without-FFmpeg_…_x64-setup.exe` |
-| macOS (Apple Silicon, M1 or newer) | `Sub20_…_aarch64.dmg` | `Sub20-without-FFmpeg_…_aarch64.dmg` |
 | Ubuntu, Debian, Mint | `Sub20_…_amd64.deb` | `Sub20-without-FFmpeg_…_amd64.deb` |
 | Fedora, openSUSE | `Sub20-….x86_64.rpm` | `Sub20-without-FFmpeg-….x86_64.rpm` |
 | Other Linux | `Sub20_…_amd64.AppImage` | `Sub20-without-FFmpeg_…_amd64.AppImage` |
@@ -76,17 +75,14 @@ Each release has two kinds, and its notes open with a table of the files:
 FFmpeg** is a much smaller download that uses the FFmpeg already on your
 computer; if there is none, it offers to download the same FFmpeg the other
 kind carries, checked against a pinned SHA-256. Sub20 updates itself, each
-kind to its own kind, and every update is signed. Intel Macs aren't
-supported.
+kind to its own kind, and every update is signed. There is no macOS
+version: 0.9.3 was the last.
 
-The Windows and macOS builds aren't code-signed yet, so the system warns
-the first time you open one:
+The Windows build isn't code-signed yet, so the system warns the first
+time you open it:
 
 - **Windows** shows "Windows protected your PC". Click **More info**, then
   **Run anyway**.
-- **macOS** says Sub20 can't be opened because Apple can't check it. Open
-  **System Settings → Privacy & Security**, scroll down, and click
-  **Open Anyway** next to Sub20.
 - **Linux** (AppImage, deb, rpm) opens without a warning. Make the AppImage
   executable first: `chmod +x Sub20*.AppImage`.
 
@@ -102,8 +98,7 @@ download against.
   to download it.
 - To build: [Rust](https://rustup.rs) 1.80+, Node.js 20+, and the
   [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your system
-  (WebView2 on Windows, Xcode command line tools on macOS, WebKitGTK 4.1 on
-  Linux).
+  (WebView2 on Windows, WebKitGTK 4.1 on Linux).
 
 ## Build and run
 
@@ -114,14 +109,12 @@ npm run tauri build    # make an installer for this system
 ```
 
 `npm run tauri build` writes installers to `target/release/bundle/` (`.msi`
-and `.exe` on Windows, `.dmg` and `.app` on macOS, `.deb`, `.rpm` and
-`.AppImage` on Linux).
+and `.exe` on Windows, `.deb`, `.rpm` and `.AppImage` on Linux).
 
 To work on the interface alone, `npm run dev` opens it in a browser at
 `http://localhost:1420` with invented clips and simulated encodes. Add
 `?clips` to the address to start with the demo clips loaded, and
-`?frame=overlay` or `?frame=native` to see the macOS or Linux window frame
-instead of the Windows one.
+`?frame=native` to see the Linux window frame instead of the Windows one.
 
 ### Bundling FFmpeg
 
@@ -142,8 +135,7 @@ from ship inside the app.
 ### Releases
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It builds both
-kinds (Sub20, and Sub20 without FFmpeg) for Windows, macOS (Apple Silicon) and
-Linux, and puts them on a draft release with the update feed
+kinds (Sub20, and Sub20 without FFmpeg) for Windows and Linux, and puts them on a draft release with the update feed
 (`latest.json`) and `SHA256SUMS.txt`. Set the version first with
 `npm run set-version -- x.y.z`. Updates are signed; the workflow needs the
 `TAURI_SIGNING_PRIVATE_KEY` secret.
@@ -168,7 +160,7 @@ a finished file is renamed on disk.
 
 **Replace the original** (Settings, Where results go) puts the result where
 the original was, under the original's name or the one you gave it, and
-moves the original to the Recycle Bin (Trash on macOS) so it can be put back.
+moves the original to the Recycle Bin (the Trash on Linux) so it can be put back.
 The result is saved before the original is moved, so a failure never loses
 either. Watched folders always save beside the original.
 
@@ -256,16 +248,16 @@ files. On Windows 11 with FFmpeg 9.0 and an NVIDIA RTX GPU, every test passes,
 including NVENC jobs. NVIDIA's H.264 encoder cannot go below roughly 600 kbps
 at 720p, so when a limit is too tight for it the job switches to the CPU
 encoder rather than save a file over the limit. The other hardware encoder
-paths (Quick Sync, AMF, Media Foundation, VideoToolbox, VAAPI) use common
-FFmpeg settings for those encoders but have only been exercised through their
-failure-and-fallback path so far. A release-style build has been installed
-and used on Windows; the app has not been run on macOS yet.
+paths (Quick Sync, AMF, Media Foundation, VAAPI) use common FFmpeg settings
+for those encoders but have only been exercised through their
+failure-and-fallback path so far. A release build has been installed, used
+and updated on Windows.
 
 ## Coming next
 
-The road to 1.0 is in [docs/plans](docs/plans/README.md): the first
-release, a beta with testers on Windows, macOS and Linux, and Sub20 Lite,
-the same app in a browser with nothing uploaded.
+The road to 1.0 is in [docs/plans](docs/plans/README.md): a beta with
+testers on Windows and Linux, a code-signed Windows installer, and Sub20
+Lite, the same app in a browser with nothing uploaded.
 
 ## Licence
 

@@ -61,7 +61,7 @@ cargo test --workspace
 npm run check
 ```
 
-CI runs the same checks on Windows, macOS and Linux.
+CI runs the same checks on Windows and Linux.
 
 - One change per pull request, with a message that says what changed and
   why.

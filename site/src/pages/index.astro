@@ -13,7 +13,7 @@ const software = {
   name: "Sub20",
   description: "Trims video clips and compresses them on the graphics card until they fit Discord's upload limit.",
   applicationCategory: "MultimediaApplication",
-  operatingSystem: "Windows 10, Windows 11, macOS 11 or newer, Linux",
+  operatingSystem: "Windows 10, Windows 11, Linux",
   url: new URL(u(), Astro.site).href,
   downloadUrl: release?.url ?? RELEASES,
   ...(release ? { softwareVersion: release.version } : {}),
@@ -26,7 +26,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
 ---
 
 <Base
-  title="Sub20: video compressor for Discord clips, on Windows, Mac and Linux"
+  title="Sub20: video compressor for Discord clips, on Windows and Linux"
   description="Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits Discord's upload limit. Free and open source."
   moments
 >
@@ -94,7 +94,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           </article>
           <article class="card card--row card--open span-6">
             <h3>Encodes the video on your graphics card</h3>
-            <p>NVIDIA, AMD and Intel cards and Apple's own encoder do the work; the CPU takes over when a card can't.</p>
+            <p>NVIDIA, AMD and Intel cards do the work; the CPU takes over when a card can't.</p>
             <div class="panel shot shot--wide"><Shot name="running" alt="The trim bar filling from the left, Compressing on the NVIDIA GPU, 42%, about 5 s left" sizes="(min-width: 1280px) 573px, (min-width: 1024px) 365px, (min-width: 640px) 269px, 303px" /></div>
           </article>
         </div>
@@ -123,7 +123,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     <div class="wrap">
       <div class="grid fill">
         <div class="span-5 downloads">
-          <h2 id="download-h">Download Sub20 for Windows, macOS and Linux</h2>
+          <h2 id="download-h">Download Sub20 for Windows and Linux</h2>
           <p>Sub20 has FFmpeg built in. Sub20 without FFmpeg is a smaller download that uses the FFmpeg on your computer, or fetches it once.</p>
           <ul class="downloads__list" role="list">
             {ROWS.map((row) => {
@@ -186,7 +186,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           <div class="faq__item"><h3>Are my videos uploaded anywhere?</h3><p>No. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself.</p></div>
           <div class="faq__item"><h3>Which Discord size should I pick?</h3><p>20 MB for a free Discord account, 50 MB with Nitro Basic, 500 MB in a boosted server, 1 GB with Nitro.</p></div>
           <div class="faq__item"><h3>Why H.264 and not HEVC?</h3><p>H.264 plays in Discord on every computer and phone. HEVC and AV1 keep more detail at the same size, but some devices won't play them in the chat: HEVC older computers, AV1 phones. Both are in Options.</p></div>
-          <div class="faq__item"><h3>Why does Windows warn me about the installer?</h3><p>Sub20 isn't code-signed yet. Click More info, then Run anyway; <a href={u("download/")}>the install steps</a> cover macOS too.</p></div>
+          <div class="faq__item"><h3>Why does Windows warn me about the installer?</h3><p>Sub20 isn't code-signed yet. Click More info, then Run anyway; <a href={u("download/")}>the install steps</a> show where.</p></div>
         </div>
       </div>
     </div>

@@ -150,7 +150,7 @@ export interface Settings {
   lastOptions: EncodeOptions | null;
 }
 
-export type Family = "nvenc" | "qsv" | "amf" | "mf" | "videotoolbox" | "vaapi" | "cpu";
+export type Family = "nvenc" | "qsv" | "amf" | "mf" | "vaapi" | "cpu";
 export type EncoderState = "works" | "failed" | "missing" | "elsewhere";
 
 export interface EncoderStatus {
@@ -269,10 +269,10 @@ export type DropEvent = { type: "over" } | { type: "leave" } | { type: "drop"; p
 /// once as an in-browser stand-in for design work.
 /**
  * Who draws the window frame. "custom": the app draws its own title bar
- * and window buttons (Windows). "overlay": the system's buttons sit over
- * the app's bar, on the left (macOS). "native": the system frame (Linux).
+ * and window buttons (Windows). "native": the system frame (Linux, and
+ * Sub20 Lite in a browser).
  */
-export type Frame = "custom" | "overlay" | "native";
+export type Frame = "custom" | "native";
 
 /** A newer release on the update feed. */
 export interface UpdateInfo {
@@ -402,7 +402,7 @@ export interface Backend {
   pickFolder(): Promise<string | null>;
   onJob(handler: (event: JobEvent) => void): Promise<() => void>;
   onDrop(handler: (event: DropEvent) => void): Promise<() => void>;
-  /** Videos opened with Sub20 ("Open with", Explorer, Finder) while it is already running. */
+  /** Videos opened with Sub20 ("Open with", Explorer, a file manager) while it is already running. */
   onOpened(handler: (paths: string[]) => void): Promise<() => void>;
   /** A watch notice was clicked; it names the results it said were ready (none for failures). */
   onNotice(handler: (results: string[]) => void): Promise<() => void>;

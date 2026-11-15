@@ -128,7 +128,7 @@ mod tests {
             encoders: vec![
                 status("h264_nvenc", State::Works, None),
                 status("h264_qsv", State::Failed, Some("No device available")),
-                status("h264_videotoolbox", State::Elsewhere, None),
+                status("h264_vaapi", State::Elsewhere, None),
             ],
             ffmpeg_version: Some("ffmpeg version 9.0.2".into()),
             checked_at: 0,
@@ -154,7 +154,7 @@ mod tests {
         assert!(text.contains(r"in ~\scoop\shims"), "{text}");
         assert!(text.contains("- h264_nvenc: works"), "{text}");
         assert!(text.contains("- h264_qsv: failed (No device available)"), "{text}");
-        assert!(!text.contains("videotoolbox"), "other systems' encoders are left out: {text}");
+        assert!(!text.contains("vaapi"), "other systems' encoders are left out: {text}");
         assert!(text.contains("oops"), "{text}");
         assert!(text.contains("from '~/Videos/clip.mp4'"), "{text}");
         assert!(!text.contains("sam"), "the user's name never appears: {text}");

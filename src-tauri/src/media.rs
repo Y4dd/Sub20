@@ -1,6 +1,6 @@
 //! A tiny loopback file server for video previews on Linux.
 //!
-//! On Windows and macOS the window plays local files through Tauri's asset
+//! On Windows the window plays local files through Tauri's asset
 //! protocol. WebKitGTK hands media to GStreamer, which only understands
 //! ordinary URLs, so on Linux the same files are offered over HTTP instead:
 //! bound to 127.0.0.1, on a random port, behind a random token, and only for

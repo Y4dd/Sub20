@@ -34,15 +34,10 @@ what the sheet says.
 1. **Windows:** run the installer. If SmartScreen says "Windows protected
    your PC", click **More info**, then **Run anyway**.
    *Expected:* it installs and Sub20 opens.
-2. **macOS:** open the disk image and drag Sub20 to Applications, then open
-   it. macOS says it can't be opened; close that. Open **System Settings →
-   Privacy & Security**, scroll down and click **Open Anyway** next to
-   Sub20, and confirm.
-   *Expected:* Sub20 opens, and opens normally from then on.
-3. **Linux:** install the deb or the rpm, or make the AppImage executable
+2. **Linux:** install the deb or the rpm, or make the AppImage executable
    (`chmod +x Sub20*.AppImage`) and run it.
    *Expected:* Sub20 is in your applications menu (deb, rpm) and opens.
-4. *Expected on every system:* the first screen shows the yellow bracket
+3. *Expected on both systems:* the first screen shows the yellow bracket
    and **Drop videos here**. Settings lists encoders under **Encoders**,
    each marked **Works** or **Not working**.
 
@@ -94,14 +89,14 @@ what the sheet says.
    screen, maximise and restore it with the title bar's buttons, and move
    it to a second monitor if you have one.
    *Expected:* each works like any other window.
-2. While a clip is compressing, close the window (the close button, Alt+F4
-   or ⌘Q).
+2. While a clip is compressing, close the window (the close button or
+   Alt+F4).
    *Expected:* a question offers **Stop and quit** or **Keep compressing**;
    **Keep compressing** keeps it going, **Stop and quit** closes Sub20 and
    leaves no half-written file beside the clip.
 3. Press `?`.
    *Expected:* the keyboard shortcuts open; Escape closes them.
-4. **Linux and macOS:** the preview plays the original and the result.
+4. **Linux:** the preview plays the original and the result.
 
 ## 4. The folder watch (Windows)
 
@@ -125,8 +120,7 @@ what the sheet says.
    *Expected:* they all arrive in Sub20's list together, in name order.
 2. With Sub20 already open, open another video with it the same way.
    *Expected:* it joins the list in the open window; no second window.
-3. **macOS:** select several videos in Finder, **Open With**, Sub20.
-   **Linux:** open a video with Sub20 from your file manager.
+3. **Linux:** open a video with Sub20 from your file manager.
    *Expected:* they arrive in the list.
 
 ## 6. Updating
@@ -141,7 +135,7 @@ When the next version is out (the owner will say):
 
 ## 7. A screen reader
 
-With NVDA (Windows) or VoiceOver (macOS):
+With NVDA on Windows, or Orca on Linux:
 
 1. Move through the window with Tab. *Expected:* every button and field is
    reached and has a name that says what it does.
@@ -157,8 +151,8 @@ Only if you have them:
 - **An Intel or AMD graphics card:** compress a clip (part 2, steps 1 to
   4). *Expected:* it says "Compressing on the Intel GPU" or "on the AMD GPU",
   and the result is under the size. Send the diagnostics either way.
-- **macOS:** the same, "on the Apple GPU". **Linux:** "on the GPU
-  (VAAPI)", where the driver has it.
+- **Linux:** the same, "on the GPU (VAAPI)" on an Intel or AMD card,
+  where the driver has it.
 - **An HDR video** (an iPhone on its default settings, or a game recorded
   in HDR). *Expected:* the line under the timeline says "HDR, converted to
   ordinary colour", and the result's colours look like the original, not

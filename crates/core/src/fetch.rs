@@ -53,8 +53,6 @@ fn this_target() -> Option<&'static str> {
         Some("x86_64-pc-windows-msvc")
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         Some("x86_64-unknown-linux-gnu")
-    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        Some("aarch64-apple-darwin")
     } else {
         None
     }
@@ -194,11 +192,7 @@ mod tests {
 
     #[test]
     fn every_supported_system_downloads_sub20s_own_ffmpeg_build() {
-        for (target, ext) in [
-            ("x86_64-pc-windows-msvc", ".zip"),
-            ("x86_64-unknown-linux-gnu", ".tar.xz"),
-            ("aarch64-apple-darwin", ".tar.xz"),
-        ] {
+        for (target, ext) in [("x86_64-pc-windows-msvc", ".zip"), ("x86_64-unknown-linux-gnu", ".tar.xz")] {
             let offer = offer_for(PINS, target).unwrap_or_else(|| panic!("{target} is pinned"));
             assert_eq!(offer.files.len(), 1);
             let file = &offer.files[0];
@@ -211,7 +205,7 @@ mod tests {
         }
 
         assert_eq!(offer_for(PINS, "riscv64gc-unknown-linux-gnu"), None);
-        assert_eq!(offer_for(PINS, "x86_64-apple-darwin"), None, "Intel Macs aren't supported");
+        assert_eq!(offer_for(PINS, "aarch64-apple-darwin"), None, "macOS isn't supported");
         if this_target().is_some() {
             assert!(offer().is_some());
         }

@@ -7,13 +7,13 @@ const release = await latestRelease();
 ---
 
 <Doc
-  title="Download Sub20 for Windows, macOS and Linux"
-  description="Both downloads of Sub20 for each system, the checksums, and what Windows and macOS say the first time you open it."
+  title="Download Sub20 for Windows and Linux"
+  description="Both downloads of Sub20 for each system, the checksums, and what Windows says the first time you open it."
   current="download"
   heading="Download Sub20"
   lead={release
-    ? `Version ${release.version}, free, for Windows, macOS and Linux. Pick your system, then one of the two downloads.`
-    : "Free, for Windows, macOS and Linux. Pick your system, then one of the two downloads."}
+    ? `Version ${release.version}, free, for Windows and Linux. Pick your system, then one of the two downloads.`
+    : "Free, for Windows and Linux. Pick your system, then one of the two downloads."}
 >
   <h2>Two downloads per system</h2>
   <p><b>Sub20</b> has FFmpeg, which does the compressing, built in. Most people want this one.</p>
@@ -41,36 +41,28 @@ const release = await latestRelease();
     </table>
   </div>
   {!release && <p class="muted">There is no release yet. Every version will be on the <a href={RELEASES}>releases page</a>.</p>}
-  <p>Intel Macs aren't supported.</p>
+  <p>There is no Mac version. On a Mac, <a href={u("app/")}>Sub20 Lite</a> runs in the browser.</p>
 
   <h2>The first time you open it</h2>
-  <p>The Windows and macOS builds aren't code-signed yet, so the system warns the first time you open one. Updates are signed either way.</p>
+  <p>The Windows build isn't code-signed yet, so Windows warns the first time you open it. Signing is being set up: see the <a href={u("code-signing/")}>code signing policy</a>. Updates are signed either way.</p>
   <h3>Windows: "Windows protected your PC"</h3>
   <ol>
     <li>Open the installer.</li>
     <li>If SmartScreen says "Windows protected your PC", click <b>More info</b>.</li>
     <li>Click <b>Run anyway</b>, then install as usual.</li>
   </ol>
-  <h3>macOS: "Apple could not verify Sub20"</h3>
-  <ol>
-    <li>Open the disk image and drag Sub20 to Applications.</li>
-    <li>Open Sub20. macOS says it can't be opened; close the message.</li>
-    <li>Open <b>System Settings</b>, then <b>Privacy &amp; Security</b>, and scroll down.</li>
-    <li>Click <b>Open Anyway</b> next to Sub20, and confirm.</li>
-  </ol>
   <h3>Linux: no warning</h3>
   <p>The deb and rpm install like any other package and add Sub20 to your menu. Make the AppImage executable first:</p>
   <p><code>chmod +x Sub20*.AppImage</code></p>
 
   <h2>Checksums</h2>
-  <p>Each release lists the SHA-256 of every file in <a href={sums(release)}>SHA256SUMS.txt</a>. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on macOS and Linux, <code>shasum -a 256</code> with the file's name. The result should match the file's line.</p>
+  <p>Each release lists the SHA-256 of every file in <a href={sums(release)}>SHA256SUMS.txt</a>. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on Linux, <code>sha256sum</code> with the file's name. The result should match the file's line.</p>
 
   <h2>What it needs</h2>
   <ul>
     <li><b>Windows</b> 10 or 11, 64-bit.</li>
-    <li><b>macOS</b> 11 or newer on Apple Silicon (M1 or newer).</li>
     <li><b>Linux</b>: 64-bit. The deb and rpm use the system's WebKitGTK; the AppImage carries its own.</li>
-    <li>A graphics card is used when there is one (NVIDIA, AMD, Intel or Apple). Without one, the processor encodes.</li>
+    <li>A graphics card is used when there is one (NVIDIA, AMD or Intel). Without one, the processor encodes.</li>
   </ul>
   <p>Can't install anything? <a href={u("app/")}>Sub20 Lite</a> runs in your browser.</p>
 </Doc>

@@ -35,7 +35,6 @@ export function latestRelease(): Promise<Release | null> {
 /** `os` matches the `data-os` the page's head script sets on `<html>` for the visitor's system. */
 export const ROWS = [
   { os: "windows", system: "Windows 10 and 11", detail: "64-bit", kind: "Installer (.exe)", file: /-setup\.exe$/ },
-  { os: "mac", system: "macOS 11 or newer", detail: "Apple Silicon, M1 or newer", kind: "Disk image (.dmg)", file: /\.dmg$/ },
   { os: "linux", system: "Ubuntu, Debian, Mint", detail: "64-bit", kind: "Package (.deb)", file: /\.deb$/ },
   { os: "linux", system: "Fedora, openSUSE", detail: "64-bit", kind: "Package (.rpm)", file: /\.rpm$/ },
   { os: "linux", system: "Other Linux", detail: "64-bit", kind: "AppImage", file: /\.AppImage$/ },

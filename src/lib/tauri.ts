@@ -21,7 +21,7 @@ const playUrls = new Map<string, string>();
 const thumbFiles = new Map<string, string>();
 
 const agent = navigator.userAgent;
-const frame: Frame = agent.includes("Windows") ? "custom" : agent.includes("Mac") ? "overlay" : "native";
+const frame: Frame = agent.includes("Windows") ? "custom" : "native";
 
 export const tauriBackend: Backend = {
   can: DESKTOP,

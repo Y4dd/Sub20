@@ -97,7 +97,7 @@ pub fn rename(path: &Path, typed: &str) -> Result<PathBuf> {
     if target == path {
         return Ok(target);
     }
-    // A change of case alone is the same file on Windows and macOS.
+    // A change of case alone is the same file on Windows.
     let same_file = target.to_string_lossy().to_lowercase() == path.to_string_lossy().to_lowercase();
     if target.exists() && !same_file {
         return Err(Error::Invalid(format!(

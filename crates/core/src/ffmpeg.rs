@@ -70,9 +70,7 @@ impl Tools {
             }
         }
         let mut usual: Vec<PathBuf> = Vec::new();
-        if cfg!(target_os = "macos") {
-            usual.extend(["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin"].map(PathBuf::from));
-        } else if cfg!(windows) {
+        if cfg!(windows) {
             usual.extend(
                 ["C:\\ffmpeg\\bin", "C:\\Program Files\\ffmpeg\\bin", "C:\\ProgramData\\chocolatey\\bin"]
                     .map(PathBuf::from),
@@ -156,7 +154,7 @@ async fn end_tree(pid: Option<u32>) {
     let _ = tokio::time::timeout(Duration::from_secs(5), cmd.status()).await;
 }
 
-/// On macOS and Linux, package managers link FFmpeg directly or `exec` it
+/// On Linux, package managers link FFmpeg directly or `exec` it
 /// from a wrapper, so the process killed is FFmpeg itself.
 #[cfg(not(windows))]
 async fn end_tree(_pid: Option<u32>) {}

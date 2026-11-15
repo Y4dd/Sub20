@@ -133,7 +133,6 @@ const ENCODER_NAMES: Record<string, string> = {
   qsv: "Intel GPU",
   amf: "AMD GPU",
   mf: "GPU (Media Foundation)",
-  videotoolbox: "Apple GPU",
   vaapi: "GPU (VAAPI)",
   // Sub20 Lite: the browser's own encoder on the graphics card.
   browser: "GPU",

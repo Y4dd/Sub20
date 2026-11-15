@@ -20,20 +20,13 @@ accepted:
 1. winget
 2. Scoop (extras bucket; "Sub20 without FFmpeg" can depend on Scoop's
    `ffmpeg`)
-3. Homebrew cask
-4. Flathub (they build it themselves)
-5. AUR
+3. Flathub (they build it themselves)
+4. AUR
 
 ### 6.2 Code signing
 
-Set aside for 1.0 by the owner. Come back to it once there is a site and
-some downloads:
-
-- **Windows:** SignPath Foundation (free for open-source projects; needs a
-  code signing policy page on the site), or Azure Artifact Signing at
-  about $10 a month.
-- **macOS:** an Apple Developer account ($99 a year) and notarisation, once
-  donations cover it.
+Moved to plan 3's task 3.8 on 15 November 2026: the owner wants the
+Windows installer signed for 1.0. macOS is no longer built for.
 
 ### 6.3 The folder watch without a window
 
@@ -46,7 +39,7 @@ and build it again when opened.
 - A tray menu: Open, Pause watching, Quit.
 - Watched encodes at below-normal priority, so they don't cost frames in a
   game.
-- Windows and macOS first; trays on Linux are patchy.
+- Windows first; trays on Linux are patchy.
 - **Budget, to be met before it ships:** under 100 MB and under 0.5% of one
   core with a watch on and no window.
 
@@ -60,7 +53,6 @@ and build it again when opened.
   more options"); it needs a packaged `IExplorerCommand` handler.
 - A "Send to" shortcut, if Explorer's menu turns out to behave badly with
   many files.
-- macOS Focus and Game Mode for watch notices, checked the way Windows was.
 - Lite: VP9 in WebM for a browser that encodes neither H.264, AV1 nor
   HEVC (moved from plan 4's 4.9: it needs a place in the codec picker),
   and HDR closer to the desktop's brightness if a browser ever hands

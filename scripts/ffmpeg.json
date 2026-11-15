@@ -16,14 +16,6 @@
         "sha256": "af2856de2eb989e1c966880437dc672ccd3c1a85074b2a4451dee0c0dc0471f1"
       },
       "source": "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1"
-    },
-    "aarch64-apple-darwin": {
-      "builder": "Sub20, from the sources and scripts published with it (scripts/ffmpeg-build)",
-      "archive": {
-        "url": "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
-        "sha256": "2d6b802c93a089452895af4845fa10e6c82fc6cbf467551b61d9f8c16b983440"
-      },
-      "source": "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1"
     }
   }
 }

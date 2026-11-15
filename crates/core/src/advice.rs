@@ -87,7 +87,7 @@ fn os_error(error: &Error) -> Option<i32> {
 }
 
 fn disk_full(error: &Error, lower: &str) -> bool {
-    // ENOSPC on Linux and macOS; ERROR_HANDLE_DISK_FULL and ERROR_DISK_FULL on Windows.
+    // ENOSPC on Linux; ERROR_HANDLE_DISK_FULL and ERROR_DISK_FULL on Windows.
     let codes: &[i32] = if cfg!(windows) { &[39, 112] } else { &[28] };
     os_error(error).is_some_and(|code| codes.contains(&code))
         || lower.contains("no space left on device")
@@ -96,7 +96,7 @@ fn disk_full(error: &Error, lower: &str) -> bool {
 }
 
 fn not_allowed(error: &Error, lower: &str) -> bool {
-    // EROFS on Linux and macOS.
+    // EROFS on Linux.
     let read_only = !cfg!(windows) && os_error(error) == Some(30);
     matches!(error, Error::Io { source, .. } if source.kind() == std::io::ErrorKind::PermissionDenied)
         || read_only

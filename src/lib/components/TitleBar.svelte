@@ -78,11 +78,6 @@
     -webkit-user-select: none;
   }
 
-  /* macOS draws its window buttons over the left of the bar. */
-  .titlebar.overlay {
-    padding-left: 80px;
-  }
-
   .titlebar:not(.custom) {
     padding-right: 12px;
   }

@@ -23,7 +23,6 @@ body:
       options:
         - Windows 11
         - Windows 10
-        - macOS (Apple Silicon)
         - Linux
         - Sub20 Lite (in a browser)
     validations:

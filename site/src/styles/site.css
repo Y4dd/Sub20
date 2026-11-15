@@ -63,7 +63,6 @@
 :is(.downloads__list li, .doc tbody tr > th)::before { content: ""; position: absolute; left: -14px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--p-accent); opacity: 0; transition: opacity 0.2s; }
 .doc tbody tr > th::before { top: var(--s-3); bottom: var(--s-3); }
 :root[data-os="windows"] :is(.downloads__list li, .doc tbody tr)[data-os="windows"],
-:root[data-os="mac"] :is(.downloads__list li, .doc tbody tr)[data-os="mac"],
 :root[data-os="linux"] :is(.downloads__list li, .doc tbody tr)[data-os="linux"] { --os-mark: 1; }
 :is(.downloads__list li, .doc tbody tr > th)::before { opacity: var(--os-mark, 0); }
 .downloads__list .muted { color: color-mix(in srgb, var(--p-ink) 72%, var(--p-bg)); }

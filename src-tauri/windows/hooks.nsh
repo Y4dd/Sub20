@@ -18,8 +18,8 @@
   DeleteRegKey SHCTX "Software\Classes\SystemFileAssociations\.${EXT}\shell\Sub20"
 !macroend
 
-; The video types Sub20 offers itself for. Keep in step with the macOS and
-; Linux configs (tauri.macos.conf.json, tauri.linux.conf.json).
+; The video types Sub20 offers itself for. Keep in step with the Linux
+; config (tauri.linux.conf.json).
 !macro SUB20_EACH_TYPE ACTION
   !insertmacro ${ACTION} mp4
   !insertmacro ${ACTION} m4v

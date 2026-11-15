@@ -62,8 +62,8 @@ Nothing is posted from here.
 - [ ] **5.7 Drafts for every post,** in `docs/launch/`, one file each,
       written as a person and not as an advert:
   - **The beta post,** first: a few lines asking for three to five people
-    to try the desktop app for a week (at least one not on NVIDIA, one on
-    a Mac), with the release page and `docs/testing.md`. For a Discord
+    to try the desktop app for a week (at least one not on NVIDIA), with
+    the release page and `docs/testing.md`. For a Discord
     server the owner is in and one small subreddit. Plan 3 uses it.
   - **Show HN** (Tuesday to Thursday, morning in the US): leads with the
     engineering, links the write-up.

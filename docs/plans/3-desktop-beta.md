@@ -1,16 +1,21 @@
 # Plan 3: the desktop beta
 
 **Goal.** The desktop app has been used by hand, in the real window, on
-Windows, macOS and Linux; a small beta (three to five people, at least one
-not on NVIDIA and one on a Mac) has used it for a week or more; and nothing
-they found that loses data or crashes is still open. After this plan the
-desktop app is ready to be called 1.0.
+Windows and Linux; a small beta (three to five people, at least one not on
+NVIDIA) has used it for a week or more; the Windows installer is signed,
+or the signing attempt has an answer (3.8); and nothing they found that
+loses data or crashes is still open. After this plan the desktop app is
+ready to be called 1.0.
+
+**No macOS** (owner, 15 November 2026): the desktop app is built for
+Windows and Linux only, and 0.9.3 was the last macOS build (the decision
+is in `CLAUDE.md`). Sub20 Lite in Safari stays in plan 4.
 
 **Why a small beta is enough** (owner, 15 November 2026, replacing ten
 testers on three GPU makers for two weeks, which the launch was needed to
 find): a file over the limit is never saved, and a hardware encoder that
-fails hands the job to the CPU. So an untested Quick Sync, AMF,
-VideoToolbox or VAAPI path can cost speed, not a file that doesn't fit.
+fails hands the job to the CPU. So an untested Quick Sync, AMF or VAAPI
+path can cost speed, not a file that doesn't fit.
 What that doesn't cover is picture and colour on those encoders: until a
 tester has seen them, they are called unverified, never safe.
 
@@ -198,6 +203,47 @@ people, the AI works on plan 4 or on plan 5's drafts.
       plan 6 with the translations.
       *Done when:* svelte-check is clean and both colour schemes look the
       same as before in screenshots.
+- [ ] **3.8 Sign the Windows installer** (owner, 15 November 2026: wanted
+      for 1.0, replacing "no code signing for 1.0"). Through SignPath
+      Foundation, free for open source; the certificate names SignPath
+      Foundation as the publisher. Its conditions (signpath.org/terms,
+      read 15 November 2026): an OSI licence for every component, no
+      proprietary code, maintained and already released, built from source
+      in a verifiable way, every signing request approved by hand, MFA on
+      SignPath and the repository, and file metadata whose product name is
+      Sub20 and whose version is the release's.
+      1. **The policy page,** `site/src/pages/code-signing.astro`, linked
+         as "Code signing policy" from the home page's footer and the
+         download page: the team and their roles (committers and
+         reviewers, approvers), how a release is built and approved, and
+         the privacy statement (the update check is the only request
+         Sub20 makes by itself, and Settings turns it off; the FFmpeg
+         download happens only when asked). It says signing is applied
+         for and current releases are unsigned until it is granted.
+         Drafted 15 November 2026.
+      2. **Apply** (owner) at signpath.org/apply, pointing at the policy
+         page and the repository.
+      3. **Wire it into `release.yml`** once SignPath has set up the
+         project (its organisation and project ids, an API token as a
+         secret). Sign `sub20.exe` and the NSIS installer, both builds.
+         **The order matters:** Authenticode signing changes the
+         installer's bytes, so the updater's `.sig` must be made after it,
+         from the signed file. Either Tauri's `bundle.windows.signCommand`
+         (it signs during bundling, before the updater signature) or
+         signing after bundling and then `tauri signer sign` again. An
+         updater signature made before Authenticode would fail every
+         update.
+      4. **After it is granted:** the credit line SignPath requires, "Free
+         code signing provided by SignPath.io, certificate by SignPath
+         Foundation", on the policy page and the download page (a
+         required service credit, not the inspiration credit, which stays
+         the README's one line); the SmartScreen steps on the download
+         page, the README and `docs/testing.md` change to say what a
+         signed installer shows.
+      *Done when:* a release's installer is signed, a 0.9.x install
+      updated to it through the updater, and the policy page is live; or
+      SignPath declined, its reason is here, and the owner has chosen
+      what next.
 
 ## Needs the owner and testers
 
@@ -249,9 +295,6 @@ Each line is ticked with who tried it, on what, and when.
       the title bar (snap, maximise, a second monitor), Replace the
       original, renaming a finished file, cancel, quit.
       The owner, Windows 11 with an RTX 5070 Ti, 15 November 2026: works.
-- [ ] **macOS (Apple Silicon):** the same pass, plus the first launch
-      through Open Anyway, video playback in the preview, and
-      VideoToolbox doing the encode.
 - [ ] **Linux:** the same pass on Ubuntu (deb) and on Fedora (rpm) or Arch
       (AppImage), plus preview playback and VAAPI.
       The owner takes this on Arch with an NVIDIA card (15 November 2026),
@@ -263,8 +306,8 @@ Each line is ticked with who tried it, on what, and when.
       the limit; Copy diagnostics from each goes into the record. Wanted,
       not required: without a tester on one, its encoder stays
       "unverified" in `CLAUDE.md` and the CPU fallback covers it. The
-      same holds for VideoToolbox in the macOS line and VAAPI in the Linux
-      line: the rest of those lines is required, the encoder is not.
+      same holds for VAAPI in the Linux line: the rest of that line is
+      required, the encoder is not.
 - [ ] **The folder watch on Windows:** "Watch NVIDIA app clips" and "Watch
       Xbox Game Bar clips" in Settings, a clip saved while watching, the
       title bar's status, History's list, and the notice: shown on the
@@ -274,15 +317,14 @@ Each line is ticked with who tried it, on what, and when.
       colour in the result, and the stage says it was HDR.
 - [ ] **Opening videos from the system:** Open with; "Compress with Sub20"
       on several selected videos in Explorer (they arrive together, in name
-      order); a video opened while Sub20 is running; Finder's Open With
-      with several files; a file manager on Linux.
-      Windows Open with: works (the owner, 15 November 2026). Left: macOS
-      and Linux.
+      order); a video opened while Sub20 is running; a file manager on
+      Linux.
+      Windows Open with: works (the owner, 15 November 2026). Left: Linux.
 - [ ] **Quit, diagnostics, crash:** the quit question while compressing and
-      Copy diagnostics on macOS and Linux (Windows: done 13 November 2026);
+      Copy diagnostics on Linux (Windows: done 13 November 2026);
       a crash leaves `crash.log` and the diagnostics include it.
-- [ ] **A screen reader:** NVDA on Windows and VoiceOver on macOS reach and
-      name everything; focus stays inside an open sheet; the size picker
+- [ ] **A screen reader:** NVDA on Windows reaches and names everything
+      (Orca on Linux if a tester uses it); focus stays inside an open sheet; the size picker
       and the segmented choices work by keyboard.
 - [x] **The download without FFmpeg, on a machine with none:** carried over
       from plan 2 if it wasn't done there.
@@ -291,8 +333,8 @@ Each line is ticked with who tried it, on what, and when.
 
 ### The beta
 
-- [ ] **Three to five testers,** at least one not on NVIDIA and one on a
-      Mac, for a week or more. Find them with a short beta post in one or
+- [ ] **Three to five testers,** at least one not on NVIDIA, for a week or
+      more. Find them with a short beta post in one or
       two places (a Discord server the owner is in, and a small subreddit),
       drafted from plan 5's 5.7 and read by the owner first. Send them the
       release page and `docs/testing.md`.
@@ -308,12 +350,15 @@ Each line is ticked with who tried it, on what, and when.
 
 - [ ] Every line under "By hand" is ticked, or has an issue that is closed,
       except the hardware encoders other than NVENC (the Intel and AMD
-      line, VideoToolbox, VAAPI), which may stay "unverified".
-- [ ] Three to five testers, at least one not on NVIDIA and one on a Mac,
-      over a week or more, with no open bug that loses data and no open
+      line, VAAPI), which may stay "unverified".
+- [ ] Three to five testers, at least one not on NVIDIA, over a week or
+      more, with no open bug that loses data and no open
       crash.
 - [ ] A fresh Windows machine goes from the download to a clip in Discord
-      without reading anything beyond the SmartScreen step.
+      without reading anything beyond the SmartScreen step (none, once
+      the installer is signed).
+- [ ] 3.8 has an answer: the installer is signed, or SignPath's refusal is
+      recorded and the owner has chosen what comes next.
 - [ ] An update from one release to the next worked on Windows and on
       Linux (the owner's AppImage on Arch; a deb or rpm install too if a
       tester has one, else that path stays "unverified").

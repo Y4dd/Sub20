@@ -423,7 +423,7 @@ fn clip_folders(app: AppHandle) -> Vec<watch::ClipFolder> {
     app.path().video_dir().map(|videos| watch::clip_folders(&videos)).unwrap_or_default()
 }
 
-/// Shows a file in Finder / Explorer / the file manager.
+/// Shows a file in Explorer or the file manager.
 #[tauri::command]
 fn reveal(app: AppHandle, path: PathBuf) -> CommandResult<()> {
     if !path.exists() {
@@ -513,8 +513,9 @@ fn copy_file(state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
 }
 
 /// Videos handed to Sub20 by the system ("Open with", Explorer's "Compress
-/// with Sub20", Finder) that the window hasn't taken yet. Static, because
-/// macOS can hand files over before the app's state exists.
+/// with Sub20", a file manager) that the window hasn't taken yet. Static,
+/// because a second launch can hand files over before the app's state
+/// exists.
 static OPENED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 /// Set when the window takes the waiting videos; later ones are sent to it
 /// as `opened` events.
@@ -527,7 +528,7 @@ static GATHERING: AtomicBool = AtomicBool::new(false);
 const OPENED_QUIET: Duration = Duration::from_millis(150);
 
 /// One batch of opened videos as the window gets it: each once, in name
-/// order as Explorer and Finder show it (clip2 before clip10), since the
+/// order as Explorer shows it (clip2 before clip10), since the
 /// launches that brought them arrive in no useful order.
 fn in_name_order(mut paths: Vec<PathBuf>) -> Vec<PathBuf> {
     let mut seen = HashSet::new();
@@ -644,10 +645,9 @@ fn update_target() -> String {
 }
 
 /// `linux-x86_64-deb-lean` and the like; the keys `scripts/collect-release.mjs`
-/// writes into `latest.json`. An AppImage, the Windows installer and the
-/// macOS app have no package part.
+/// writes into `latest.json`. An AppImage and the Windows installer have no
+/// package part.
 fn update_key(os: &str, arch: &str, package: Option<&str>, bundled: bool) -> String {
-    let os = if os == "macos" { "darwin" } else { os };
     let package = package.map(|p| format!("-{p}")).unwrap_or_default();
     let lean = if bundled { "" } else { "-lean" };
     format!("{os}-{arch}{package}{lean}")
@@ -950,12 +950,6 @@ pub fn run() {
                 api.prevent_exit();
             }
         }
-        // Finder's "Open With" and files dropped on the Dock icon.
-        #[cfg(any(target_os = "macos", target_os = "ios"))]
-        RunEvent::Opened { urls } => {
-            let paths = urls.iter().filter_map(|url| url.to_file_path().ok()).filter(|p| p.exists()).collect();
-            hand_over(app, paths);
-        }
         RunEvent::Exit => {
             // Stop FFmpeg before the process goes away, so nothing keeps
             // encoding in the background and no partial files are left.
@@ -988,7 +982,7 @@ mod tests {
     #[test]
     fn each_install_asks_for_updates_of_its_own_kind() {
         assert_eq!(update_key("windows", "x86_64", None, true), "windows-x86_64");
-        assert_eq!(update_key("macos", "aarch64", None, false), "darwin-aarch64-lean");
+        assert_eq!(update_key("windows", "x86_64", None, false), "windows-x86_64-lean");
         assert_eq!(update_key("linux", "x86_64", None, true), "linux-x86_64");
         assert_eq!(update_key("linux", "x86_64", Some("deb"), true), "linux-x86_64-deb");
         assert_eq!(update_key("linux", "x86_64", Some("rpm"), false), "linux-x86_64-rpm-lean");

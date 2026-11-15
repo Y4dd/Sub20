@@ -156,7 +156,6 @@ async fn test(tools: &Tools, encoder: Encoder) -> TestOutcome {
             }
         }
         Family::Mf => attempts.push((Vec::new(), None, vec!["-pix_fmt", "yuv420p", "-hw_encoding", "1"], None)),
-        Family::VideoToolbox => attempts.push((Vec::new(), None, vec!["-pix_fmt", "yuv420p", "-allow_sw", "0"], None)),
         Family::Nvenc | Family::Amf | Family::Cpu => {
             attempts.push((Vec::new(), None, vec!["-pix_fmt", "yuv420p"], None))
         }

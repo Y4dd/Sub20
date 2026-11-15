@@ -141,10 +141,6 @@ fn format_flags(args: &EncodeArgs) -> Vec<&'static str> {
             }
         }
         Family::Mf => vec!["-pix_fmt", "yuv420p", "-hw_encoding", "1"],
-        Family::VideoToolbox => match encoder.codec {
-            Codec::H264 => vec!["-pix_fmt", "yuv420p", "-allow_sw", "0", "-profile:v", "high"],
-            _ => vec!["-pix_fmt", "yuv420p", "-allow_sw", "0", "-profile:v", "main"],
-        },
         Family::Nvenc | Family::Amf => match encoder.codec {
             Codec::H264 => vec!["-pix_fmt", "yuv420p", "-profile:v", "high"],
             Codec::Hevc => vec!["-pix_fmt", "yuv420p", "-profile:v", "main"],
@@ -172,7 +168,7 @@ fn effort_flags(encoder: Encoder, options: &EncodeOptions) -> Vec<String> {
         }
         // These take driver-specific controls; FFmpeg's generic preset does
         // not travel well, so rate control alone steers them.
-        (Family::Vaapi | Family::Amf | Family::Mf | Family::VideoToolbox, _) => Vec::new(),
+        (Family::Vaapi | Family::Amf | Family::Mf, _) => Vec::new(),
         (_, "libx264") => {
             let preset = ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "veryslow"][i];
             let mut flags = pair("-preset", preset);

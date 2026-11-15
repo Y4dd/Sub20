@@ -17,7 +17,7 @@ finished. What was built and measured before the split is in
 | 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems, a small beta (three to five people), its fixes | 2 | Started: Windows passed, 0.9.1 to 0.9.3 fixed the first reports; waits on the owner's Windows sitting and the testers |
 | 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean; not tested outside this machine. Doesn't hold up the launch |
 | 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3 (the drafts may start now) | Not started; the beta post is first |
-| 6 | [After 1.0](6-after-1.0.md) | Package managers, code signing, the watch without a window, new features | 5 | Parked |
+| 6 | [After 1.0](6-after-1.0.md) | Package managers, the watch without a window, new features | 5 | Parked |
 
 ## Why this order
 
@@ -100,10 +100,12 @@ it:
   describe what Sub20 is for; its
   logo and colours may not be used, and "Not affiliated with Discord"
   stays in the README, the site and the About line.
-- **No code signing for 1.0.** Windows shows SmartScreen and macOS needs
-  Open Anyway; the README and the download page say how. Updates are signed
-  either way. Signing comes back in plan 6.
-- **Intel Macs** are not built for.
+- **Code signing for 1.0,** the Windows installer through SignPath
+  Foundation (owner, 15 November 2026; plan 3's task 3.8). Until it is
+  granted, Windows shows SmartScreen and the README and the download page
+  say how. Updates are signed either way.
+- **No macOS desktop app** (owner, 15 November 2026; 0.9.3 was the last).
+  Lite in Safari stays.
 - **Two downloads:** "Sub20" (FFmpeg included) and "Sub20 without FFmpeg".
 - **No telemetry in the app.** The update check is the only request it
   makes by itself.

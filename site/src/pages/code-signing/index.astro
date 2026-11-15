@@ -1,0 +1,33 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u, GITHUB } from "../../lib/site";
+---
+
+<Doc
+  title="Code signing policy | Sub20"
+  description="How Sub20's Windows releases are built, who approves them, and what is signed."
+  heading="Code signing policy"
+  lead="Sub20's Windows releases are being set up for code signing through SignPath Foundation, so Windows can tell who published the installer. Until that is in place, releases are not signed, and Windows warns the first time you open one."
+>
+  <h2>What will be signed</h2>
+  <ul>
+    <li>Sub20's own program, <code>sub20.exe</code>, and the Windows installers of both downloads (Sub20, and Sub20 without FFmpeg).</li>
+    <li>Only files built from this project's source. Nothing made by anyone else is signed as Sub20.</li>
+  </ul>
+
+  <h2>How a release is built</h2>
+  <ul>
+    <li>Every release is built from the public source on <a href={GITHUB}>GitHub</a>, by the release workflow (<code>.github/workflows/release.yml</code>) on GitHub's own runners, from a version tag.</li>
+    <li>The FFmpeg inside the download with FFmpeg is built by Sub20's own workflow from pinned source archives, and published with its source code and build scripts.</li>
+    <li>Each release is a draft until the maintainer has checked its files, and each signing request is approved by hand.</li>
+  </ul>
+
+  <h2>Team and roles</h2>
+  <ul>
+    <li><b>Committer and reviewer:</b> <a href="https://github.com/Y4dd">Y4dd</a>, the maintainer. Only the maintainer can push to the repository. Changes from anyone else arrive as pull requests and are reviewed by the maintainer before they are merged.</li>
+    <li><b>Approver:</b> <a href="https://github.com/Y4dd">Y4dd</a> approves each signing request.</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, with one exception: when it opens, Sub20 reads one file from GitHub to see whether a newer version is out. Settings, Updates turns that off. The <a href={u("privacy/")}>privacy page</a> has the details.</p>
+</Doc>

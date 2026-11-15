@@ -307,8 +307,8 @@ const DEMO_OFFER: FfmpegOffer = {
   source: "https://github.com/Y4dd/Sub20/releases/tag/ffmpeg-9.0.2-1",
   files: [
     {
-      name: "sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
-      url: "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-aarch64-apple-darwin.tar.xz",
+      name: "sub20-ffmpeg-9.0.2-1-x86_64-pc-windows-msvc.zip",
+      url: "https://github.com/Y4dd/Sub20/releases/download/ffmpeg-9.0.2-1/sub20-ffmpeg-9.0.2-1-x86_64-pc-windows-msvc.zip",
       sha256: "0".repeat(64),
     },
   ],
@@ -317,11 +317,8 @@ const DEMO_OFFER: FfmpegOffer = {
 export const mockBackend: Backend = {
   can: DESKTOP,
   demo: true,
-  // The Windows frame by default; `?frame=overlay` or `?frame=native` shows the others.
-  frame: ((): Frame => {
-    const asked = new URLSearchParams(location.search).get("frame");
-    return asked === "overlay" || asked === "native" ? asked : "custom";
-  })(),
+  // The Windows frame by default; `?frame=native` shows Linux's.
+  frame: ((): Frame => (new URLSearchParams(location.search).get("frame") === "native" ? "native" : "custom"))(),
   minimize: async () => {},
   toggleMaximize: async () => {},
   closeWindow: async () => {},

@@ -58,7 +58,6 @@ pub enum Family {
     Amf,
     /// Windows Media Foundation.
     Mf,
-    VideoToolbox,
     Vaapi,
     Cpu,
 }
@@ -70,7 +69,6 @@ impl Family {
             Family::Qsv => "Intel Quick Sync",
             Family::Amf => "AMD AMF",
             Family::Mf => "Windows Media Foundation",
-            Family::VideoToolbox => "Apple VideoToolbox",
             Family::Vaapi => "VAAPI",
             Family::Cpu => "CPU",
         }
@@ -86,7 +84,6 @@ impl Family {
             Family::Cpu => true,
             Family::Nvenc | Family::Qsv => cfg!(any(windows, target_os = "linux")),
             Family::Amf | Family::Mf => cfg!(windows),
-            Family::VideoToolbox => cfg!(target_os = "macos"),
             Family::Vaapi => cfg!(target_os = "linux"),
         }
     }
@@ -112,14 +109,12 @@ pub const CATALOG: &[Encoder] = &[
     enc("h264_qsv", Codec::H264, Family::Qsv),
     enc("h264_amf", Codec::H264, Family::Amf),
     enc("h264_mf", Codec::H264, Family::Mf),
-    enc("h264_videotoolbox", Codec::H264, Family::VideoToolbox),
     enc("h264_vaapi", Codec::H264, Family::Vaapi),
     enc("libx264", Codec::H264, Family::Cpu),
     enc("hevc_nvenc", Codec::Hevc, Family::Nvenc),
     enc("hevc_qsv", Codec::Hevc, Family::Qsv),
     enc("hevc_amf", Codec::Hevc, Family::Amf),
     enc("hevc_mf", Codec::Hevc, Family::Mf),
-    enc("hevc_videotoolbox", Codec::Hevc, Family::VideoToolbox),
     enc("hevc_vaapi", Codec::Hevc, Family::Vaapi),
     enc("libx265", Codec::Hevc, Family::Cpu),
     enc("av1_nvenc", Codec::Av1, Family::Nvenc),
@@ -161,7 +156,7 @@ mod tests {
 
     #[test]
     fn catalog_is_consistent() {
-        assert_eq!(CATALOG.len(), 21);
+        assert_eq!(CATALOG.len(), 19);
         for codec in Codec::ALL {
             let list: Vec<_> = for_codec(codec).collect();
             // Hardware comes before CPU within a codec.

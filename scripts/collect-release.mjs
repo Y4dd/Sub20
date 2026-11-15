@@ -25,11 +25,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = "Y4dd/Sub20";
 
 // The rows of the download table in the release notes: the file of each build
-// that a person on that system opens. The rest (.sig, .app.tar.gz) are for
+// that a person on that system opens. The rest (.sig) are for
 // the updater (the deb and rpm are both a row here and an update).
 const ROWS = [
   { os: "windows", system: "Windows (64-bit)", kind: "Installer (.exe)", file: /-setup\.exe$/ },
-  { os: "darwin", system: "macOS (Apple Silicon, M1 or newer)", kind: "Disk image (.dmg)", file: /\.dmg$/ },
   { os: "linux", system: "Ubuntu, Debian, Mint", kind: "Package (.deb)", file: /\.deb$/ },
   { os: "linux", system: "Fedora, openSUSE", kind: "Package (.rpm)", file: /\.rpm$/ },
   { os: "linux", system: "Other Linux", kind: "AppImage", file: /\.AppImage$/ },
@@ -61,8 +60,7 @@ function collect() {
   if (!existsSync(bundle)) fail(`No bundle folder at ${bundle}. Build first.`);
 
   const name = flavor === "lean" ? "Sub20-without-FFmpeg" : "Sub20";
-  const arch = target.startsWith("aarch64") ? "aarch64" : "x64";
-  const os = target.includes("windows") ? "windows" : target.includes("apple") ? "darwin" : "linux";
+  const os = target.includes("windows") ? "windows" : "linux";
   // The keys the app asks the feed for (`update_key` in src-tauri/src/lib.rs):
   // on Linux each package updates from its own kind, since the updater
   // installs a deb with dpkg and an rpm with rpm.
@@ -71,7 +69,6 @@ function collect() {
   const platform = key(null);
   const updateKey = (file) => {
     if (os === "windows") return file.endsWith("-setup.exe") ? key(null) : null;
-    if (os === "darwin") return file.endsWith(".app.tar.gz") ? key(null) : null;
     if (file.endsWith(".AppImage")) return key(null);
     if (file.endsWith(".deb")) return key("deb");
     if (file.endsWith(".rpm")) return key("rpm");
@@ -85,8 +82,7 @@ function collect() {
   for (const file of walk(bundle)) {
     const base = file.split(/[\\/]/).pop();
     let renamed;
-    if (base.endsWith(".app.tar.gz")) renamed = `${name}_${version}_${arch}.app.tar.gz`;
-    else if (/\.(exe|dmg|AppImage|deb|rpm)$/.test(base) && base.startsWith("Sub20")) renamed = base.replace(/^Sub20/, name);
+    if (/\.(exe|AppImage|deb|rpm)$/.test(base) && base.startsWith("Sub20")) renamed = base.replace(/^Sub20/, name);
     else continue;
 
     copyFileSync(file, join(out, renamed));
@@ -167,9 +163,9 @@ function guide(version, fragments) {
     "| --- | --- | --- |",
     ...rows,
     "",
-    "Windows and macOS warn the first time you open Sub20, because it isn't",
-    `code-signed yet; the [README](https://github.com/${REPO}#install) says how to open it.`,
-    "The `.sig`, `.app.tar.gz` and `latest.json` files are for Sub20's updater, and",
+    "Windows warns the first time you open Sub20, because it isn't code-signed",
+    `yet; the [README](https://github.com/${REPO}#install) says how to open it.`,
+    "The `.sig` and `latest.json` files are for Sub20's updater, and",
     "`SHA256SUMS.txt` lists every file's fingerprint.",
   ].join("\n");
 }
@@ -190,8 +186,7 @@ function notesFor(version) {
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
-    // A macOS .app is a folder; only its .tar.gz is wanted.
-    if (entry.isDirectory()) return entry.name.endsWith(".app") ? [] : walk(path);
+    if (entry.isDirectory()) return walk(path);
     return [path];
   });
 }

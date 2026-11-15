@@ -6,6 +6,11 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Removed
+
+- The macOS app. 0.9.3 was the last version for macOS: it keeps working
+  but gets no more updates. On a Mac, Sub20 Lite runs in the browser.
+
 ## [0.9.3] - 2026-11-15
 
 ### Changed

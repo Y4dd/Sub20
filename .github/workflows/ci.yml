@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-latest]
     steps:
       - uses: actions/checkout@v7
 
@@ -51,9 +51,6 @@ jobs:
             libxdo-dev libssl-dev patchelf ffmpeg
 
       # The end-to-end tests run real encodes; they skip themselves without FFmpeg.
-      - name: FFmpeg (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ffmpeg
       - name: FFmpeg (Windows)
         if: runner.os == 'Windows'
         run: choco install ffmpeg -y --no-progress
