@@ -78,10 +78,12 @@ fix what comes back (3.6).
       *Released 15 November 2026:* v0.9.1 published at 07:21 UTC as latest
       (CI and the release build green on all three systems, 24 files, ten
       signed feed entries pointing at v0.9.1, the site's links follow it).
-      Left: the owner's 0.9.0 offers it, installs it and comes back as
-      0.9.1 without FFmpeg, with FFmpeg working after the restart (if it
-      doesn't, the FFmpeg screen and Copy diagnostics now say why: send
-      them); then a deb or rpm install by a tester.
+      Seen on Windows the same morning (owner): 0.9.0 offered it, installed
+      it and came back as 0.9.1, and FFmpeg worked after that restart, so
+      the failure after the 0.9.0 update did not repeat (still unexplained).
+      Left: a deb or rpm install by a tester. The `github-pages`
+      environment now allows `v*` tags beside `main` (owner), so the next
+      published release deploys the site by itself.
 - [ ] **3.6 Fix what the beta finds.** Every report becomes an issue. A bug
       that loses a file, saves one over the limit, or crashes is fixed
       before anything else, with a test where one can be written. Fixes go
@@ -146,6 +148,18 @@ fix what comes back (3.6).
         release the handle settles on the mark. Checked on the mock: the
         handle tracked the pointer in 2% steps, the mark stepped by
         keyframes, and the release landed on the mark.
+      - After 0.9.1 (owner): the drag is smooth but the cut still starts on
+        the 2-second keyframe; the end lands where it's put. Fix (0.9.2):
+        an MP4 cut starts exactly at the handle, still copied. The copy
+        keeps the packets from the keyframe before and the muxer's edit
+        list starts playback at the start; checked in Chromium (Discord's
+        desktop player and Sub20's window): a cut at 3.0 s showed the
+        source's 3.0 s frame first (difference 0, against 12.7 for the 2 s
+        keyframe). Matroska has no edit list, so an MKV result still snaps,
+        and its seek went one keyframe too far back (a cut from 2 s kept
+        from 0); it now seeks half a second past the keyframe. Both are e2e
+        tests with real FFmpeg. Not yet seen: Discord's phone apps playing
+        an edit-listed cut (iOS and Android players honour edit lists).
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so

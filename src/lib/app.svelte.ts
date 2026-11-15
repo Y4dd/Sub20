@@ -125,7 +125,8 @@ export class Clip {
 }
 
 /** The keyframe at or before `time`, where a cut of a result can start; with
- *  none (sound only) the time stays. The engine snaps the same way
+ *  none (an MP4, which starts anywhere, or sound only) the time stays. The
+ *  engine snaps the same way
  *  (`sub20_core::cut::snap_start`): change them together. */
 export function snapStart(keyframes: number[], time: number): number {
   if (!keyframes.length) return Math.max(0, time);
@@ -648,8 +649,9 @@ class App {
     }
   }
 
-  /** Sets the part of a finished result to keep. The start moves back to a
-   *  keyframe, because the cut copies the file and can only start on one. */
+  /** Sets the part of a finished result to keep. In an MKV the start moves
+   *  back to a keyframe, because the cut copies the file and Matroska can
+   *  only start on one; an MP4 has no keyframes listed and starts anywhere. */
   setCut(clip: Clip, start: number, end: number) {
     const result = clip.result;
     if (!result || clip.cutting || !clip.keyframes) return;

@@ -563,7 +563,7 @@ async fn a_typed_name_is_used_and_a_result_can_be_renamed() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn a_result_is_cut_on_a_keyframe_without_encoding_it_again() {
+async fn a_result_is_cut_where_asked_without_encoding_it_again() {
     let Some(b) = bench().await else { return };
     let input = b.root.join("clip.mp4");
     make_source(&b.tools, &input, 10, "640x360").await;
@@ -571,10 +571,12 @@ async fn a_result_is_cut_on_a_keyframe_without_encoding_it_again() {
     let (_, done) = b.engine.submit_and_wait(spec(&input, options));
     let result = done.await.unwrap().expect("the job should succeed");
 
-    // A keyframe every two seconds, so a cut can start close to anywhere.
-    let keys = b.engine.keyframes(&result.output).await.unwrap();
+    // A keyframe every two seconds, which players seek to.
+    let keys = sub20_core::cut::keyframes(&b.tools, &result.output).await.unwrap();
     assert_eq!(keys.len(), 5, "keyframes at {keys:?}");
     assert!(keys.windows(2).all(|w| (w[1] - w[0] - 2.0).abs() < 0.05), "keyframes at {keys:?}");
+    // An MP4 cut can start between them (an edit list), so the window has nothing to snap to.
+    assert!(b.engine.keyframes(&result.output).await.unwrap().is_empty());
 
     // A fake bin, so the test leaves the real one alone.
     let bin = b.root.join("bin");
@@ -583,11 +585,12 @@ async fn a_result_is_cut_on_a_keyframe_without_encoding_it_again() {
     let cut = b.engine.cut_result_with(&result.output, 3.1, 7.5, to_bin).await.unwrap();
 
     assert_eq!(cut.output, result.output, "the cut takes the result's name");
-    assert_eq!(cut.start, 2.0, "the start moves back to the keyframe at 2 s");
+    assert_eq!(cut.start, 3.1, "the start stays where it was asked");
     assert!(cut.note.is_none());
     assert!(bin.join("clip-1mb.mp4").exists(), "the uncut file is in the bin");
     let info = probe::probe(&b.tools, &cut.output).await.unwrap();
-    assert!((info.duration - 5.5).abs() < 0.1, "kept {} s, wanted 5.5", info.duration);
+    // The end lands within a few frames (B-frames are reordered past it).
+    assert!((info.duration - 4.4).abs() < 0.15, "kept {} s, wanted 4.4", info.duration);
     assert!((cut.duration - info.duration).abs() < 0.01);
     assert_eq!(cut.size_bytes, std::fs::metadata(&cut.output).unwrap().len());
     assert!(cut.size_bytes < result.size_bytes * 7 / 10, "{} of {} bytes", cut.size_bytes, result.size_bytes);
@@ -601,7 +604,7 @@ async fn a_result_is_cut_on_a_keyframe_without_encoding_it_again() {
     );
 
     // Keeping all of it is not a cut.
-    let whole = b.engine.cut_result_with(&cut.output, 0.5, 60.0, |_| Ok(())).await;
+    let whole = b.engine.cut_result_with(&cut.output, 0.0, 60.0, |_| Ok(())).await;
     assert!(whole.unwrap_err().to_string().contains("nothing to cut"));
 
     // A bin that refuses: both files stay.
@@ -613,6 +616,32 @@ async fn a_result_is_cut_on_a_keyframe_without_encoding_it_again() {
     assert_ne!(kept.output, cut.output);
     assert!(kept.output.exists() && cut.output.exists());
     assert!(kept.note.unwrap().contains("both were kept"));
+    no_leftovers(&b.root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_matroska_result_is_cut_on_a_keyframe() {
+    let Some(b) = bench().await else { return };
+    let input = b.root.join("clip.mp4");
+    make_source(&b.tools, &input, 10, "640x360").await;
+    let options = EncodeOptions {
+        target_mb: 1.0,
+        encoder: Some("libx264".into()),
+        container: Container::Mkv,
+        ..Default::default()
+    };
+    let (_, done) = b.engine.submit_and_wait(spec(&input, options));
+    let result = done.await.unwrap().expect("the job should succeed");
+
+    // Matroska has no edit list, so the window snaps to these.
+    let keys = b.engine.keyframes(&result.output).await.unwrap();
+    assert_eq!(keys.len(), 5, "keyframes at {keys:?}");
+
+    let cut = b.engine.cut_result_with(&result.output, 3.1, 7.5, |_| Ok(())).await.unwrap();
+    assert_eq!(cut.start, 2.0, "the start moves back to the keyframe at 2 s");
+    let info = probe::probe(&b.tools, &cut.output).await.unwrap();
+    // Before, the seek went back a keyframe too far and this kept 7.6 s.
+    assert!((info.duration - 5.5).abs() < 0.2, "kept {} s, wanted 5.5", info.duration);
     no_leftovers(&b.root);
 }
 

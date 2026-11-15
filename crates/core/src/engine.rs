@@ -178,13 +178,17 @@ impl Engine {
         Ok(renamed)
     }
 
-    /// Where a finished result can be cut from: its keyframes ([`cut`]).
+    /// Where a cut of a finished result may start: its keyframes, or none
+    /// when it can start anywhere (MP4, through an edit list; see [`cut`]).
     pub async fn keyframes(&self, path: &Path) -> Result<Vec<f64>> {
+        if cut::starts_anywhere(path) {
+            return Ok(Vec::new());
+        }
         cut::keyframes(&self.tools()?, path).await
     }
 
     /// Cuts a finished result to `start..end` (seconds into it) by copying
-    /// its packets. The start moves back to a keyframe. The cut takes the
+    /// its packets. In Matroska the start moves back to a keyframe. The cut takes the
     /// result's name and the uncut file goes to the bin; if the bin refuses,
     /// both stay. The history entry follows the cut.
     pub async fn cut_result(&self, path: &Path, start: f64, end: f64) -> Result<Cut> {
@@ -202,7 +206,11 @@ impl Engine {
     ) -> Result<Cut> {
         let tools = self.tools()?;
         let info = probe::probe(&tools, path).await?;
-        let keys = if info.has_video { cut::keyframes(&tools, path).await? } else { Vec::new() };
+        let keys = if info.has_video && !cut::starts_anywhere(path) {
+            cut::keyframes(&tools, path).await?
+        } else {
+            Vec::new()
+        };
         let (start, end) = cut::window(&keys, start, end, info.duration)?;
 
         let dir = path.parent().ok_or_else(|| Error::Invalid(format!("{} has no folder", path.display())))?;

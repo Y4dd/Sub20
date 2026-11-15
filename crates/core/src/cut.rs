@@ -1,10 +1,14 @@
 //! Cutting a finished result shorter without encoding it again.
 //!
 //! The packets are copied, so a cut is quick, loses nothing and can only make
-//! the file smaller. A copy can start only on a keyframe, so the start moves
-//! back to the keyframe at or before it ([`snap_start`]); the window snaps its
-//! handle by the same rule, so the cut is what was shown. The end lands within
-//! a frame or two (B-frames are reordered past it).
+//! the file smaller. A copy has to begin on a keyframe. In MP4 and MOV that
+//! doesn't move the start: the packets from the keyframe before it are kept
+//! and an edit list tells players to begin at the start itself (Chromium,
+//! and so Discord's desktop player and Sub20's window, do). Matroska has no
+//! edit list, so there the start moves back to the keyframe at or before it
+//! ([`snap_start`]), and the window snaps its handle by the same rule, so the
+//! cut is what was shown. The end lands within a frame or two (B-frames are
+//! reordered past it).
 //! Results get a keyframe every [`crate::command::KEYFRAME_SECONDS`].
 
 use std::ffi::OsString;
@@ -31,6 +35,14 @@ pub struct Cut {
     pub start: f64,
     /// Why both files were kept, when they were.
     pub note: Option<String>,
+}
+
+/// Whether a copy of this file can begin between keyframes: MP4 and MOV keep
+/// the packets before the start and hide them with an edit list.
+pub fn starts_anywhere(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| ["mp4", "m4v", "m4a", "mov"].iter().any(|x| e.eq_ignore_ascii_case(x)))
 }
 
 /// The keyframe at or before `start`. With no keyframes (a sound-only
@@ -75,20 +87,27 @@ pub fn parse_keyframes(csv: &str) -> Vec<f64> {
 
 /// FFmpeg's arguments for copying `start..end` of `input` into `output`.
 ///
-/// The seek lands a millisecond after the keyframe, so rounding in the
-/// printed time can't send it back to the keyframe before; the demuxer still
-/// starts on the keyframe itself.
+/// In MP4 the seek is the start itself, and the muxer writes the edit list
+/// that begins playback there. Elsewhere the start is a keyframe, and the
+/// seek lands half a second after it (less on a very short cut): Matroska's
+/// seek goes to the keyframe before the time asked less the B-frame delay,
+/// so a seek a millisecond past the keyframe went back to the one before it
+/// (a cut from 2 s started at 0). The demuxer starts on the keyframe, and
+/// the copy keeps everything from there.
 pub fn args(input: &Path, start: f64, end: f64, output: &Path) -> Vec<OsString> {
     let mut a: Vec<OsString> = vec!["-y".into()];
-    let seek = if start > 0.0 { start + 0.001 } else { 0.0 };
+    let seek = match (start > 0.0, starts_anywhere(output)) {
+        (false, _) => 0.0,
+        (true, true) => start,
+        (true, false) => start + (0.5f64).min((end - start) / 2.0),
+    };
     if seek > 0.0 {
         a.extend(["-ss".into(), format!("{seek:.3}").into()]);
     }
     a.extend(["-i".into(), input.as_os_str().to_owned()]);
     a.extend(["-t".into(), format!("{:.3}", end - seek).into()]);
     a.extend(["-map", "0", "-c", "copy", "-sn", "-dn"].map(OsString::from));
-    let mp4 = output.extension().is_some_and(|e| e.eq_ignore_ascii_case("mp4") || e.eq_ignore_ascii_case("m4a"));
-    if mp4 {
+    if starts_anywhere(output) {
         a.extend(["-movflags", "+faststart"].map(OsString::from));
     }
     a.push(output.as_os_str().to_owned());
@@ -159,11 +178,23 @@ mod tests {
     }
 
     #[test]
-    fn the_copy_seeks_just_past_the_keyframe_and_keeps_every_stream() {
+    fn mp4_starts_anywhere_and_matroska_on_a_keyframe() {
+        assert!(starts_anywhere(Path::new("/r/clip-20mb.mp4")));
+        assert!(starts_anywhere(Path::new("/r/clip.MOV")));
+        assert!(!starts_anywhere(Path::new("/r/clip-20mb.mkv")));
+        assert!(!starts_anywhere(Path::new("/r/clip")));
+    }
+
+    #[test]
+    fn the_copy_seeks_to_the_start_in_mp4_and_just_past_the_keyframe_elsewhere() {
         let text = |a: Vec<OsString>| a.iter().map(|s| s.to_string_lossy().into_owned()).collect::<Vec<_>>().join(" ");
         assert_eq!(
-            text(args(Path::new("/r/clip-20mb.mp4"), 4.0, 9.5, Path::new("/r/.clip.1.part.mp4"))),
-            "-y -ss 4.001 -i /r/clip-20mb.mp4 -t 5.499 -map 0 -c copy -sn -dn -movflags +faststart /r/.clip.1.part.mp4"
+            text(args(Path::new("/r/clip-20mb.mp4"), 3.25, 9.5, Path::new("/r/.clip.1.part.mp4"))),
+            "-y -ss 3.250 -i /r/clip-20mb.mp4 -t 6.250 -map 0 -c copy -sn -dn -movflags +faststart /r/.clip.1.part.mp4"
+        );
+        assert_eq!(
+            text(args(Path::new("/r/clip-20mb.mkv"), 4.0, 9.5, Path::new("/r/.clip.1.part.mkv"))),
+            "-y -ss 4.500 -i /r/clip-20mb.mkv -t 5.000 -map 0 -c copy -sn -dn /r/.clip.1.part.mkv"
         );
         let from_start = text(args(Path::new("/r/a.mkv"), 0.0, 3.0, Path::new("/r/b.mkv")));
         assert!(from_start.starts_with("-y -i /r/a.mkv -t 3.000 "), "{from_start}");

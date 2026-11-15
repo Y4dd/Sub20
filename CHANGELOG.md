@@ -6,6 +6,13 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Cutting a finished video starts exactly where the start handle is, not
+  at the keyframe up to two seconds before it. The cut still copies the
+  file without compressing it again. (In an MKV result the start still
+  moves back to a keyframe; it used to go back one keyframe too far.)
+
 ## [0.9.1] - 2026-11-15
 
 Fixes from the first days of the beta.

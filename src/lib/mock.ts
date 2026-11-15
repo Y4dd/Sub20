@@ -455,8 +455,10 @@ export const mockBackend: Backend = {
   openFile: async () => {},
   resultUrl: async () => null,
   copyFile: () => new Promise((resolve) => setTimeout(resolve, 120)),
-  // A keyframe every two seconds, as the real results have.
+  // As the engine: an MP4 can be cut anywhere (none listed); an MKV only on
+  // its keyframes, every two seconds as the real results have them.
   keyframes: async (path) => {
+    if (!path.toLowerCase().endsWith(".mkv")) return [];
     const duration = made.get(path)?.duration ?? 0;
     return Array.from({ length: Math.ceil(duration / 2) }, (_, i) => i * 2);
   },
