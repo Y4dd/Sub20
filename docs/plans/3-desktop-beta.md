@@ -160,6 +160,11 @@ fix what comes back (3.6).
         from 0); it now seeks half a second past the keyframe. Both are e2e
         tests with real FFmpeg. Not yet seen: Discord's phone apps playing
         an edit-listed cut (iOS and Android players honour edit lists).
+        Released as 0.9.2 (15 November 2026, 07:52 UTC): CI and the release
+        build green on all three systems, ten signed feed entries, and the
+        site deployed from the release on its own for the first time (the
+        `v*` tag rule). Left: the owner cuts a result in the real app and
+        plays it in Discord, on a computer and a phone.
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so
