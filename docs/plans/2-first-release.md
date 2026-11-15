@@ -61,11 +61,14 @@ test of the download without FFmpeg.
       installs without updates, so the choice is made now: it stays,
       unless the owner says otherwise before the tag.
       *Done when:* the owner has seen this line.
-- [ ] **2.4 Version and changelog.** `npm run set-version -- 0.9.0`; turn
+- [x] **2.4 Version and changelog.** `npm run set-version -- 0.9.0`; turn
       "Unreleased" into `## [0.9.0]` with the date, written for people who
       use the app, with a fresh empty "Unreleased" above it. Run fmt,
       clippy, svelte-check and the tests. Commit.
       *Done when:* the three checks are clean and the tests pass.
+      Done 15 November 2026: 0.9.0, the changelog rewritten for people who
+      use the app (contributors' items last); fmt, clippy, svelte-check
+      clean, 120 tests pass.
 - [ ] **2.5 Push, CI, dry run** (on the owner's word). Push `main`; when CI
       is green, run the release workflow by hand on `main`.
       *Done when:* CI and the dry run are green, and the dry run's
@@ -89,21 +92,27 @@ test of the download without FFmpeg.
 
 ## Needs the owner
 
-- [ ] **A short try on Windows before the tag**, from the dry run in 2.5:
+- [x] **A short try on Windows before the tag**, from the dry run in 2.5:
       install, compress a clip, Ctrl+C then Ctrl+V into Discord, drag the
       file chip into a channel, close the window while a clip is
       compressing. Ten minutes; the full pass is plan 3.
-- [ ] **A friend installs "Sub20 without FFmpeg"** on a machine with no
+      Done by the owner on the 13 November dry run (15 November 2026: works).
+- [x] **A friend installs "Sub20 without FFmpeg"** on a machine with no
       FFmpeg: the first screen offers "Download FFmpeg", it downloads, a
-      clip compresses. A dry-run build will do.
-- [ ] **Turn on private vulnerability reporting:** repository Settings →
+      clip compresses. A dry-run build will do. Done, 15 November 2026.
+- [x] **Turn on private vulnerability reporting:** repository Settings →
       Advanced Security (or Code security) → Private vulnerability
       reporting → Enable. `SECURITY.md`, the code of conduct and the issue
       form's "Security problem" link all send people to it, and it was off
       on 14 November 2026. (Or say so, and the AI turns it on with `gh`.)
-- [ ] **Say when to push, and when to tag.**
+      On, 15 November 2026 (the API reports it enabled).
+- [x] **Say when to push, and when to tag.** 15 November 2026: push, and
+      tag at the best time.
 - [ ] **Publish the draft release.**
 - [ ] Optional: a GitHub Sponsors or Ko-fi account, then `FUNDING.yml`.
+      Discussions on and both labels there, 15 November 2026 (the labels
+      are GitHub's defaults); the issue chooser and `CONTRIBUTING.md` point
+      questions to Discussions. Left: an account, if wanted.
       Turn on Discussions if questions should go there rather than to
       issues, and add the labels `good first issue` and `help wanted`
       (the AI can do both with `gh` once told to).

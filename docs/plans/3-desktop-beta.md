@@ -119,9 +119,10 @@ fix what comes back (3.6).
 
 Each line is ticked with who tried it, on what, and when.
 
-- [ ] **Windows, the full pass:** Copy then paste into Discord, drag-out,
+- [x] **Windows, the full pass:** Copy then paste into Discord, drag-out,
       the title bar (snap, maximise, a second monitor), Replace the
       original, renaming a finished file, cancel, quit.
+      The owner, Windows 11 with an RTX 5070 Ti, 15 November 2026: works.
 - [ ] **macOS (Apple Silicon):** the same pass, plus the first launch
       through Open Anyway, video playback in the preview, and
       VideoToolbox doing the encode.
@@ -140,20 +141,26 @@ Each line is ticked with who tried it, on what, and when.
       on several selected videos in Explorer (they arrive together, in name
       order); a video opened while Sub20 is running; Finder's Open With
       with several files; a file manager on Linux.
+      Windows Open with: works (the owner, 15 November 2026). Left: macOS
+      and Linux.
 - [ ] **Quit, diagnostics, crash:** the quit question while compressing and
       Copy diagnostics on macOS and Linux (Windows: done 13 November 2026);
       a crash leaves `crash.log` and the diagnostics include it.
 - [ ] **A screen reader:** NVDA on Windows and VoiceOver on macOS reach and
       name everything; focus stays inside an open sheet; the size picker
       and the segmented choices work by keyboard.
-- [ ] **The download without FFmpeg, on a machine with none:** carried over
+- [x] **The download without FFmpeg, on a machine with none:** carried over
       from plan 2 if it wasn't done there.
+      A friend of the owner, Windows, 15 November 2026: the first screen
+      offered Download FFmpeg, it installed, and clips compressed.
 
 ### The beta
 
 - [ ] **Ten or more testers**, from Discord servers the owner is already
       in, with NVIDIA, Intel and AMD cards among them, for two weeks or
       more. Send them the release page and `docs/testing.md`.
+      15 November 2026: one tester so far, and the owner expects ten to be
+      hard to find.
 - [ ] Ask each for the size before and after of a clip they really sent,
       and whether their words may be quoted. Plan 5 uses them.
 - [ ] **Nitro's limits in bytes,** if someone has Nitro: the largest file

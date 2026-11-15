@@ -179,20 +179,31 @@ invented.
       *Done when:* `git status` is clean and fmt, clippy and svelte-check
       are still clean.
       Done 14 November 2026.
-- [ ] **1.11 Deploy and check it live** (after the owner enables Pages and
+- [x] **1.11 Deploy and check it live** (after the owner enables Pages and
       says to push). Run the workflow; open the live site: every page, the
       download links, `/app/` loading and compressing a clip, its service
       worker registering, `sitemap-index.xml`. Set the repository's
       homepage to the site.
       *Done when:* all of that was seen on the live address.
+      Done 15 November 2026 at https://y4dd.github.io/Sub20/: every page,
+      `/app/` and its manifest, `sw.js` and `sitemap-index.xml` answer 200;
+      the download links go to the releases page (no release yet); in
+      headless Edge on a phone profile, `/app/` has no installability
+      errors, its worker takes control, it opens offline, a clip compresses,
+      and axe is clean. The repository homepage points to the site.
 
 ## Needs the owner
 
-- [ ] **Enable GitHub Pages:** repository Settings → Pages → Source:
+- [x] **Enable GitHub Pages:** repository Settings → Pages → Source:
       "GitHub Actions".
-- [ ] **Say when to push** (one push with everything in 1.3 to 1.10).
+- [x] **Say when to push** (one push with everything in 1.3 to 1.10).
 - [ ] Optional, any time before plan 5: buy a domain (a `.app` name is
       about $15 a year). Until then the address is `y4dd.github.io/Sub20`.
+      15 November 2026: the owner has `amjad.sh` (Porkbun) and would use a
+      subdomain. Then: a CNAME record at Porkbun pointing it at
+      `y4dd.github.io`, the custom domain set in Pages, and the Pages
+      workflow run again (it reads the address from Pages, so no code
+      changes; `BASE` becomes `/`).
 
 ## Exit criteria
 
@@ -202,4 +213,4 @@ invented.
       back to the releases page when there is none. (Seen with a real
       release in plan 2, task 2.8.)
 - [ ] Every guide is accurate against the current app.
-- [ ] The site is live on Pages with Lite at `/app`.
+- [x] The site is live on Pages with Lite at `/app`.

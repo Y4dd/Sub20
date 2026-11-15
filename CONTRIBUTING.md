@@ -18,6 +18,11 @@ Open an issue with the bug form. The most useful things to include:
 Results from Intel, AMD and Apple GPUs are especially welcome: the encoder
 settings for those have not been tried on real hardware here yet.
 
+Questions (how to do something, whether Sub20 can) go to
+[Discussions](https://github.com/Y4dd/Sub20/discussions). Issues labelled
+`good first issue` are small and self-contained; `help wanted` marks ones
+that need hardware or know-how we don't have.
+
 By contributing, you agree that your work is published under the
 [MIT licence](LICENSE), like the rest of Sub20.
 
