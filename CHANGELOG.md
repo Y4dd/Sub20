@@ -6,13 +6,9 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
-### Changed
+## [0.9.1] - 2026-11-15
 
-- Sub20 Lite writes results of 64 MB or more to the browser's own storage
-  as they are made, instead of holding them in memory, so a 500 MB or 1 GB
-  limit works on a phone.
-- Sub20 Lite encodes the codec picked in Options (H.264, AV1 or HEVC) where
-  the browser can, and a browser without H.264 falls back to AV1.
+Fixes from the first days of the beta.
 
 ### Fixed
 
@@ -24,6 +20,14 @@ What changed in each release. The format follows
   smoothly instead of jumping two seconds at a time. A mark shows the
   keyframe the cut will start on, and the handle settles there when you
   let go.
+
+### Changed
+
+- Sub20 Lite writes results of 64 MB or more to the browser's own storage
+  as they are made, instead of holding them in memory, so a 500 MB or 1 GB
+  limit works on a phone.
+- Sub20 Lite encodes the codec picked in Options (H.264, AV1 or HEVC) where
+  the browser can, and a browser without H.264 falls back to AV1.
 
 ## [0.9.0] - 2026-11-15
 
@@ -145,6 +149,7 @@ The first version, before any public release.
 - Folder watch, history, saved profiles, the FFmpeg log for each job.
 - A title bar drawn by the app on Windows.
 
-[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/Y4dd/Sub20/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/Y4dd/Sub20/releases/tag/v0.9.0
 [0.1.0]: https://github.com/Y4dd/Sub20/commits/main
