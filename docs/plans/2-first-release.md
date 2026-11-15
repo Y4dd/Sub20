@@ -5,8 +5,8 @@ and Linux, signed update entries, checksums, and notes that open with
 "Which file do I need?". It is a beta in name only: a normal release, not a
 GitHub pre-release, because the updater and the site both read "latest".
 
-**Status.** Published 15 November 2026; one owner check left (2.7, the
-update offered in an installed build). Everything it needs is built: the release workflow
+**Status.** Done: published 15 November 2026, and an installed build
+updated itself to it. Everything it needs is built: the release workflow
 passed a dry run on 13 November 2026 (see [record.md](record.md)), and the
 owner installed and used the Windows build from it.
 
@@ -89,14 +89,18 @@ test of the download without FFmpeg.
       `latest.json` entries pointing at v0.9.0. The tag also started the
       FFmpeg workflow (a new tag has no paths to compare); it was canceled,
       and the workflow now runs on branch pushes only.
-- [ ] **2.7 After the owner publishes.** `gh release view v0.9.0`: it is
+- [x] **2.7 After the owner publishes.** `gh release view v0.9.0`: it is
       the latest release, not a draft, not a pre-release. An installed
       dry-run build (0.1.0) offers the update in its title bar.
       *Done when:* both were seen.
       *Half seen, 15 November 2026:* published at 06:40 UTC, latest, not a
       draft or pre-release. `releases/latest/download/latest.json` (the
       updater's endpoint) says 0.9.0 with ten signed keys, and every URL in
-      it downloads. Left: the owner opens an older install and sees the offer.
+      it downloads. Seen the same morning: the owner's Windows install
+      offered 0.9.0, installed it and restarted as 0.9.0 (the running
+      `sub20.exe` started at 06:50 UTC with the installer as its parent;
+      Copy diagnostics says 0.9.0, without FFmpeg). After that restart its
+      FFmpeg didn't answer; see plan 3, 3.6.
 - [x] **2.8 The site follows it.** The Pages workflow runs on a published
       release; the home page and `download/` then show the version, the
       file names and the sizes, and each link downloads that file.
