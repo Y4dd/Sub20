@@ -20,11 +20,14 @@
     o.encoder ? (app.report?.encoders.find((e) => e.name === o.encoder) ?? null) : (usable(o.codec)[0] ?? working(o.codec)[0] ?? null),
   );
 
-  const CODEC_NOTE: Record<Codec, string> = {
-    h264: "Plays everywhere, including in Discord's chat.",
-    hevc: "Sharper at the same size, but Discord won't play it in the chat: people have to download it to watch.",
-    av1: "Sharpest at the same size. Needs a recent device to play, and is slow without a recent graphics card.",
-  };
+  // Where each plays in Discord, shown for all three so the choice is clear.
+  // From the owner's test (November 2026): all three played in Discord on a
+  // Windows computer; on a phone H.264 and HEVC played and AV1 did not.
+  const CODECS: { codec: Codec; note: string }[] = [
+    { codec: "h264", note: "The default. Plays in Discord on every computer and phone." },
+    { codec: "hevc", note: "Sharper at the same size. Plays in Discord on most phones and newer computers, but may not on older ones." },
+    { codec: "av1", note: "Sharpest at the same size. Plays in Discord on computers, but may not on phones. Slow to make without a recent graphics card." },
+  ];
 
   const EFFORTS: Effort[] = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "max"];
   const effortIndex = $derived(EFFORTS.indexOf(o.effort));
@@ -94,12 +97,17 @@
           }))}
           onchange={(codec) => { o.codec = codec; o.encoder = null; }}
         />
-        <p class="note">
-          {CODEC_NOTE[o.codec]}
-          {#if chosen}
-            {chosen.family === "cpu" ? "Encoded on the CPU." : `Encoded on the ${engineOf(chosen.name)}.`}
-          {/if}
-        </p>
+        <dl class="codecs">
+          {#each CODECS as { codec, note } (codec)}
+            <div class:picked={o.codec === codec}>
+              <dt>{CODEC_LABEL[codec]}</dt>
+              <dd>{note}</dd>
+            </div>
+          {/each}
+        </dl>
+        {#if chosen}
+          <p class="note">{chosen.family === "cpu" ? "Encoded on the CPU." : `Encoded on the ${engineOf(chosen.name)}.`}</p>
+        {/if}
       </div>
     </div>
 
@@ -359,6 +367,34 @@
     color: var(--muted);
     font-size: var(--step--1);
     line-height: 1.45;
+  }
+
+  /* The three formats, each with where it plays; the picked one stands out. */
+  .codecs {
+    display: grid;
+    gap: 5px;
+    margin: 9px 0 0;
+    font-size: var(--step--1);
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .codecs div {
+    display: grid;
+    grid-template-columns: 3.4em minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .codecs dt {
+    font-weight: 600;
+  }
+
+  .codecs dd {
+    margin: 0;
+  }
+
+  .codecs .picked {
+    color: var(--text);
   }
 
   .note.flush {

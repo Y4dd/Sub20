@@ -81,8 +81,10 @@ it:
 ## Settled, not to be reopened
 
 - **Licence:** MIT.
-- **Discord:** H.264 is the default. HEVC doesn't play in the chat and says
-  so. AV1 plays in the chat. The sizes are 20 MB (Free), 50 MB (Nitro
+- **Discord:** H.264 is the default and plays on every device. HEVC may not
+  play on every device, AV1 may not play on phones, and Options says so
+  (owner's test, 15 November 2026: all three on Windows, H.264 and HEVC on
+  a phone). The sizes are 20 MB (Free), 50 MB (Nitro
   Basic), 500 MB (Server boost) and 1 GB (Nitro); the free limit is 20 MiB,
   confirmed by upload. Discord's name may describe what Sub20 is for; its
   logo and colours may not be used, and "Not affiliated with Discord"

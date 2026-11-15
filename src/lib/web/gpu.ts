@@ -16,7 +16,7 @@ const even = (value: number) => Math.max(2, Math.floor(value / 2) * 2);
 /** WebCodecs strings to ask about each codec with: high profiles, levels that hold 4K. */
 const PROBE: Record<Codec, string> = { h264: "avc1.640034", hevc: "hev1.1.6.L153.90", av1: "av01.0.12M.08" };
 
-/** Fallbacks in order: AV1 before HEVC, because Discord plays AV1 in the chat and not HEVC. */
+/** Fallbacks in order: AV1 before HEVC. Discord's desktop app plays AV1 on any computer, while HEVC needs the computer to decode it; phones are the other way round. */
 const ORDER: Codec[] = ["h264", "av1", "hevc"];
 
 let encodable: Promise<Codec[]> | null = null;

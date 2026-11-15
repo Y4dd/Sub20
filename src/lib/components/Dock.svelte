@@ -59,7 +59,8 @@
   const summary = $derived.by(() => {
     const o = app.options;
     if (o.audioOnly) return `Sound only, ${o.audio === "opus" ? "Opus" : "AAC"} at ${o.audioKbps} kbps`;
-    const parts = [o.codec === "hevc" ? "HEVC (won't play in Discord's chat)" : CODEC_LABEL[o.codec]];
+    const caveat = { h264: "", hevc: " (may not play on every device)", av1: " (may not play on phones)" }[o.codec];
+    const parts = [CODEC_LABEL[o.codec] + caveat];
     if (o.autoResolution) parts.push("resolution picked for you");
     else if (o.maxShortSide) parts.push(`up to ${o.maxShortSide}p`);
     else if (o.maxWidth || o.maxHeight) parts.push("custom size limit");

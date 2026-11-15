@@ -133,7 +133,7 @@ are the gate; do them before the rest.
       fallback: Lite asks which of H.264, AV1 and HEVC the browser encodes
       (`codecsHere`), reports them as its encoders, so Options offers the
       ones that work, and encodes the one picked; a browser without it gets
-      the first it has, H.264, then AV1 (Discord plays it in the chat), then
+      the first it has, H.264, then AV1 (Discord plays it on any computer), then
       HEVC, and the log says so. All in MP4; Opus where AAC can't be encoded
       was already there. VP9 has no place in the codec picker and moved to
       plan 6. Checked in Chromium 156 (all three encodable): an AV1 job

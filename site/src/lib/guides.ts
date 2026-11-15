@@ -17,7 +17,7 @@ export const GUIDES = [
   },
   {
     slug: "hevc",
-    title: "Why your HEVC video won't play on Discord",
-    summary: "What HEVC is, why Discord's chat won't play it, and which format will.",
+    title: "Why your HEVC video may not play on Discord",
+    summary: "What HEVC is, why Discord may not play it, and which format plays everywhere.",
   },
 ] as const;

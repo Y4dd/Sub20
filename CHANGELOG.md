@@ -6,6 +6,14 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Options lists H.264, HEVC and AV1 with where each plays in Discord:
+  H.264 on every computer and phone (still the default), HEVC on most
+  phones and newer computers, AV1 on computers but maybe not on phones.
+  HEVC no longer says Discord won't play it, which wasn't true on every
+  device. The options summary notes the same after HEVC and AV1.
+
 ## [0.9.2] - 2026-11-15
 
 ### Fixed

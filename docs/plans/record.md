@@ -17,7 +17,8 @@ measurements from the plans are added at the end of their section.
   a free account uploaded a file of 20,971,000 bytes and refused one of
   20,972,000. The Nitro figures have not been checked the same way.
 - **AV1 plays in Discord's chat** (owner's test, November 2026). HEVC
-  doesn't.
+  didn't, in that test. A later test (15 November 2026) on a Windows
+  computer played all three, and on a phone H.264 and HEVC but not AV1.
 - **The updater key** was made on 12 November 2026, backed up by the
   owner, and added to GitHub as `TAURI_SIGNING_PRIVATE_KEY`.
 - **No code signing, no Intel Macs** (owner, November 2026).

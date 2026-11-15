@@ -125,7 +125,8 @@ invented.
   - `guides/` and four guides: "Discord says your file is too large: what
     to do", "Send an NVIDIA Instant Replay clip on Discord", "Send an
     iPhone video on Discord" (Lite has no HDR conversion; the desktop app
-    does), "Why your HEVC video won't play on Discord".
+    does), "Why your HEVC video may not play on Discord" (it said "won't" until
+    15 November 2026).
   - `compare/`: HandBrake, LosslessCut and the online compressors that
     upload files, fairly: what each does better is said too.
   - `privacy/`: nothing uploaded, no telemetry, the update check, what

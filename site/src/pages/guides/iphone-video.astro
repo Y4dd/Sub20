@@ -5,15 +5,15 @@ import { u } from "../../lib/site";
 
 <Doc
   title="Send an iPhone video on Discord | Sub20"
-  description="iPhone videos are often over Discord's limit, recorded in HEVC that the chat won't play, and in HDR. How to send one that plays, in ordinary colour."
+  description="iPhone videos are often over Discord's limit, recorded in HEVC that not every device plays, and in HDR. How to send one that plays, in ordinary colour."
   current="guides"
   heading="Send an iPhone video on Discord"
-  lead="An iPhone video has three things against it on Discord: it is big, it is usually HEVC, which the chat won't play, and newer iPhones record it in HDR. Converting it to H.264 in ordinary colour, at a size under the limit, fixes all three."
+  lead="An iPhone video has three things against it on Discord: it is big, it is usually HEVC, which some devices won't play in the chat, and newer iPhones record it in HDR. Converting it to H.264 in ordinary colour, at a size under the limit, fixes all three."
 >
   <h2>Why it doesn't just send</h2>
   <ul>
     <li><b>Size.</b> A minute of 4K video is hundreds of megabytes; Discord's free limit is 20 MB.</li>
-    <li><b>HEVC.</b> With <b>High Efficiency</b> chosen in Settings, Camera, Formats (the default), the iPhone records HEVC. Discord's chat doesn't play HEVC, so people have to download the file to watch it. See <a href={u("guides/hevc/")}>why HEVC won't play</a>.</li>
+    <li><b>HEVC.</b> With <b>High Efficiency</b> chosen in Settings, Camera, Formats (the default), the iPhone records HEVC. Discord plays HEVC only on devices that can decode it, so on older computers people have to download the file to watch it. See <a href={u("guides/hevc/")}>why HEVC may not play</a>.</li>
     <li><b>HDR.</b> iPhone 12 and later record HDR video by default. Converted without care, HDR comes out grey and washed out.</li>
   </ul>
 
