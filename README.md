@@ -78,8 +78,9 @@ kind carries, checked against a pinned SHA-256. Sub20 updates itself, each
 kind to its own kind, and every update is signed. There is no macOS
 version: 0.9.3 was the last.
 
-The Windows build isn't code-signed yet, so the system warns the first
-time you open it:
+The Windows build isn't code-signed yet (signing is being set up; see the
+[code signing policy](https://y4dd.github.io/Sub20/code-signing/)), so the
+system warns the first time you open it:
 
 - **Windows** shows "Windows protected your PC". Click **More info**, then
   **Run anyway**.

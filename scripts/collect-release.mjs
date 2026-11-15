@@ -164,7 +164,8 @@ function guide(version, fragments) {
     ...rows,
     "",
     "Windows warns the first time you open Sub20, because it isn't code-signed",
-    `yet; the [README](https://github.com/${REPO}#install) says how to open it.`,
+    `yet; the [README](https://github.com/${REPO}#install) says how to open it, and the`,
+    "[code signing policy](https://y4dd.github.io/Sub20/code-signing/) says how signing is being set up.",
     "The `.sig` and `latest.json` files are for Sub20's updater, and",
     "`SHA256SUMS.txt` lists every file's fingerprint.",
   ].join("\n");
