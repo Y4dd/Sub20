@@ -105,6 +105,26 @@ fix what comes back (3.6).
         bin, the history entry follows the cut, and the original's trim
         moves with it, so Compress again starts from what is kept. Not in
         Lite yet (`can.cut`).
+
+      Report after the 0.9.0 update (owner, 15 November 2026, Windows,
+      Sub20 without FFmpeg, FFmpeg 9.0.2 from Scoop):
+      - Every dropped video "can't be read", and Copy diagnostics says
+        "FFmpeg not found" with every encoder "not in this FFmpeg", though
+        `ffmpeg` works in a terminal. What was measured: Sub20 found Scoop's
+        shim (`~\scoop\shims`, on the running Sub20's PATH, and the
+        engine's encoder test ran), but `ffmpeg -version` gave it no answer.
+        The same shim answers from a small windowed test program started
+        the way Sub20 starts FFmpeg. The Sub20 that failed was the one the
+        update installer restarted (its parent was the installer). Not yet
+        known: whether a Sub20 opened by hand runs the shim, which tells an
+        updater-restart problem from a Scoop one.
+      - Fix (0.9.1): FFmpeg counts as found only when `ffmpeg -version`
+        answers (`Tools::check`). One that doesn't puts the window on the
+        FFmpeg screen with where it is and why (the error, the exit code,
+        or FFmpeg's last line), offers the download, and Look again starts
+        afresh; Settings and Copy diagnostics say the same, and an encoder
+        report made while FFmpeg didn't answer isn't kept. The cause itself
+        waits on the owner's answer above.
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so

@@ -47,7 +47,14 @@
   {:else if !app.ffmpeg.found}
     <div class="notice">
       <h1>FFmpeg is needed first</h1>
-      <p>Sub20 uses FFmpeg to read and write video, and could not find it on this computer.</p>
+      {#if app.ffmpeg.problem}
+        <p>
+          Sub20 uses FFmpeg to read and write video. It found FFmpeg in
+          <span class="where">{app.ffmpeg.folder}</span>, but {app.ffmpeg.problem}.
+        </p>
+      {:else}
+        <p>Sub20 uses FFmpeg to read and write video, and could not find it on this computer.</p>
+      {/if}
       {#if offer}
         <div class="fetch">
           {#if fetching}
@@ -260,6 +267,10 @@
     letter-spacing: -0.02em;
   }
 
+  .notice .where {
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
   .notice p {
     font-size: var(--step-1);
     color: var(--muted);

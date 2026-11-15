@@ -295,7 +295,7 @@ export const webBackend: Backend = {
     return {
       settings: loadSettings(),
       // Lite has no FFmpeg: "found" means this browser can do the work.
-      ffmpeg: { found: reason === null, version: reason, folder: null },
+      ffmpeg: { found: reason === null, version: reason, folder: null, problem: null },
       version,
       openedWith: await takeShared(),
       bundled: false,
@@ -305,7 +305,7 @@ export const webBackend: Backend = {
   },
   ffmpegStatus: async () => {
     const reason = await blocked();
-    return { found: reason === null, version: reason, folder: null };
+    return { found: reason === null, version: reason, folder: null, problem: null };
   },
   downloadFfmpeg: desktopOnly,
   // A browser hands over files, never folders.

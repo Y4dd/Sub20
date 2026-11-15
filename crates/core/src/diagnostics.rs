@@ -16,6 +16,8 @@ pub struct Facts<'a> {
     pub system: &'a str,
     /// `ffmpeg -version`'s first line and where FFmpeg was found.
     pub ffmpeg: Option<(&'a str, &'a Path)>,
+    /// An FFmpeg that was found but didn't start: why, and where it is.
+    pub ffmpeg_problem: Option<(&'a str, &'a Path)>,
     pub report: Option<&'a Report>,
     pub settings: &'a Settings,
     /// The end of the crash log, when there is one.
@@ -31,11 +33,14 @@ pub fn report(facts: &Facts) -> String {
     let mut out = String::new();
     let _ = writeln!(out, "**Sub20** {} ({})", facts.app_version, facts.build);
     let _ = writeln!(out, "**System** {}", facts.system);
-    match facts.ffmpeg {
-        Some((version, folder)) => {
+    match (facts.ffmpeg, facts.ffmpeg_problem) {
+        (Some((version, folder)), _) => {
             let _ = writeln!(out, "**FFmpeg** {version}, in {}", folder.display());
         }
-        None => out.push_str("**FFmpeg** not found\n"),
+        (None, Some((why, folder))) => {
+            let _ = writeln!(out, "**FFmpeg** found in {}, but {why}", folder.display());
+        }
+        (None, None) => out.push_str("**FFmpeg** not found\n"),
     }
 
     let s = facts.settings;
@@ -137,6 +142,7 @@ mod tests {
             build: "without FFmpeg",
             system: "Windows 11 (x86_64)",
             ffmpeg: Some(("ffmpeg version 9.0.2", &folder)),
+            ffmpeg_problem: None,
             report: Some(&tested),
             settings: &Settings::default(),
             crashes: Some("panicked at src/lib.rs:1:1: oops"),
@@ -161,6 +167,7 @@ mod tests {
             build: "FFmpeg included",
             system: "Linux",
             ffmpeg: None,
+            ffmpeg_problem: None,
             report: None,
             settings: &Settings::default(),
             crashes: Some("  \n"),
@@ -170,5 +177,27 @@ mod tests {
         assert!(text.contains("**FFmpeg** not found"), "{text}");
         assert!(!text.contains("Crash log"), "{text}");
         assert!(!text.contains("last job"), "{text}");
+    }
+
+    #[test]
+    fn an_ffmpeg_that_would_not_start_says_where_and_why() {
+        let home = PathBuf::from(r"C:\Users\sam");
+        let folder = PathBuf::from(r"C:\Users\sam\scoop\shims");
+        let text = report(&Facts {
+            app_version: "0.9.1",
+            build: "without FFmpeg",
+            system: "Windows 11 (x86_64)",
+            ffmpeg: None,
+            ffmpeg_problem: Some(("it stopped with exit code 0xC0000142", &folder)),
+            report: None,
+            settings: &Settings::default(),
+            crashes: None,
+            job_log: &[],
+            home: Some(&home),
+        });
+        assert!(
+            text.contains(r"**FFmpeg** found in ~\scoop\shims, but it stopped with exit code 0xC0000142"),
+            "{text}"
+        );
     }
 }

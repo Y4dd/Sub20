@@ -294,8 +294,13 @@ function findClips() {
 }
 if (WATCH !== null) findClips();
 
-const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin" };
+const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin", problem: null };
 let noFfmpeg = new URLSearchParams(location.search).has("noffmpeg");
+// `?noffmpeg=broken`: an FFmpeg is there but won't start.
+const NO_FFMPEG: FfmpegStatus =
+  new URLSearchParams(location.search).get("noffmpeg") === "broken"
+    ? { found: false, version: null, folder: "C:\\Users\\you\\scoop\\shims", problem: "it stopped with exit code 0xC0000142" }
+    : { found: false, version: null, folder: null, problem: null };
 const DEMO_OFFER: FfmpegOffer = {
   version: "9.0.2",
   builder: "Sub20 (scripts/ffmpeg-build)",
@@ -327,7 +332,7 @@ export const mockBackend: Backend = {
   bootstrap: async () => ({
     settings: structuredClone(settings),
     // `?noffmpeg` starts as a lean build on a computer without FFmpeg.
-    ffmpeg: noFfmpeg ? { found: false, version: null, folder: null } : DEMO_FFMPEG,
+    ffmpeg: noFfmpeg ? NO_FFMPEG : DEMO_FFMPEG,
     version: "0.1.0",
     bundled: false,
     ffmpegNotice: null,
@@ -338,7 +343,7 @@ export const mockBackend: Backend = {
       ? DEMOS.slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`)
       : [],
   }),
-  ffmpegStatus: async () => (noFfmpeg ? { found: false, version: null, folder: null } : DEMO_FFMPEG),
+  ffmpegStatus: async () => (noFfmpeg ? NO_FFMPEG : DEMO_FFMPEG),
   // `?noffmpeg=fail` makes the download fail halfway.
   downloadFfmpeg: async (onProgress) => {
     const size = 84 * 1048576;

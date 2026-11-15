@@ -330,6 +330,8 @@
       <p class="path flush">
         <span title={app.ffmpeg.folder}>{app.ffmpeg.version ?? "Found"} in {app.ffmpeg.folder}</span>
       </p>
+    {:else if app.ffmpeg.problem}
+      <p class="bad">Found in {app.ffmpeg.folder}, but {app.ffmpeg.problem}.</p>
     {:else}
       <p class="bad">Not found. Install FFmpeg, or choose the folder that holds ffmpeg and ffprobe.</p>
     {/if}

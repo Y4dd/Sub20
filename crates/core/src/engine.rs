@@ -260,7 +260,11 @@ impl Engine {
         }
         let tools = self.tools()?;
         let report = Arc::new(hardware::detect(&tools).await);
-        *slot = Some(report.clone());
+        // An FFmpeg that didn't answer makes every encoder look missing; that
+        // is not worth remembering, so the next call asks again.
+        if report.ffmpeg_version.is_some() {
+            *slot = Some(report.clone());
+        }
         Ok(report)
     }
 

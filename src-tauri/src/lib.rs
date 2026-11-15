@@ -66,16 +66,25 @@ struct FfmpegStatus {
     found: bool,
     version: Option<String>,
     folder: Option<PathBuf>,
+    /// Why the FFmpeg in `folder` didn't start, when it was found but
+    /// wouldn't run (`found` is then false).
+    problem: Option<String>,
 }
 
 async fn ffmpeg_state(engine: &Engine) -> FfmpegStatus {
-    match engine.tools() {
-        Ok(tools) => FfmpegStatus {
-            found: true,
-            version: tools.version().await,
-            folder: tools.ffmpeg.parent().map(Path::to_path_buf),
-        },
-        Err(_) => FfmpegStatus { found: false, version: None, folder: None },
+    let Ok(tools) = engine.tools() else {
+        return FfmpegStatus { found: false, version: None, folder: None, problem: None };
+    };
+    let folder = tools.ffmpeg.parent().map(Path::to_path_buf);
+    match tools.check().await {
+        Ok(version) => FfmpegStatus { found: true, version: Some(version), folder, problem: None },
+        // There, but it won't run: the window treats it as missing and says
+        // why, and the next look starts afresh.
+        Err(why) => {
+            log::warn!("FFmpeg in {} did not start: {why}", folder.as_deref().unwrap_or(Path::new("?")).display());
+            engine.forget_tools().await;
+            FfmpegStatus { found: false, version: None, folder, problem: Some(why) }
+        }
     }
 }
 
@@ -760,14 +769,16 @@ async fn copy_diagnostics(app: AppHandle, state: State<'_, AppState>, log: Vec<S
 
 async fn diagnostics(app: &AppHandle, state: &AppState, log: Vec<String>) -> String {
     let ffmpeg = state.engine.tools().ok();
-    let version = match &ffmpeg {
-        Some(tools) => tools.version().await,
+    let checked = match &ffmpeg {
+        Some(tools) => Some(tools.check().await),
         None => None,
     };
     let folder = ffmpeg.as_ref().and_then(|tools| tools.ffmpeg.parent().map(Path::to_path_buf));
-    let report = match &ffmpeg {
-        Some(_) => state.engine.hardware(false).await.ok(),
-        None => None,
+    // Encoders are listed only from an FFmpeg that runs; one that doesn't
+    // would list every encoder as missing.
+    let report = match &checked {
+        Some(Ok(_)) => state.engine.hardware(false).await.ok(),
+        _ => None,
     };
     let info = os_info::get();
     let system = format!("{} {} ({})", info.os_type(), info.version(), std::env::consts::ARCH);
@@ -778,8 +789,12 @@ async fn diagnostics(app: &AppHandle, state: &AppState, log: Vec<String>) -> Str
         app_version: env!("CARGO_PKG_VERSION"),
         build: build_kind(),
         system: &system,
-        ffmpeg: match (&version, &folder) {
-            (Some(version), Some(folder)) => Some((version.as_str(), folder.as_path())),
+        ffmpeg: match (&checked, &folder) {
+            (Some(Ok(version)), Some(folder)) => Some((version.as_str(), folder.as_path())),
+            _ => None,
+        },
+        ffmpeg_problem: match (&checked, &folder) {
+            (Some(Err(why)), Some(folder)) => Some((why.as_str(), folder.as_path())),
             _ => None,
         },
         report: report.as_deref(),

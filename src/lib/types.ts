@@ -205,6 +205,8 @@ export interface FfmpegStatus {
   found: boolean;
   version: string | null;
   folder: string | null;
+  /** Why the FFmpeg in `folder` would not start, when it was found but won't run (`found` is then false). */
+  problem: string | null;
 }
 
 export interface Bootstrap {

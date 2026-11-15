@@ -101,8 +101,35 @@ impl Tools {
 
     /// First line of `ffmpeg -version`, e.g. `ffmpeg version 7.1`.
     pub async fn version(&self) -> Option<String> {
-        let out = run(self.ffmpeg().arg("-version"), Duration::from_secs(10)).await.ok()?;
-        out.stdout.lines().next().map(|line| line.split(" Copyright").next().unwrap_or(line).trim().to_string())
+        self.check().await.ok()
+    }
+
+    /// Runs `ffmpeg -version` and returns its first line, or why FFmpeg did
+    /// not answer. A file that exists is not yet an FFmpeg that runs: a
+    /// launcher whose target is gone, a damaged download, or a system that
+    /// refuses to start it all look found until this is asked.
+    pub async fn check(&self) -> std::result::Result<String, String> {
+        let mut cmd = self.ffmpeg();
+        cmd.arg("-version");
+        let out = match run(&mut cmd, Duration::from_secs(10)).await {
+            Ok(out) => out,
+            Err(Error::Io { source, .. }) => return Err(format!("it could not be started ({source})")),
+            Err(Error::Encode(_)) => return Err("it did not answer within 10 seconds".to_string()),
+            Err(other) => return Err(other.to_string()),
+        };
+        let first = out.stdout.lines().next().map(|line| line.split(" Copyright").next().unwrap_or(line).trim());
+        match first {
+            Some(line) if out.ok && line.starts_with("ffmpeg version") => Ok(line.to_string()),
+            _ => {
+                let said = tail(&out.stderr, 1);
+                let code = out.code.map(exit_code).unwrap_or_else(|| "no exit code".to_string());
+                Err(if said.is_empty() {
+                    format!("it stopped with {code}")
+                } else {
+                    format!("it stopped with {code}: {said}")
+                })
+            }
+        }
     }
 }
 
@@ -148,8 +175,20 @@ pub(crate) fn quiet(program: impl AsRef<OsStr>) -> Command {
 /// Captured result of a short helper run.
 pub struct Output {
     pub ok: bool,
+    /// The exit code, when the process gave one.
+    pub code: Option<i32>,
     pub stdout: String,
     pub stderr: String,
+}
+
+/// An exit code as people search for it: Windows' start-up failures are
+/// NTSTATUS values, written in hex (0xC0000142), others in decimal.
+fn exit_code(code: i32) -> String {
+    if cfg!(windows) && code < 0 {
+        format!("exit code {:#010X}", code as u32).replace("0X", "0x")
+    } else {
+        format!("exit code {code}")
+    }
 }
 
 /// Runs a command to completion with a time limit and captures its output.
@@ -160,6 +199,7 @@ pub async fn run(cmd: &mut Command, limit: Duration) -> Result<Output> {
     match tokio::time::timeout(limit, child.wait_with_output()).await {
         Ok(Ok(out)) => Ok(Output {
             ok: out.status.success(),
+            code: out.status.code(),
             stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
         }),
@@ -226,5 +266,26 @@ mod tests {
 
         let found = Tools::locate(None, &[dir.path().to_path_buf()]).unwrap();
         assert_eq!(found, Tools { ffmpeg, ffprobe });
+    }
+
+    #[tokio::test]
+    async fn an_ffmpeg_that_will_not_start_says_why() {
+        // Found, because the files are there, but not a program at all.
+        let dir = tempfile::tempdir().unwrap();
+        touch(dir.path(), "ffmpeg");
+        touch(dir.path(), "ffprobe");
+        let found = Tools::locate(None, &[dir.path().to_path_buf()]).unwrap();
+
+        let why = found.check().await.unwrap_err();
+        assert!(why.starts_with("it could not be started ("), "{why}");
+        assert_eq!(found.version().await, None);
+    }
+
+    #[test]
+    fn windows_start_up_failures_read_as_hex() {
+        if cfg!(windows) {
+            assert_eq!(exit_code(0xC000_0142_u32 as i32), "exit code 0xC0000142");
+        }
+        assert_eq!(exit_code(1), "exit code 1");
     }
 }

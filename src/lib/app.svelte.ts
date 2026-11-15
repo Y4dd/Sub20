@@ -174,7 +174,7 @@ class App {
   /** The profile the options were last loaded from. */
   profile = $state<string | null>(null);
   settings = $state<Settings | null>(null);
-  ffmpeg = $state<FfmpegStatus>({ found: true, version: null, folder: null });
+  ffmpeg = $state<FfmpegStatus>({ found: true, version: null, folder: null, problem: null });
   report = $state.raw<Report | null>(null);
   sheet = $state<Sheet>(null);
   /** Files are being dragged over the window. */

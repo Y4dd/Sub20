@@ -14,6 +14,13 @@ What changed in each release. The format follows
 - Sub20 Lite encodes the codec picked in Options (H.264, AV1 or HEVC) where
   the browser can, and a browser without H.264 falls back to AV1.
 
+### Fixed
+
+- An FFmpeg that is found but won't start no longer looks like a working
+  one, which made every dropped video fail as unreadable. Sub20 now shows
+  the FFmpeg screen, with where it found FFmpeg and why it didn't start,
+  and offers the download; Copy diagnostics says the same.
+
 ## [0.9.0] - 2026-11-15
 
 The first public release. Sub20 trims your clips and fits each one under
