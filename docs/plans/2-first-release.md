@@ -5,7 +5,8 @@ and Linux, signed update entries, checksums, and notes that open with
 "Which file do I need?". It is a beta in name only: a normal release, not a
 GitHub pre-release, because the updater and the site both read "latest".
 
-**Status.** Tagged 15 November 2026; the draft waits for the owner to publish it. Everything it needs is built: the release workflow
+**Status.** Published 15 November 2026; one owner check left (2.7, the
+update offered in an installed build). Everything it needs is built: the release workflow
 passed a dry run on 13 November 2026 (see [record.md](record.md)), and the
 owner installed and used the Windows build from it.
 
@@ -92,11 +93,23 @@ test of the download without FFmpeg.
       the latest release, not a draft, not a pre-release. An installed
       dry-run build (0.1.0) offers the update in its title bar.
       *Done when:* both were seen.
-- [ ] **2.8 The site follows it.** The Pages workflow runs on a published
+      *Half seen, 15 November 2026:* published at 06:40 UTC, latest, not a
+      draft or pre-release. `releases/latest/download/latest.json` (the
+      updater's endpoint) says 0.9.0 with ten signed keys, and every URL in
+      it downloads. Left: the owner opens an older install and sees the offer.
+- [x] **2.8 The site follows it.** The Pages workflow runs on a published
       release; the home page and `download/` then show the version, the
       file names and the sizes, and each link downloads that file.
       (Only if plan 1 is live; otherwise this moves with it.)
       *Done when:* seen on the live site.
+      *Done 15 November 2026:* the run the release started built the site
+      but its deploy was refused: the `github-pages` environment allows
+      deploys from `main` only, and a release runs on its tag. Run again from
+      `main` by hand, it deployed; `download/` lists all ten files of v0.9.0
+      with sizes, and each link answers 200. For the next release the owner
+      adds a tag rule (Settings → Environments → github-pages → Deployment
+      branches and tags → add `v*` as a tag), or runs Website by hand after
+      publishing.
 
 ## Needs the owner
 
