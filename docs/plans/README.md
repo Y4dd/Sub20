@@ -12,11 +12,11 @@ finished. What was built and measured before the split is in
 
 | # | Plan | Delivers | Needs first | Status |
 | --- | --- | --- | --- | --- |
-| 1 | [Website](1-website.md) | The site under `site/`, deployed to GitHub Pages with Lite at `/app`, unannounced | nothing | Live at y4dd.github.io/Sub20 (15 November 2026); a subdomain of amjad.sh to come |
-| 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | Done: v0.9.0 published, an install updated to it, the site's links follow it |
-| 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems and three GPU makers, a two-week beta, its fixes | 2 | Started: test sheet written, first beta reports fixed, Windows passed; v0.9.0 is out, so testers can install it; macOS, Linux, other GPUs and the folder watch wait on testers |
-| 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean, warnings and mixing in; not tested outside this machine |
-| 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3, and 4 or a decision to launch without Lite | Not started |
+| 1 | [Website](1-website.md) | The site under `site/`, deployed to GitHub Pages with Lite at `/app`, unannounced | nothing | Finished 15 November 2026; the subdomain moved to 5.4 |
+| 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | Finished 15 November 2026 |
+| 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems, a small beta (three to five people), its fixes | 2 | Started: Windows passed, 0.9.1 to 0.9.3 fixed the first reports; waits on the owner's Windows sitting and the testers |
+| 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean; not tested outside this machine. Doesn't hold up the launch |
+| 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3 (the drafts may start now) | Not started; the beta post is first |
 | 6 | [After 1.0](6-after-1.0.md) | Package managers, code signing, the watch without a window, new features | 5 | Parked |
 
 ## Why this order
@@ -30,9 +30,16 @@ finished. What was built and measured before the split is in
   the site's download links. The dry run already passes, so this plan is
   short.
 - **The beta third, Lite beside it.** Both wait on people and machines the
-  AI can't reach, for two weeks or more. Plans 3 and 4 run side by side:
-  when one is waiting on the owner or testers, work on the other.
-- **Launch last,** once the beta has no open crash or data-loss bug.
+  AI can't reach. Plans 3 and 4 run side by side: when one is waiting on
+  the owner or testers, work on the other, or on plan 5's drafts.
+- **A small beta, not a big one** (owner, 15 November 2026). Ten testers
+  for two weeks would have needed the launch to find them. Three to five
+  are enough because a file over the limit is never saved and a failing
+  hardware encoder hands over to the CPU; what's untested is labelled
+  unverified.
+- **Launch last,** once the beta has no open crash or data-loss bug. Lite
+  launches with it only if it has passed its gate; otherwise it gets its
+  own announcement later.
 - **Plan 6 holds everything that isn't needed for 1.0,** so the plans
   before it stay small.
 
@@ -41,7 +48,8 @@ finished. What was built and measured before the split is in
 For the AI doing the work:
 
 1. Work on the lowest-numbered plan that isn't finished, unless the owner
-   names another. Plans 3 and 4 may be worked side by side.
+   names another. Plans 3 and 4 may be worked side by side, and plan 5's
+   drafts (5.3, 5.7 to 5.10) beside them.
 2. Inside a plan, take the tasks in order. A task's number (`1.4`, `3.2`)
    is its name: use it in commits and when reporting.
 3. Tick a task only when its "Done when" holds, and write beside the tick
@@ -56,6 +64,16 @@ For the AI doing the work:
    to "Finished" with the date.
 7. Decisions and facts that outlive a plan go into `CLAUDE.md`; numbers
    worth keeping go into [record.md](record.md).
+8. **One home per fact.** A decision is written in `CLAUDE.md`, a
+   measurement in `record.md`, and a plan says what it means for the plan
+   and points there instead of copying it. A change of fact then edits
+   one place, plus whatever shows it to people (the app, the site, the
+   changelog).
+9. **Bug reports** are written down in plan 3's task 3.6 with the date
+   and who reported them; a tester's report also becomes a GitHub issue,
+   so they can follow it.
+10. **Releases:** a fix for a lost file, a file over the limit or a crash
+    goes out at once; anything else waits for one release a week.
 
 ## Rules that hold in every plan
 
@@ -81,12 +99,9 @@ it:
 ## Settled, not to be reopened
 
 - **Licence:** MIT.
-- **Discord:** H.264 is the default and plays on every device. HEVC may not
-  play on every device, AV1 may not play on phones, and Options says so
-  (owner's test, 15 November 2026: all three on Windows, H.264 and HEVC on
-  a phone). The sizes are 20 MB (Free), 50 MB (Nitro
-  Basic), 500 MB (Server boost) and 1 GB (Nitro); the free limit is 20 MiB,
-  confirmed by upload. Discord's name may describe what Sub20 is for; its
+- **Discord:** H.264 is the default; which formats play where and the
+  size limits are in `CLAUDE.md` ("Discord facts"). Discord's name may
+  describe what Sub20 is for; its
   logo and colours may not be used, and "Not affiliated with Discord"
   stays in the README, the site and the About line.
 - **No code signing for 1.0.** Windows shows SmartScreen and macOS needs

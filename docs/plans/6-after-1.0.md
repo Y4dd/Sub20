@@ -69,8 +69,10 @@ and build it again when opened.
 ### 6.5 New features
 
 - Crop and aspect (9:16 for phones).
-- Translations (the strings are in one place after plan 3's task 3.7, or
-  that task comes first here).
+- Translations. First the window's visible strings move into one module,
+  so a translation is one file, with no behaviour change: svelte-check
+  clean and both colour schemes the same in screenshots (moved here from
+  plan 3's task 3.7 on 15 November 2026).
 - Merge several clips into one.
 - GIF output for short clips.
 

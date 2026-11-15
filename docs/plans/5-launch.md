@@ -4,10 +4,15 @@
 on it, and the people who send clips every day have had a fair chance to
 see it.
 
-**Status.** Not started.
+**Status.** Not started. The drafts (5.3, 5.7 to 5.10) may start now.
 
-**Needs first:** plan 3 finished, and plan 4 finished or its gate failed
-(then Lite is left out of everything below). **Unblocks:** plan 6.
+**Needs first:** for 5.1, 5.2, 5.4 to 5.6 and the posts going out, plan 3
+finished. Lite doesn't hold this plan up: if plan 4's gate is still open,
+everything below leaves Lite out (plan 4, "Lite doesn't hold up the
+launch"). **May start now** (owner, 15 November 2026): 5.3, 5.7, 5.8, 5.9
+and 5.10, which need nothing from the beta, so the AI's time isn't idle
+while plan 3 waits on people. 5.7's beta post comes first, because plan 3
+uses it to find testers. **Unblocks:** plan 6.
 
 **Who it's for.** People who record clips and send them on Discord: PC
 gamers using the NVIDIA app, Steam, OBS or Xbox Game Bar, and everyone with
@@ -37,7 +42,9 @@ Nothing is posted from here.
       WebAssembly for the browser. Every number from `CLAUDE.md` or the
       record.
       *Done when:* the owner has read it and it passes `copy-lint`.
-- [ ] **5.4 The address.** If the owner bought a domain: `SITE_URL` and
+- [ ] **5.4 The address.** The owner has `amjad.sh` and would use a
+      subdomain (carried from plan 1): once its CNAME record points at
+      `y4dd.github.io`, set the custom domain in Pages, then `SITE_URL` and
       `BASE` in the Pages workflow, the `CNAME`, a canonical link in
       `Base.astro`, Lite's manifest scope, and a check that every old
       `y4dd.github.io/Sub20` link still lands.
@@ -52,6 +59,10 @@ Nothing is posted from here.
       to it.
 - [ ] **5.7 Drafts for every post,** in `docs/launch/`, one file each,
       written as a person and not as an advert:
+  - **The beta post,** first: a few lines asking for three to five people
+    to try the desktop app for a week (at least one not on NVIDIA, one on
+    a Mac), with the release page and `docs/testing.md`. For a Discord
+    server the owner is in and one small subreddit. Plan 3 uses it.
   - **Show HN** (Tuesday to Thursday, morning in the US): leads with the
     engineering, links the write-up.
   - **Reddit:** r/rust, r/tauri and r/sveltejs (how it's built);
@@ -83,8 +94,11 @@ Nothing is posted from here.
       Discord.
 - [ ] **Accounts** with one name on Bluesky, X, Reddit and YouTube, after
       checking the name isn't used by a similar product.
-- [ ] **Decide:** a domain or the GitHub address; a visit counter or none;
-      launch with Lite or without it, if plan 4's gate is still open.
+- [ ] **Decide:** a visit counter or none. (The address: a subdomain of
+      amjad.sh, 5.4. Lite at launch: decided 15 November 2026, left out if
+      plan 4's gate is still open.)
+- [ ] **The CNAME record** at Porkbun: host `sub20`, pointing at
+      `y4dd.github.io` (5.4).
 - [ ] **Publish 1.0.0** and **post each draft**, on the calendar's days,
       and answer every comment.
 

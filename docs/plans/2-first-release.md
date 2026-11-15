@@ -5,8 +5,8 @@ and Linux, signed update entries, checksums, and notes that open with
 "Which file do I need?". It is a beta in name only: a normal release, not a
 GitHub pre-release, because the updater and the site both read "latest".
 
-**Status.** Done: published 15 November 2026, and an installed build
-updated itself to it. Everything it needs is built: the release workflow
+**Status.** Finished 15 November 2026: v0.9.0 published, and an installed
+build updated itself to it. Everything it needs is built: the release workflow
 passed a dry run on 13 November 2026 (see [record.md](record.md)), and the
 owner installed and used the Windows build from it.
 
@@ -44,7 +44,7 @@ test of the download without FFmpeg.
       published); the bug form asks for Copy diagnostics in place of the
       GPU and log fields and no longer offers Intel Macs; `CONTRIBUTING.md`
       points to both. Private reporting itself is off: see below.
-- [ ] **2.2 README for a stranger.** The top reads: what it is, the
+- [x] **2.2 README for a stranger.** The top reads: what it is, the
       download, "Try it in your browser" (the site's `/app`, once plan 1
       is live), then the rest. The Requirements section says the main
       download needs nothing installed (it still says "FFmpeg included").
@@ -56,12 +56,16 @@ test of the download without FFmpeg.
       Install table), Requirements per download, the Windows run recorded,
       "Coming next" pointing to the plans. Left: the "Try it in your
       browser" line, once the site is live (1.11).
-- [ ] **2.3 The AppImage without FFmpeg: keep it.** It is 79 MB because it
+      Closed 15 November 2026 with that line moved to plan 4 (task 4.4),
+      since it waits on Lite being ready to point people at.
+- [x] **2.3 The AppImage without FFmpeg: keep it.** It is 79 MB because it
       carries its own WebKitGTK, and few will pick it. Keeping it costs
       nothing but storage, and dropping it after a release would leave its
       installs without updates, so the choice is made now: it stays,
       unless the owner says otherwise before the tag.
       *Done when:* the owner has seen this line.
+      Kept: v0.9.0 to v0.9.3 all shipped it, and the owner raised no
+      objection before the tag.
 - [x] **2.4 Version and changelog.** `npm run set-version -- 0.9.0`; turn
       "Unreleased" into `## [0.9.0]` with the date, written for people who
       use the app, with a fresh empty "Unreleased" above it. Run fmt,
@@ -133,7 +137,8 @@ test of the download without FFmpeg.
       On, 15 November 2026 (the API reports it enabled).
 - [x] **Say when to push, and when to tag.** 15 November 2026: push, and
       tag at the best time.
-- [ ] **Publish the draft release.**
+- [x] **Publish the draft release.** Done 15 November 2026 ("Yes, publish
+      it").
 - [ ] Optional: a GitHub Sponsors or Ko-fi account, then `FUNDING.yml`.
       Discussions on and both labels there, 15 November 2026 (the labels
       are GitHub's defaults); the issue chooser and `CONTRIBUTING.md` point
@@ -144,8 +149,10 @@ test of the download without FFmpeg.
 
 ## Exit criteria
 
-- [ ] v0.9.0 is published and is GitHub's "latest".
-- [ ] Its notes, files, checksums and `latest.json` were read and are
-      right.
-- [ ] A Windows machine installed it from the release page and compressed
-      a clip.
+- [x] v0.9.0 is published and is GitHub's "latest". (15 November 2026,
+      06:40 UTC; 2.7.)
+- [x] Its notes, files, checksums and `latest.json` were read and are
+      right. (2.6 and 2.7.)
+- [x] A Windows machine installed it from the release page and compressed
+      a clip. (A friend of the owner, "Sub20 without FFmpeg", 15 November
+      2026; see plan 3, "By hand".)

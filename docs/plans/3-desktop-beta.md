@@ -1,10 +1,18 @@
 # Plan 3: the desktop beta
 
 **Goal.** The desktop app has been used by hand, in the real window, on
-Windows, macOS and Linux and on NVIDIA, Intel and AMD cards; ten or more
-people have used it for two weeks; and nothing they found that loses data
-or crashes is still open. After this plan the desktop app is ready to be
-called 1.0.
+Windows, macOS and Linux; a small beta (three to five people, at least one
+not on NVIDIA and one on a Mac) has used it for a week or more; and nothing
+they found that loses data or crashes is still open. After this plan the
+desktop app is ready to be called 1.0.
+
+**Why a small beta is enough** (owner, 15 November 2026, replacing ten
+testers on three GPU makers for two weeks, which the launch was needed to
+find): a file over the limit is never saved, and a hardware encoder that
+fails hands the job to the CPU. So an untested Quick Sync, AMF,
+VideoToolbox or VAAPI path can cost speed, not a file that doesn't fit.
+What that doesn't cover is picture and colour on those encoders: until a
+tester has seen them, they are called unverified, never safe.
 
 **Status.** Started 14 November 2026: the test sheet is written, real
 clips have run through the engine, and the first beta reports are fixed
@@ -16,9 +24,10 @@ been tried by hand is listed in `CLAUDE.md` under "Verified, and not".
 **Needs first:** plan 2 (a release to install). **Runs beside:** plan 4.
 **Unblocks:** plan 5.
 
-Most of this plan is other people trying things. The AI's part is to make
-that easy (3.1), to test what can be tested from here (3.2, 3.3), and to
-fix what comes back (3.6).
+Most of this plan is the owner and a few other people trying things. The
+AI's part is to make that easy (3.1), to test what can be tested from here
+(3.2, 3.3), and to fix what comes back (3.6). While this plan waits on
+people, the AI works on plan 4 or on plan 5's drafts.
 
 ## Tasks
 
@@ -90,6 +99,11 @@ fix what comes back (3.6).
       out as 0.9.x releases, a few at a time. Requests for new features go
       to plan 6.
       *Done when:* the exit criteria hold.
+      Reports are written down here, under the date and who reported
+      them; a tester's report also becomes a GitHub issue, so they can
+      follow it. Releases (owner, 15 November 2026, after four in one day):
+      a fix for a lost file, a file over the limit or a crash goes out at
+      once; everything else waits for one release a week.
       First reports (owner, 14 November 2026):
       - Adding many videos is slow. Cause: every file was read one after
         another and nothing showed until the last, and every video's
@@ -166,7 +180,16 @@ fix what comes back (3.6).
         `v*` tag rule). The owner confirmed it in the real app on Windows
         the same day: the cut starts where the handle is. Not yet seen: the
         cut played in Discord on a phone.
-- [ ] **3.7 Words in one place.** Move the window's visible strings into
+
+      Report on the formats (owner, 15 November 2026): on a Windows
+      computer Discord played H.264, HEVC and AV1 in the chat; on a phone
+      H.264 and HEVC, not AV1. So "Discord won't play HEVC" was wrong.
+      Fix (0.9.3): Options lists all three with where each plays, H.264
+      still the default; the dock, the guides and the FAQ say "may not
+      play". Released as 0.9.3 the same day.
+- [x] **3.7 Words in one place.** Moved to plan 6 (6.5, with the
+      translations) on 15 November 2026: the beta runs long, as foreseen
+      below. Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so
       it doesn't collide with them; if the beta runs long, it moves to
@@ -175,6 +198,26 @@ fix what comes back (3.6).
       same as before in screenshots.
 
 ## Needs the owner and testers
+
+### The owner's Windows sitting
+
+Most of what is left needs no tester, only the owner's Windows machine and
+an hour or two. In one sitting, with `docs/testing.md` open:
+
+- Follow the sheet once from the start, noting any step that needed
+  asking about (3.1).
+- Load and compress a recording an hour or longer, with Task Manager open
+  for memory, and time it against the estimate (3.3).
+- Turn on a watch, save a clip while watching, click the notice while it
+  is on screen (3.4), and play a full-screen and a borderless game while a
+  clip is saved (the folder watch line below).
+- Turn on NVDA and go through the window (the screen reader line, Windows
+  half).
+- If a game records in HDR, compress one such clip (the HDR line).
+
+From friends, without joining the beta: an OBS recording with the
+microphone on its own track, and a video from an iPhone and from an
+Android phone (3.2 and plan 4's 4.1).
 
 ### By hand, in an installed build
 
@@ -190,7 +233,9 @@ Each line is ticked with who tried it, on what, and when.
 - [ ] **Linux:** the same pass on Ubuntu (deb) and on Fedora (rpm) or Arch
       (AppImage), plus preview playback and VAAPI.
 - [ ] **An Intel and an AMD card:** Quick Sync and AMF encode a clip under
-      the limit; Copy diagnostics from each goes into the record.
+      the limit; Copy diagnostics from each goes into the record. Wanted,
+      not required: without a tester on one, its encoder stays
+      "unverified" in `CLAUDE.md` and the CPU fallback covers it.
 - [ ] **The folder watch on Windows:** "Watch NVIDIA app clips" and "Watch
       Xbox Game Bar clips" in Settings, a clip saved while watching, the
       title bar's status, History's list, and the notice: shown on the
@@ -217,11 +262,13 @@ Each line is ticked with who tried it, on what, and when.
 
 ### The beta
 
-- [ ] **Ten or more testers**, from Discord servers the owner is already
-      in, with NVIDIA, Intel and AMD cards among them, for two weeks or
-      more. Send them the release page and `docs/testing.md`.
-      15 November 2026: one tester so far, and the owner expects ten to be
-      hard to find.
+- [ ] **Three to five testers,** at least one not on NVIDIA and one on a
+      Mac, for a week or more. Find them with a short beta post in one or
+      two places (a Discord server the owner is in, and a small subreddit),
+      drafted from plan 5's 5.7 and read by the owner first. Send them the
+      release page and `docs/testing.md`.
+      15 November 2026: one tester so far. Was ten testers on three GPU
+      makers for two weeks, lowered by the owner the same day.
 - [ ] Ask each for the size before and after of a clip they really sent,
       and whether their words may be quoted. Plan 5 uses them.
 - [ ] **Nitro's limits in bytes,** if someone has Nitro: the largest file
@@ -230,9 +277,11 @@ Each line is ticked with who tried it, on what, and when.
 
 ## Exit criteria
 
-- [ ] Every line under "By hand" is ticked, or has an issue that is closed.
-- [ ] Ten or more testers on at least three GPU makers, over two weeks or
-      more, with no open bug that loses data and no open crash.
+- [ ] Every line under "By hand" is ticked, or has an issue that is closed,
+      except the Intel and AMD line, which may stay open as "unverified".
+- [ ] Three to five testers, at least one not on NVIDIA and one on a Mac,
+      over a week or more, with no open bug that loses data and no open
+      crash.
 - [ ] A fresh Windows machine goes from the download to a clip in Discord
       without reading anything beyond the SmartScreen step.
 - [ ] An update from one release to the next worked on Windows and on a

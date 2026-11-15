@@ -4,8 +4,9 @@
 to GitHub Pages, with Sub20 Lite served at `/app`. It stays unannounced
 until the launch (plan 5): nothing links to it yet except the repository.
 
-**Status.** Built, checked and committed (14 November 2026). Waits for the
-owner to enable Pages and say when to push, then 1.11 deploys it.
+**Status.** Finished 15 November 2026: live at y4dd.github.io/Sub20 with
+Lite at `/app`, deploying itself on every published release. The
+subdomain of amjad.sh is carried to plan 5's task 5.4.
 
 **Needs first:** nothing. **Unblocks:** plan 2 (the README and release notes
 point to the download page), plan 4 (Lite on a phone needs HTTPS), and
@@ -204,14 +205,19 @@ invented.
       subdomain. Then: a CNAME record at Porkbun pointing it at
       `y4dd.github.io`, the custom domain set in Pages, and the Pages
       workflow run again (it reads the address from Pages, so no code
-      changes; `BASE` becomes `/`).
+      changes; `BASE` becomes `/`). Carried to plan 5's task 5.4 when
+      this plan closed.
 
 ## Exit criteria
 
 - [x] The finish gate passes and Lighthouse on a phone is 95 or more.
       (Locally: home 95, the guide 97. Seen again live in 1.11.)
-- [ ] The download links read the latest release at build time, and fall
+- [x] The download links read the latest release at build time, and fall
       back to the releases page when there is none. (Seen with a real
       release in plan 2, task 2.8.)
-- [ ] Every guide is accurate against the current app.
+      Seen with four releases, 15 November 2026: after each was published
+      the live download page named its version (22 links to 0.9.3).
+- [x] Every guide is accurate against the current app.
+      Read again 15 November 2026 for 0.9.3: the HEVC guide, the iPhone
+      guide and the FAQ say HEVC and AV1 may not play on every device.
 - [x] The site is live on Pages with Lite at `/app`.

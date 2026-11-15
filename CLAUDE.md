@@ -160,8 +160,9 @@ The brief was "modern, intuitive, fewer buttons, sleek and simple". How that was
 
 `docs/plans/` is the road to a public 1.0, as six plans that run in order: 1 the website, 2 the first release (v0.9.0), 3 the desktop beta, 4 Sub20 Lite (beside 3), 5 1.0 and the launch, 6 after 1.0. `docs/plans/README.md` has the order, each plan's status, how to work from them and the rules that hold in all of them. Each plan is the source of truth for its work: numbered tasks with a "Done when" line, what only the owner can do, and exit criteria. Work on the lowest-numbered unfinished plan, tick tasks there as they land, and put new ideas into a plan before writing code for them. `docs/plans/record.md` keeps what was built and measured before the split. Highlights:
 
-- **The first release**: the release workflow, both builds and the updater pass a dry run but have not made a real release yet.
-- **Sub20 Lite**: built (see Lite decisions); still gated on the size test across real clips, browsers and GPUs before it ships.
+- **Releases**: v0.9.0 to v0.9.3 are out (15 November 2026), and Windows installs have updated themselves through them. Plans 1 and 2 are finished.
+- **The beta** (plan 3) is small by the owner's choice: three to five testers, at least one not on NVIDIA and one on a Mac. Plan 5's drafts may be written while it waits on people, the beta post first.
+- **Sub20 Lite**: built (see Lite decisions); still gated on the size test across real clips, browsers and GPUs. It doesn't hold up the launch: if the gate is still open, 1.0 launches the desktop app alone.
 - **Discord facts**: H.264 plays inline on every device and stays the default. The owner's test (15 November 2026): on a Windows computer all three played inline; on a phone H.264 and HEVC played and AV1 did not. HEVC plays only where the device decodes it (an earlier test had it not playing), so the window says HEVC may not play on every device and AV1 may not play on phones, never that they won't; the free limit is 20 MiB, matching the app's 1024 × 1024 MB (confirmed by upload in November 2026: 20,971,000 bytes went through, 20,972,000 did not).
 
 ## Verified, and not

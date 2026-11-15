@@ -22,6 +22,11 @@ site's Lite section, its nav word and its footer links come out, `/app`
 stays unlinked, and plan 5 launches the desktop app alone. Tasks 4.1 to 4.3
 are the gate; do them before the rest.
 
+**Lite doesn't hold up the launch** (owner, 15 November 2026). If the gate
+is still open when plan 5 is ready, 1.0 launches the desktop app: Lite
+stays at `/app` and in the site's Lite section as it is today, and no
+launch post names it. Lite gets its own announcement once it passes the gate (4.4).
+
 ## Tasks
 
 - [ ] **4.1 Real clips on this machine.** `/lite-lab.html` under
@@ -140,6 +145,11 @@ are the gate; do them before the rest.
       through the window gave a valid AV1 MP4 with AAC; with H.264 refused,
       H.264 falls to AV1 and HEVC stays HEVC; with nothing encodable, Lite
       says the browser can't do it.
+
+- [ ] **4.4 Point people at Lite,** once the gate passes: the README's
+      "Try it in your browser" line under the download line (moved from
+      plan 2's 2.2), and a short post of its own drafted beside plan 5's.
+      *Done when:* the README links Lite and the owner has read the post.
 
 ## Needs the owner and testers
 
