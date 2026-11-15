@@ -194,6 +194,14 @@ people, the AI works on plan 4 or on plan 5's drafts.
       Fix (0.9.3): Options lists all three with where each plays, H.264
       still the default; the dock, the guides and the FAQ say "may not
       play". Released as 0.9.3 the same day.
+
+      Report from a tester (relayed by the owner, 15 November 2026): they
+      often add several videos but want to compress only two, and "Leave
+      out" under the stage isn't obvious. Fix: with more than one video on
+      the bench, each clip that can be compressed gets a checkbox in the
+      list (ticked goes in the next Compress; it is `Clip::leftOut`, so the
+      stage's link and `s` still work), and a line above the list ticks or
+      clears them all and counts how many are ticked.
 - [ ] **3.7 Words in one place.** Moved to plan 6 (6.5, with the
       translations) on 15 November 2026, not done: the beta runs long, as
       foreseen below. Move the window's visible strings into

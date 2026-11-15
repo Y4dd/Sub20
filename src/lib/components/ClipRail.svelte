@@ -28,6 +28,12 @@
     return renamed && renamed !== app.defaultStem(clip) ? `${renamed}${app.extensionOf(clip)}` : clip.name;
   }
 
+  // The line above the list ticks or clears every clip that can be compressed.
+  const ticked = $derived(app.pending.length);
+  const choosable = $derived(app.compressible.length);
+  const all = $derived(ticked === choosable);
+  const mixed = $derived(ticked > 0 && !all);
+
   // What the name field holds while renaming; filled when it opens.
   let draft = $state("");
   $effect(() => {
@@ -36,11 +42,47 @@
   });
 </script>
 
-<aside>
+<!-- A checkbox drawn to match the app; the real input stays for keyboards and
+     screen readers. -->
+{#snippet box(checked: boolean, dash: boolean)}
+  <span class="box" class:checked={checked || dash} aria-hidden="true">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      {#if dash}<path d="M3 6h6" />{:else if checked}<path d="M2.5 6.2l2.3 2.3 4.7-5" />{/if}
+    </svg>
+  </span>
+{/snippet}
+
+<aside class:choosing={app.choosing}>
+  {#if app.choosing}
+    <label class="all" title={all ? "Leave every video out" : "Compress every video"}>
+      <input
+        type="checkbox"
+        aria-label="Compress every video, {ticked} of {choosable} chosen"
+        checked={all}
+        {@attach (node: HTMLInputElement) => {
+          node.indeterminate = mixed;
+        }}
+        onchange={() => app.includeAll(!all)}
+      />
+      {@render box(all, mixed)}
+      <span class="count">{ticked} of {choosable} to compress</span>
+    </label>
+  {/if}
   <ul>
     {#each app.clips as clip (clip.key)}
       {@const selected = app.selected === clip}
       <li class:selected class:left-out={clip.leftOut && clip.compressible} class={clip.status}>
+        {#if app.choosing && clip.compressible}
+          <label class="include" title={clip.leftOut ? "Include in Compress (S)" : "Leave out of Compress (S)"}>
+            <input
+              type="checkbox"
+              checked={!clip.leftOut}
+              onchange={() => app.toggleLeftOut(clip)}
+              aria-label="Compress {clip.name}"
+            />
+            {@render box(!clip.leftOut, false)}
+          </label>
+        {/if}
         <button
           type="button"
           class="pick"
@@ -225,6 +267,88 @@
     color: var(--bad);
   }
 
+  /* Checkboxes, with more than one video: ticked goes in the next Compress.
+     Each row's box sits in a strip of its own at the left, which the rows
+     without one (finished, compressing) keep too, so the pictures line up. */
+  .choosing .pick {
+    padding-left: 36px;
+  }
+
+  .include {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    cursor: pointer;
+  }
+
+  .all {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 2px 8px;
+    padding: 6px 8px 6px 10px;
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: var(--step--1);
+    cursor: pointer;
+  }
+
+  .all:hover {
+    color: var(--text);
+  }
+
+  .include input,
+  .all input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .box {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    /* Muted, not a line colour: a control's edge needs 3:1 to be seen. */
+    border: 1.5px solid var(--muted);
+    border-radius: 4px;
+    background: var(--bench);
+    color: var(--trim-ink);
+    transition: background-color 120ms var(--ease), border-color 120ms var(--ease);
+  }
+
+  /* Yellow means switched on; in light, its amber edge keeps it visible. */
+  .box.checked {
+    border-color: var(--trim-edge);
+    background: var(--trim);
+  }
+
+  .include:hover .box:not(.checked),
+  .all:hover .box:not(.checked) {
+    border-color: var(--text);
+  }
+
+  input:focus-visible + .box {
+    outline: 2px solid var(--trim);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    input:focus-visible + .box {
+      outline-color: var(--text);
+    }
+  }
+
   .actions {
     position: absolute;
     top: 6px;
@@ -238,6 +362,12 @@
      hover over their own background, so names are not cut short for them. */
   li.selected .words {
     padding-right: 62px;
+  }
+
+  /* Queued or compressing: only Remove, so the progress fits on one line. */
+  li.selected.queued .words,
+  li.selected.running .words {
+    padding-right: 34px;
   }
 
   li:not(.selected) .actions {
@@ -289,6 +419,10 @@
     outline: none;
     background: none;
     font-weight: 550;
+  }
+
+  .choosing .rename {
+    left: 106px;
   }
 
   .extension {
@@ -359,6 +493,34 @@
 
     .rename {
       left: 60px;
+    }
+
+    .choosing .pick {
+      padding-left: 30px;
+    }
+
+    .include {
+      width: 30px;
+    }
+
+    .choosing .rename {
+      left: 84px;
+    }
+
+    /* The box alone before the strip; its words stay for screen readers. */
+    .all {
+      flex: none;
+      margin: 0 0 4px;
+      padding: 10px 8px;
+    }
+
+    .count {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .add {

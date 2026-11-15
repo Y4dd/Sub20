@@ -6,6 +6,12 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Checkboxes in the video list, shown when there is more than one video.
+  Untick a video to leave it out of Compress, and use the box above the
+  list to tick or clear them all.
+
 ### Removed
 
 - The macOS app. 0.9.3 was the last version for macOS: it keeps working

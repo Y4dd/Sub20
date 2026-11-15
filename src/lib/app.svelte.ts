@@ -219,6 +219,16 @@ class App {
     return this.clips.filter((clip) => clip.compressible && clip.leftOut);
   }
 
+  /** Clips that could go in the next Compress, ticked or not. */
+  get compressible(): Clip[] {
+    return this.clips.filter((clip) => clip.compressible);
+  }
+
+  /** The clip list shows checkboxes: more than one video, and one to choose. */
+  get choosing(): boolean {
+    return this.clips.length > 1 && this.clips.some((clip) => clip.compressible);
+  }
+
   get busy(): Clip[] {
     return this.clips.filter((clip) => clip.busy);
   }
@@ -599,6 +609,11 @@ class App {
   toggleLeftOut(clip: Clip) {
     if (clip.busy || clip.status === "done") return;
     clip.leftOut = !clip.leftOut;
+  }
+
+  /** Ticks every clip that could be compressed, or clears them all. */
+  includeAll(included: boolean) {
+    for (const clip of this.compressible) clip.leftOut = !included;
   }
 
   clearFinished() {

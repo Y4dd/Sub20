@@ -40,8 +40,20 @@ and build it again when opened.
 - Watched encodes at below-normal priority, so they don't cost frames in a
   game.
 - Windows first; trays on Linux are patchy.
+- Start with the system (owner, 15 November 2026): an option, under the
+  watch in Settings, to open Sub20 into the tray when you sign in, so a
+  watch runs without being started by hand. Off by default; it only makes
+  sense once the tray exists.
 - **Budget, to be met before it ships:** under 100 MB and under 0.5% of one
   core with a watch on and no window.
+- About the memory (15 November 2026): the 388 MB is summed working set,
+  which counts the libraries the seven processes share once in each; the
+  private figure (232 MB) is the fairer one. Most of it is WebView2's own
+  floor, not Sub20, and is usual for apps built on a browser engine. Two
+  things to measure when this starts: an empty Tauri window on the same
+  machine, to split WebView2's floor from Sub20's share, and WebView2's
+  `MemoryUsageTargetLevel` (low while the window is in the background),
+  which may trim the window's share while it is open.
 
 ### 6.4 Smaller things asked for or left over
 
