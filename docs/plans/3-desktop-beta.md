@@ -123,8 +123,22 @@ fix what comes back (3.6).
         FFmpeg screen with where it is and why (the error, the exit code,
         or FFmpeg's last line), offers the download, and Look again starts
         afresh; Settings and Copy diagnostics say the same, and an encoder
-        report made while FFmpeg didn't answer isn't kept. The cause itself
-        waits on the owner's answer above.
+        report made while FFmpeg didn't answer isn't kept.
+      - Answer: after quitting and opening Sub20 from the Start menu, FFmpeg
+        works. So only the copy the update installer restarted couldn't run
+        it. That restart is Tauri's NSIS template (`RunAsUser`, which for a
+        per-user install is a plain `ShellExecute` from `$INSTDIR`); nothing
+        in it explains the failure, and the failing process is gone. 3.5
+        (0.9.0 to 0.9.1) repeats the update; if FFmpeg fails after that
+        restart, 0.9.1's FFmpeg screen and Copy diagnostics now name why.
+      - The Cut start handle moved two seconds at a time while the end
+        handle moved smoothly. Cause: the start snaps to the result's
+        keyframes (every 2 s) on every pointer move. Fix (0.9.1): while
+        dragging, the handle follows the pointer and a thin mark shows the
+        keyframe the cut will start on (the readout gives its time); on
+        release the handle settles on the mark. Checked on the mock: the
+        handle tracked the pointer in 2% steps, the mark stepped by
+        keyframes, and the release landed on the mark.
 - [ ] **3.7 Words in one place.** Move the window's visible strings into
       one module, so a translation later is one file. No behaviour changes,
       and no translation yet. Do it after the beta's fixes have settled, so

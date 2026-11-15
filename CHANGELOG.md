@@ -20,6 +20,10 @@ What changed in each release. The format follows
   one, which made every dropped video fail as unreadable. Sub20 now shows
   the FFmpeg screen, with where it found FFmpeg and why it didn't start,
   and offers the download; Copy diagnostics says the same.
+- When cutting a finished video, the start handle follows the pointer
+  smoothly instead of jumping two seconds at a time. A mark shows the
+  keyframe the cut will start on, and the handle settles there when you
+  let go.
 
 ## [0.9.0] - 2026-11-15
 

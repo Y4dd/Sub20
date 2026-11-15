@@ -39,9 +39,14 @@
   let rail: HTMLElement;
   let dragging = $state<"start" | "end" | "playhead" | null>(null);
   let grabOffset = 0;
+  // Where the pointer holds the start handle while `start` itself has moved
+  // back to a stop (a result's keyframe): the handle follows the pointer
+  // smoothly, a mark shows the stop, and on release the handle settles there.
+  let loose = $state<number | null>(null);
 
   const percent = (time: number) => (duration > 0 ? (time / duration) * 100 : 0);
-  const startAt = $derived(percent(start));
+  const startAt = $derived(percent(loose ?? start));
+  const keptAt = $derived(percent(start));
   const endAt = $derived(percent(end));
 
   function timeAt(clientX: number): number {
@@ -50,9 +55,11 @@
     return Math.min(duration, Math.max(0, fraction * duration));
   }
 
-  function move(which: "start" | "end", time: number) {
-    if (which === "start") ontrim(Math.min(time, end), end);
-    else ontrim(start, Math.max(time, start));
+  function move(which: "start" | "end", time: number, held = false) {
+    if (which === "start") {
+      loose = held && stops?.length ? Math.min(Math.max(0, time), end) : null;
+      ontrim(Math.min(time, end), end);
+    } else ontrim(start, Math.max(time, start));
     // Show the frame the handle sits on.
     onseek(which === "start" ? start : end, true);
   }
@@ -64,11 +71,11 @@
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     dragging = which;
     // Keep the edge under the pointer where it was grabbed.
-    grabOffset = timeAt(event.clientX) - (which === "start" ? start : end);
+    grabOffset = timeAt(event.clientX) - (which === "start" ? (loose ?? start) : end);
   }
 
   function drag(event: PointerEvent) {
-    if (dragging === "start" || dragging === "end") move(dragging, timeAt(event.clientX) - grabOffset);
+    if (dragging === "start" || dragging === "end") move(dragging, timeAt(event.clientX) - grabOffset, true);
     else if (dragging === "playhead") onseek(timeAt(event.clientX), true);
   }
 
@@ -78,6 +85,7 @@
     if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
     if (dragging === "playhead") onseek(timeAt(event.clientX), false);
     dragging = null;
+    loose = null;
   }
 
   function scrub(event: PointerEvent) {
@@ -124,7 +132,11 @@
       {/each}
     </div>
 
-    <div class="cut" style:left="0" style:width="{startAt}%"></div>
+    <div class="cut" style:left="0" style:width="{keptAt}%"></div>
+    {#if loose !== null && keptAt < startAt}
+      <!-- Where the cut will really start: the stop before the handle. -->
+      <div class="snap" style:left="{keptAt}%"></div>
+    {/if}
     <div class="cut" style:left="{endAt}%" style:right="0"></div>
     {#if busy}
       <!-- The part not encoded yet slides off to the right, led by a bright
@@ -337,6 +349,17 @@
   .busy .handle,
   .locked .handle {
     cursor: default;
+  }
+
+  .snap {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--trim-mark);
+    pointer-events: none;
   }
 
   .playhead {
