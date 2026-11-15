@@ -143,14 +143,33 @@ fn density(codec: Codec, video_kbps: f64, width: u32, height: u32, fps: f64) -> 
 /// give way to good as the picture grows)
 /// (`shorter_trims_never_look_worse`).
 pub fn auto_short_side(width: u32, height: u32, video_kbps: f64, codec: Codec, fps: f64, min_side: u32) -> Option<u32> {
+    auto_short_side_within(width, height, video_kbps, codec, fps, min_side, None)
+}
+
+/// `auto_short_side` among the sizes no larger than `most` (short side),
+/// the largest the encoder takes. With every rung above the floor too large,
+/// the largest it takes.
+fn auto_short_side_within(
+    width: u32,
+    height: u32,
+    video_kbps: f64,
+    codec: Codec,
+    fps: f64,
+    min_side: u32,
+    most: Option<u32>,
+) -> Option<u32> {
     if width == 0 || height == 0 {
         return None;
     }
     let short = width.min(height);
+    let most = most.unwrap_or(u32::MAX);
     let floor = LADDER.iter().rev().copied().find(|r| *r >= min_side).unwrap_or(LADDER[0]);
     // The source, then the rungs below it and not under the floor, largest first.
-    let mut sizes = vec![short];
-    sizes.extend(LADDER.iter().copied().filter(|r| *r < short && *r >= floor.min(short)));
+    let mut sizes: Vec<u32> = (short <= most).then_some(short).into_iter().collect();
+    sizes.extend(LADDER.iter().copied().filter(|r| *r < short && *r >= floor.min(short) && *r <= most));
+    if sizes.is_empty() {
+        sizes.extend(LADDER.iter().copied().find(|r| *r < short && *r <= most));
+    }
     let verdict = |side: u32| {
         let (w, h) = if side == short { (width, height) } else { scale_to_short_side(width, height, side) };
         rate(codec, video_kbps, w, h, fps, side != short)
@@ -218,6 +237,15 @@ fn audio_floor(codec: AudioCodec) -> u32 {
 
 /// Works out bitrates, resolution and frame rate for one job.
 pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Result<Plan> {
+    plan_within(info, trim, options, None)
+}
+
+/// `plan` for an encoder that takes a short side of at most `most` pixels at
+/// the clip's frame rate. Sub20 Lite asks the browser's GPU encoder first
+/// (1440p60 can be refused where 1440p30 is taken), so the size and verdict
+/// shown are those of the encode that will run. FFmpeg's encoders have no
+/// such limit worth asking about, so the desktop passes `None`.
+pub fn plan_within(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions, most: Option<u32>) -> Result<Plan> {
     let (start, duration, trimmed) = trim_window(info.duration, trim)?;
     if duration <= 0.0 {
         return Err(Error::Invalid("the video has no readable length".into()));
@@ -331,17 +359,29 @@ pub fn plan(info: &MediaInfo, trim: Option<Trim>, options: &EncodeOptions) -> Re
     let (src_w, src_h) = (info.display_width, info.display_height);
     let (mut width, mut height) = (src_w, src_h);
     if src_w > 0 && src_h > 0 {
+        let held =
+            |side: u32| format!("Resolution lowered to {side}p: the encoder here takes no more at {fps:.0} fps.");
         if options.auto_resolution {
             let kbps = f64::from(video_kbps);
-            if let Some(side) = auto_short_side(src_w, src_h, kbps, options.codec, fps, options.min_auto_height) {
+            let free = auto_short_side(src_w, src_h, kbps, options.codec, fps, options.min_auto_height);
+            let chosen = auto_short_side_within(src_w, src_h, kbps, options.codec, fps, options.min_auto_height, most);
+            if let Some(side) = chosen {
                 (width, height) = scale_to_short_side(src_w, src_h, side);
-                notes.push(format!("Resolution lowered to {width}×{height} so the bitrate is not spread too thin."));
+                notes.push(if chosen == free {
+                    format!("Resolution lowered to {width}×{height} so the bitrate is not spread too thin.")
+                } else {
+                    held(side)
+                });
             }
         } else {
             if let Some(side) = options.max_short_side.filter(|s| *s >= 16 && *s < src_w.min(src_h)) {
                 (width, height) = scale_to_short_side(src_w, src_h, side);
             }
             (width, height) = scale_to_limits(width, height, options.max_width, options.max_height);
+            if let Some(side) = most.filter(|m| *m >= 16 && *m < width.min(height)) {
+                (width, height) = scale_to_short_side(width, height, side);
+                notes.push(held(side));
+            }
         }
         // 4:2:0 encoders need even dimensions.
         if (width, height) == (src_w, src_h) && (src_w % 2 == 1 || src_h % 2 == 1) {
@@ -510,6 +550,36 @@ mod tests {
         let shorter = plan(&info, Some(Trim { start: 15.8, end: 55.4 }), &options).unwrap();
         assert!(shorter.quality <= longer.quality, "{:?} then {:?}", longer.quality, shorter.quality);
         assert!(shorter.height >= longer.height);
+    }
+
+    /// Sub20 Lite's case: a 1440p60 clip with room for 1440p, on a GPU that
+    /// takes 1080p60 at most. The plan is the best within that, and its
+    /// verdict is for the size that will be encoded.
+    #[test]
+    fn a_plan_stays_within_what_the_encoder_takes() {
+        let info = MediaInfo { fps: Some(60.0), ..source(2560, 1440, 20.0) };
+        let options = EncodeOptions { target_mb: 50.0, ..Default::default() };
+        let free = plan(&info, None, &options).unwrap();
+        assert_eq!((free.width, free.height), (2560, 1440));
+        let held = plan_within(&info, None, &options, Some(1080)).unwrap();
+        assert_eq!((held.width, held.height), (1920, 1080));
+        assert!(held.scaled);
+        assert_eq!(held.quality, rate(Codec::H264, f64::from(held.video_kbps), 1920, 1080, 60.0, true));
+        assert!(held.notes.iter().any(|n| n.contains("1080p: the encoder")), "{:?}", held.notes);
+        // A limit above the source changes nothing.
+        assert_eq!(plan_within(&info, None, &options, Some(2160)).unwrap(), free);
+        // A tight budget still steps down further, for the bitrate's sake.
+        let tight = EncodeOptions { target_mb: 1.0, ..Default::default() };
+        let small = plan_within(&info, None, &tight, Some(1080)).unwrap();
+        assert!(small.height < 1080, "{small:?}");
+        assert_eq!(small, plan(&info, None, &tight).unwrap());
+        // Manual sizes are held to it too.
+        let manual = EncodeOptions { auto_resolution: false, ..Default::default() };
+        let p = plan_within(&info, None, &manual, Some(720)).unwrap();
+        assert_eq!((p.width, p.height), (1280, 720));
+        // An encoder that takes less than the floor allows gets its largest size.
+        let floor = EncodeOptions { target_mb: 50.0, min_auto_height: 720, ..Default::default() };
+        assert_eq!(plan_within(&info, None, &floor, Some(480)).unwrap().height, 480);
     }
 
     #[test]

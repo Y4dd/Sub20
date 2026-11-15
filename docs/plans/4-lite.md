@@ -73,12 +73,22 @@ are the gate; do them before the rest.
       beside a silent game track came out at full volume (peak 0.131, as
       in the source), and two loud tracks peaked at 0.95. With mixing off
       the stage says "2 sound tracks, only the first is kept".
-- [ ] **4.6 A planner that knows the GPU's limits.** Today Lite plans, then
+- [x] **4.6 A planner that knows the GPU's limits.** Today Lite plans, then
       steps down the resolution ladder when the encoder refuses a size
       (1440p60 on this GPU). Ask the encoder first and plan within what it
       takes, so the stage's "1080p, good" is what will happen.
       *Done when:* the plan shown equals the encode done, on a clip that
       used to step down.
+      Done 14 November 2026: `plan::plan_within` takes the largest short
+      side the encoder takes, and automatic resolution picks the best size
+      at or under it, with its verdict for that size. Lite asks WebCodecs
+      once per source size and frame rate (`web/gpu.ts`) and passes it with
+      every plan; `fit.ts` keeps its step-down as a safety net. On this
+      machine (Chromium 156, RTX 5070 Ti: 1440p60 refused, 1080p60 and
+      1440p30 taken), a 2560×1440 60 fps clip at 20 MB now shows "1080p,
+      should look sharp" and encodes at 1920×1080 on the GPU, 19.9 MB, in
+      3 s. Found on the way: Lite's default options still had mixing off
+      from before 4.5; it is on now, as on the desktop.
 - [x] **4.7 Lighthouse and accessibility** on the built Lite, on a phone
       profile: installable, works offline, every control named.
       *Done when:* the PWA and accessibility checks pass.

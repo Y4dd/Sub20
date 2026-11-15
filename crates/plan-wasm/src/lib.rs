@@ -17,6 +17,9 @@ struct Request {
     source: MediaInfo,
     trim: Option<Trim>,
     options: EncodeOptions,
+    /// The largest short side the browser's encoder takes at this frame rate.
+    #[serde(rename = "mostShortSide", default)]
+    most_short_side: Option<u32>,
 }
 
 /// `{"plan": …}`, or `{"error": "…"}` with the planner's advice.
@@ -30,7 +33,7 @@ enum Answer {
 /// Plans one clip from a JSON request (`source`, `trim`, `options`).
 pub fn plan_json(request: &str) -> String {
     let answer = match serde_json::from_str::<Request>(request) {
-        Ok(r) => match plan::plan(&r.source, r.trim, &r.options) {
+        Ok(r) => match plan::plan_within(&r.source, r.trim, &r.options, r.most_short_side) {
             Ok(plan) => Answer::Plan(plan),
             Err(e) => Answer::Error(e.to_string()),
         },
@@ -101,6 +104,15 @@ mod tests {
         assert_eq!(plan["duration"], 30.0, "{answer}");
         assert!(plan["videoKbps"].as_u64().unwrap() > 1000, "{answer}");
         assert_eq!(plan["trimmed"], true);
+    }
+
+    #[test]
+    fn a_plan_keeps_within_the_encoder() {
+        let options = serde_json::to_string(&EncodeOptions { target_mb: 500.0, ..EncodeOptions::default() }).unwrap();
+        let answer =
+            plan_json(&format!(r#"{{"source":{SOURCE},"trim":null,"options":{options},"mostShortSide":720}}"#));
+        let value: serde_json::Value = serde_json::from_str(&answer).unwrap();
+        assert_eq!(value["plan"]["height"], 720, "{answer}");
     }
 
     #[test]

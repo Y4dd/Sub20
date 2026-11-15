@@ -11,6 +11,7 @@ import {
 
 // Mediabunny and the encode path load with the first video, not the page.
 const media = () => import("./media");
+import { gpuMostShortSide, outputFps } from "./gpu";
 import { loadPlanner } from "./planner";
 
 const LITE: Capabilities = {
@@ -24,7 +25,7 @@ const LITE: Capabilities = {
 const OPTIONS: EncodeOptions = {
   targetMb: 20, videoKbps: null, codec: "h264", encoder: null, audio: "aac", audioKbps: 128, effort: "p4", tune: "hq",
   container: "mp4", autoResolution: true, minAutoHeight: 240, maxShortSide: null, maxWidth: null, maxHeight: null,
-  maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false, mixAudio: false,
+  maxFps: null, audioOnly: false, fastFinalize: false, hardwareDecode: false, mixAudio: true,
 };
 
 const SETTINGS: Settings = {
@@ -156,7 +157,7 @@ async function run(job: Job) {
     const { fit, probe } = await media();
     const planner = await loadPlanner();
     const source = await probe(file);
-    const plan = planner.plan(source, request.trim, request.options);
+    const plan = planner.plan(source, request.trim, request.options, await gpuMostShortSide(source, outputFps(source, request.options)));
     emit({ type: "progress", id, phase: "analyzing", percent: 0, speed: null, etaSeconds: null, outBytes: 0 });
     let started = false;
     const fitted = await fit(file, source, plan, { bitrateMode: "constant", hardware: "no-preference", mixAudio: request.options.mixAudio }, {
@@ -304,8 +305,8 @@ export const webBackend: Backend = {
         try {
           const info = await (await media()).probe(file);
           if (!info.hasVideo) return { path, name, info: null, playUrl: null, error: "This file has no video this browser can read." };
-          // HDR and extra sound tracks are kept in the facts: the stage
-          // says Lite can't convert or mix them yet (`can.toneMap`, `can.mixAudio`).
+          // HDR is kept in the facts: the stage says Lite can't convert it
+          // yet (`can.toneMap`). Extra sound tracks are mixed (`mix.ts`).
           return { path, name, info, playUrl: urlOf(path), error: null };
         } catch {
           return { path, name, info: null, playUrl: null, error: "This browser can't read this file." };
@@ -327,7 +328,9 @@ export const webBackend: Backend = {
     for await (const url of frames(path, [at], 540)) return url;
     throw new Error("No frame there.");
   },
-  estimate: async (info, trim, options) => (await loadPlanner()).plan(info, trim, options),
+  // Planned within what the GPU encoder takes, so "1080p, good" is what will happen.
+  estimate: async (info, trim, options) =>
+    (await loadPlanner()).plan(info, trim, options, await gpuMostShortSide(info, outputFps(info, options))),
   compress: async (jobs) =>
     jobs.map((request) => {
       const id = `lite-job-${next++}`;

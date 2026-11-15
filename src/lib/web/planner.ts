@@ -14,8 +14,11 @@ interface Exports {
 }
 
 export interface Planner {
-  /** The plan for a clip; throws the planner's advice when it can't fit. */
-  plan(source: MediaInfo, trim: Trim | null, options: EncodeOptions): Plan;
+  /**
+   * The plan for a clip; throws the planner's advice when it can't fit.
+   * `mostShortSide` is the largest short side the encoder takes (`gpu.ts`).
+   */
+  plan(source: MediaInfo, trim: Trim | null, options: EncodeOptions, mostShortSide?: number | null): Plan;
   /** The next video bitrate after a result landed `size` bytes against `target`. */
   lowerBitrate(videoKbps: number, size: number, target: number, duration: number): number;
   /** How many times a too-large result is encoded again. */
@@ -45,8 +48,8 @@ async function instantiate(bytes?: BufferSource): Promise<Planner> {
   const decoder = new TextDecoder();
 
   return {
-    plan(source, trim, options) {
-      const request = encoder.encode(JSON.stringify({ source, trim, options }));
+    plan(source, trim, options, mostShortSide = null) {
+      const request = encoder.encode(JSON.stringify({ source, trim, options, mostShortSide }));
       const ptr = wasm.alloc(request.length);
       new Uint8Array(wasm.memory.buffer, ptr, request.length).set(request);
       const packed = wasm.plan(ptr, request.length);

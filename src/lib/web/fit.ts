@@ -8,6 +8,7 @@ import {
   type AudioCodec,
 } from "mediabunny";
 import type { MediaInfo, Plan } from "../types";
+import { LADDER, gpuTakes, scaled } from "./gpu";
 import { Mixer, RATE } from "./mix";
 import { loadPlanner } from "./planner";
 
@@ -48,39 +49,20 @@ export interface FitEvents {
   signal?: AbortSignal;
 }
 
-const LADDER = [2160, 1440, 1080, 720, 480, 360, 240];
-
 /** A retry that shrinks the file by less than this means the encoder is at its floor (as in `crates/core/src/engine.rs`). */
 const FLOOR_SHRINK = 0.95;
 
 /**
- * Whether this browser's GPU can encode H.264 at this size and frame rate.
- * Asked of WebCodecs directly: Mediabunny's `canEncodeVideo` leaves the frame
- * rate out, and GPUs that take 1440p30 can refuse 1440p60. When the GPU says
- * no, the browser quietly uses its software encoder, which ignores low
- * bitrates.
+ * The plan at the largest size the GPU can take, at the same frame rate.
+ * The backend plans within what the GPU takes (`gpu.ts`), so this changes
+ * nothing then; it is the safety net for a GPU that refuses the exact
+ * bitrate, or a plan made without asking.
  */
-async function gpuTakes(width: number, height: number, kbps: number, fps: number): Promise<boolean> {
-  if (!("VideoEncoder" in window)) return false;
-  try {
-    const { supported } = await VideoEncoder.isConfigSupported({
-      codec: "avc1.640034", width, height, bitrate: kbps * 1000, framerate: fps, hardwareAcceleration: "prefer-hardware",
-    });
-    return supported ?? false;
-  } catch {
-    return false;
-  }
-}
-
-/** The plan at the largest size the GPU can take, at the same frame rate. */
 async function onTheGpu(source: MediaInfo, plan: Plan, fps: number): Promise<{ plan: Plan; note: string | null } | null> {
   if (await gpuTakes(plan.width, plan.height, plan.videoKbps, fps)) return { plan, note: null };
-  const short = Math.min(source.displayWidth, source.displayHeight);
   const asked = Math.min(plan.width, plan.height);
-  const even = (v: number) => Math.max(2, Math.floor(v / 2) * 2);
   for (const side of LADDER.filter((s) => s < asked)) {
-    const width = even((source.displayWidth * side) / short);
-    const height = even((source.displayHeight * side) / short);
+    const { width, height } = scaled(source, side);
     if (await gpuTakes(width, height, plan.videoKbps, fps)) {
       return {
         plan: { ...plan, width, height, scaled: true },
