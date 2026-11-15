@@ -13,6 +13,7 @@ import {
 const media = () => import("./media");
 import { gpuMostShortSide, outputFps } from "./gpu";
 import { loadPlanner } from "./planner";
+import { clearResults } from "./store";
 
 const LITE: Capabilities = {
   watch: false, replace: false, files: false, encoders: false, ffmpeg: false, copyFile: false, dragOut: false,
@@ -175,6 +176,7 @@ async function run(job: Job) {
       onRetry: (attempt, overPercent, videoKbps) => emit({ type: "retry", id, attempt, overPercent, videoKbps }),
     });
     if (!fitted.under) {
+      await fitted.drop();
       const over = ((fitted.blob.size / (plan.targetBytes ?? fitted.blob.size)) - 1) * 100;
       throw new Error(
         `Could not get under the size limit: still ${over.toFixed(1)}% over after ${fitted.attempts.length} tries, so nothing was saved. ` +
@@ -273,6 +275,8 @@ export const webBackend: Backend = {
   onMaximized: async () => () => {},
   bootstrap: async (): Promise<Bootstrap> => {
     listenForLaunches();
+    // Large results from an earlier visit are out of reach now (`store.ts`).
+    await clearResults();
     // The built Lite works offline and can be installed; development doesn't
     // register, so Vite's own updates aren't cached.
     if (import.meta.env.PROD && "serviceWorker" in navigator) {

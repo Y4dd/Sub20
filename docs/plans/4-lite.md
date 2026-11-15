@@ -113,10 +113,20 @@ are the gate; do them before the rest.
       had no `h1`; the play button and the size limit had names that left
       out the time and size they show, so voice control couldn't find
       them).
-- [ ] **4.8 Large results on disk.** Results are blobs in memory, fine at
+- [x] **4.8 Large results on disk.** Results are blobs in memory, fine at
       20 MB and not at 500 MB or 1 GB on a phone. Write them to the origin
       private file system. Not needed for the gate; do it if plans 3 and 4
       are both waiting on people, otherwise it moves to plan 6.
+      Done 15 November 2026: a result whose limit is 64 MB or more is
+      written as it is made into a folder of the origin private file system
+      (`web/store.ts`, Mediabunny's `StreamTarget`, index at the end so
+      nothing is held back), and handed on as a disk-backed `File`. An
+      attempt that came out over, a canceled one, and one never kept are
+      deleted; the folder is emptied when Lite opens. Smaller results stay
+      in memory with the index at the front. Browsers without
+      `createWritable` (older Safari) keep everything in memory. Checked in
+      Chromium 156: the 1440p60 clip at 100 MB came out 29 MB on disk, a
+      valid MP4 that decodes cleanly; a canceled attempt left no file.
 - [ ] **4.9 Other codecs.** VP9 or AV1 in WebM where H.264 can't be
       encoded, Opus where AAC can't. Same standing as 4.8.
 

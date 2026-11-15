@@ -6,6 +6,12 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Sub20 Lite writes results of 64 MB or more to the browser's own storage
+  as they are made, instead of holding them in memory, so a 500 MB or 1 GB
+  limit works on a phone.
+
 ## [0.9.0] - 2026-11-15
 
 The first public release. Sub20 trims your clips and fits each one under

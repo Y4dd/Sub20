@@ -4,12 +4,13 @@
 // desktop engine. Nothing leaves the machine.
 
 import {
-  ALL_FORMATS, BlobSource, BufferTarget, Conversion, Input, Mp4OutputFormat, Output, Quality, canEncodeAudio,
+  ALL_FORMATS, BlobSource, BufferTarget, Conversion, Input, Mp4OutputFormat, Output, Quality, StreamTarget, canEncodeAudio,
   type AudioCodec, type VideoSample,
 } from "mediabunny";
 import type { MediaInfo, Plan } from "../types";
 import { LADDER, gpuTakes, scaled } from "./gpu";
 import { Mixer, RATE } from "./mix";
+import { DISK_FROM_BYTES, newResult, resultsFolder } from "./store";
 import { loadPlanner } from "./planner";
 
 export interface FitSettings {
@@ -52,8 +53,10 @@ export interface Fitted {
   plan: Plan;
   fps: number;
   attempts: Attempt[];
-  /** The last attempt's file, whether or not it fits. */
+  /** The last attempt's file, whether or not it fits: in memory, or read from disk (`store.ts`). */
   blob: Blob;
+  /** Deletes the file from disk when it was written there; call it for a result that isn't kept. */
+  drop: () => Promise<void>;
   under: boolean;
   audio: AudioCodec | null;
   /** The browser's GPU encoder did the work, not its CPU one. */
@@ -165,10 +168,16 @@ export async function fit(
 
   const attempts: Attempt[] = [];
   let videoKbps = plan.videoKbps;
-  let blob: Blob | null = null;
+  let made: Made | null = null;
+  // Large results go to disk, so a 1 GB limit doesn't hold a 1 GB file in memory.
+  const folder = (plan.targetBytes ?? plan.expectedBytes) >= DISK_FROM_BYTES ? await resultsFolder() : null;
   for (let n = 0; n <= planner.sizeRetries; n++) {
     const began = performance.now();
-    blob = await encode(file, source, plan, fps, videoKbps, audio, { ...settings, hardware }, (f) => onProgress?.(n, f), signal);
+    const over = made;
+    made = await encode(file, source, plan, fps, videoKbps, audio, { ...settings, hardware }, folder, (f) => onProgress?.(n, f), signal);
+    // An attempt that came out over is never kept.
+    await over?.drop();
+    const blob = made.blob;
     attempts.push({ videoKbps, bytes: blob.size, seconds: (performance.now() - began) / 1000 });
     if (blob.size <= target) break;
     const previous = attempts[attempts.length - 2];
@@ -182,8 +191,17 @@ export async function fit(
   }
 
   const gpu = hardware === "prefer-hardware";
-  return { plan, fps, attempts, blob: blob!, under: blob!.size <= target, audio, hardware: gpu, notes };
+  const { blob, drop } = made!;
+  return { plan, fps, attempts, blob, drop, under: blob.size <= target, audio, hardware: gpu, notes };
 }
+
+/** One attempt's file, and how to delete it. */
+interface Made {
+  blob: Blob;
+  drop: () => Promise<void>;
+}
+
+const keep = async () => {};
 
 async function encode(
   file: File,
@@ -193,13 +211,20 @@ async function encode(
   videoKbps: number,
   audio: AudioCodec | null,
   settings: FitSettings,
+  folder: FileSystemDirectoryHandle | null,
   onProgress: (fraction: number) => void,
   signal?: AbortSignal,
-): Promise<Blob> {
+): Promise<Made> {
   signal?.throwIfAborted();
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
-  const output = new Output({ format: new Mp4OutputFormat({ fastStart: "in-memory" }), target: new BufferTarget() });
+  // On disk, written as it is made, with the index at the end (`fastStart: false`)
+  // so nothing is held back in memory; in memory, with the index at the front.
+  const disk = folder ? await newResult(folder) : null;
+  const output = disk
+    ? new Output({ format: new Mp4OutputFormat({ fastStart: false }), target: new StreamTarget(disk.writable, { chunked: true }) })
+    : new Output({ format: new Mp4OutputFormat({ fastStart: "in-memory" }), target: new BufferTarget() });
   let mixer: Mixer | null = null;
+  let done = false;
   try {
     if (audio && settings.mixAudio) {
       const primary = await input.getPrimaryAudioTrack();
@@ -253,10 +278,17 @@ async function encode(
       signal?.removeEventListener("abort", stop);
     }
     signal?.throwIfAborted();
-    return new Blob([output.target.buffer!], { type: "video/mp4" });
+    done = true;
+    if (disk) return { blob: await disk.read(), drop: disk.drop };
+    return { blob: new Blob([(output.target as BufferTarget).buffer!], { type: "video/mp4" }), drop: keep };
   } finally {
     await mixer?.close().catch(() => {});
     input.dispose();
+    // A canceled or failed attempt leaves no file behind.
+    if (disk && !done) {
+      await disk.writable.abort().catch(() => {});
+      await disk.drop();
+    }
   }
 }
 
