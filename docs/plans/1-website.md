@@ -264,8 +264,9 @@ invented.
       into `Base.astro`'s head; the AI can add it), then submit
       `sitemap-index.xml` there and ask for the home page and the guides to
       be indexed. The same in Bing Webmaster Tools, which ChatGPT search
-      and Copilot draw on. If the subdomain (5.4) is coming soon, moving
-      first saves doing this twice.
+      and Copilot draw on. The subdomain is set aside for now (owner,
+      17 November 2026), so this is done on `y4dd.github.io/Sub20`; a move
+      later means a new property and a redirect.
 - [ ] Optional, any time before plan 5: buy a domain (a `.app` name is
       about $15 a year). Until then the address is `y4dd.github.io/Sub20`.
       15 November 2026: the owner has `amjad.sh` (Porkbun) and would use a
