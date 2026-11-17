@@ -227,12 +227,45 @@ invented.
       description opens "Video compressor for Discord", and ten topics
       were added (discord-video, video-compressor, compress-video and
       others).
+- [ ] **1.13 Answers that AI search can quote** (owner, 17 November 2026:
+      come up in Google's AI summary for Discord compression searches).
+      Google's AI Overviews quote pages Google has already indexed and
+      ranks; there is no markup, file or opt-in for them (Google's "AI
+      features and your website", read 17 November 2026; it says no
+      `llms.txt` is needed). So: indexing (below, the owner's), and pages
+      that answer the search in their first lines. A guide whose heading
+      is the search itself, "How to compress a video for Discord", opening
+      with the whole answer, the bitrate sum and a hand-run FFmpeg command
+      tested on a real encode; `file-too-large` stays the error's page and
+      the two link to each other. Each guide shows the date it was last
+      checked and repeats it as `dateModified`. Mentions and links from
+      elsewhere come with plan 5's launch.
+      *Done when:* the guide is live, linked from the home page, the guides
+      page and the README, and the gate still passes.
+      Built 17 November 2026: `guides/compress-video-for-discord/`, first
+      in `GUIDES`, so the home page's questions, the guides page and every
+      guide's "More guides" list it; `file-too-large` links to it and back.
+      Its FFmpeg command was run as printed on a generated 1080p 60 fps
+      clip with a 440 Hz tone (FFmpeg 9.0.2): 50 s kept, 18.3 MB, 91.5% of
+      20 MB; the same clip at 60 s in one pass came out at 92%, in two
+      passes 98%. Guides show "Checked against Sub20 on …" from
+      `GUIDES.checked` (15 November for the four read then). Gate PASS,
+      copy-lint 0 FAIL and 0 WARN on the new guide, the guides page and
+      `file-too-large`. Left: it goes live with the next Pages run, and
+      indexing waits on the owner (below).
 
 ## Needs the owner
 
 - [x] **Enable GitHub Pages:** repository Settings → Pages → Source:
       "GitHub Actions".
 - [x] **Say when to push** (one push with everything in 1.3 to 1.10).
+- [ ] **Get the site indexed** (for 1.13): a Search Console URL-prefix
+      property for `https://y4dd.github.io/Sub20/` (an HTML-tag token goes
+      into `Base.astro`'s head; the AI can add it), then submit
+      `sitemap-index.xml` there and ask for the home page and the guides to
+      be indexed. The same in Bing Webmaster Tools, which ChatGPT search
+      and Copilot draw on. If the subdomain (5.4) is coming soon, moving
+      first saves doing this twice.
 - [ ] Optional, any time before plan 5: buy a domain (a `.app` name is
       about $15 a year). Until then the address is `y4dd.github.io/Sub20`.
       15 November 2026: the owner has `amjad.sh` (Porkbun) and would use a

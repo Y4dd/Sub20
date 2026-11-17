@@ -162,6 +162,7 @@ kinds (Sub20, and Sub20 without FFmpeg) for Windows and Linux, and puts them on 
    from under the timeline into a channel.
 
 The website has guides for the usual cases:
+[how to compress a video for Discord](https://y4dd.github.io/Sub20/guides/compress-video-for-discord/),
 [Discord says your file is too large](https://y4dd.github.io/Sub20/guides/file-too-large/),
 [NVIDIA Instant Replay clips](https://y4dd.github.io/Sub20/guides/nvidia-instant-replay/),
 [iPhone videos](https://y4dd.github.io/Sub20/guides/iphone-video/) and

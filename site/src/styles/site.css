@@ -114,6 +114,11 @@
 .changelog h3 { font-size: var(--t-lead); margin-top: var(--s-6); }
 .changelog > * + * { margin-top: var(--s-4); }
 
+/* A guide's date, under its lead; a command, in a block that scrolls sideways (wrapping broke lines after a flag's hyphen). */
+.doc .doc__checked { color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); font-size: var(--t-small); }
+.doc pre { max-width: 100%; overflow-x: auto; padding: var(--s-4) var(--s-5); border-radius: var(--r-md); background: var(--p-surface); line-height: 1.6; }
+.doc pre code { padding: 0; background: none; white-space: pre; }
+
 /* A guide's way back to the guides, above its heading. */
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 

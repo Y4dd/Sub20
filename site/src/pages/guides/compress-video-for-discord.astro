@@ -1,0 +1,53 @@
+---
+import Doc from "../../layouts/Doc.astro";
+import { u } from "../../lib/site";
+---
+
+<Doc
+  title="How to compress a video for Discord (under 20 MB) | Sub20"
+  description="Keep only the part worth sending, then encode it at the bitrate that fits: the size divided by the length. A free app that does both, and the FFmpeg command to do it by hand."
+  current="guides"
+  heading="How to compress a video for Discord"
+  lead="Keep only the part worth sending, then encode it at a bitrate that fits your limit: 20 MB on a free account, 50 MB with Nitro Basic, 500 MB in a boosted server, 1 GB with Nitro. The bitrate that fits is the size divided by the length, about 2.7 megabits a second for a one-minute clip at 20 MB."
+>
+  <h2>The quick way, with Sub20</h2>
+  <ol>
+    <li><a href={u("download/")}>Download Sub20</a> for Windows or Linux. It's free, with no account.</li>
+    <li>Drop the video on the window and drag the two yellow handles to the part you want to keep.</li>
+    <li>Leave the size at 20 MB, or pick your Nitro limit.</li>
+    <li>Press <b>Compress</b>. Sub20 sets the bitrate and the picture size, encodes on your graphics card and checks the file. A result even a byte over is encoded again, lower.</li>
+    <li>Press Ctrl+C, then paste into the Discord message box.</li>
+  </ol>
+  <p>No install possible, or on a phone? <a href={u("app/")}>Sub20 Lite</a> does the same in the browser, and nothing is uploaded.</p>
+
+  <h2>How much video fits in 20 MB</h2>
+  <p>The size is fixed, so a longer clip gets fewer bits each second. At 20 MB, picture and sound together get:</p>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th scope="col">Length kept</th><th scope="col">Bitrate for everything</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">15 seconds</th><td>10.9 Mbps</td></tr>
+        <tr><th scope="row">30 seconds</th><td>5.5 Mbps</td></tr>
+        <tr><th scope="row">1 minute</th><td>2.7 Mbps</td></tr>
+        <tr><th scope="row">2 minutes</th><td>1.4 Mbps</td></tr>
+        <tr><th scope="row">5 minutes</th><td>0.55 Mbps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>That's why trimming matters more than any setting: halve the length and every second gets twice the bits. When the bitrate runs low, a 720p or 480p picture looks cleaner than a blocky 1080p one. Sub20 picks that picture size for you and says how the result should look before you compress.</p>
+
+  <h2>By hand, with FFmpeg</h2>
+  <p>FFmpeg is the free command-line tool that does the encoding inside many video apps, Sub20 included. Work out the video bitrate first:</p>
+  <p><b>video kbps = size in MB × 8192 ÷ seconds − sound kbps</b></p>
+  <p>For 50 seconds starting 5 seconds in, at 20 MB with 128 kbps sound: 20 × 8192 ÷ 50 − 128 = 3149, so round down to 3100k.</p>
+  <pre><code>ffmpeg -ss 5 -i clip.mp4 -t 50 -c:v libx264 -b:v 3100k -maxrate 3100k -bufsize 3100k -c:a aac -b:a 128k -movflags +faststart clip-20mb.mp4</code></pre>
+  <p><code>-ss</code> and <code>-t</code> keep the 50 seconds, <code>-maxrate</code> and <code>-bufsize</code> stop the encoder spending past the average, and <code>+faststart</code> lets Discord start playing before the whole file has loaded. On a busy 1080p 60 fps test clip it came out at 18.3 MB. Check the size each time: if a file lands over, lower <code>-b:v</code> by a tenth and run it again. Sub20 does that check and the retry by itself.</p>
+
+  <h2>Other ways to get it there</h2>
+  <ul>
+    <li><b>Trim it on your phone.</b> The Photos or Gallery editor cuts a video shorter, and a short enough clip may fit as it is.</li>
+    <li><b>A higher limit.</b> Nitro Basic raises it to 50 MB, Nitro to 1 GB, and a server with boosts takes up to 500 MB.</li>
+    <li><b>Send a link.</b> Upload the full video to a cloud drive or as an unlisted video and paste the link. It won't play inline as a clip does.</li>
+  </ul>
+  <p>Discord already refused the file? <a href={u("guides/file-too-large/")}>What Discord's "file too large" means</a> has the exact limits.</p>
+</Doc>

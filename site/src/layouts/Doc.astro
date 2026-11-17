@@ -22,6 +22,8 @@ const abs = (path: string) => new URL(u(path), Astro.site).href;
 const slug = Astro.url.pathname.match(/\/guides\/([^/]+)\/?$/)?.[1];
 const guide = GUIDES.find((g) => g.slug === slug);
 const others = guide ? GUIDES.filter((g) => g !== guide) : [];
+// The day the guide was last read against the app, as people read it ("15 November 2026").
+const checked = guide && new Date(`${guide.checked}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 const trail = [
   { name: "Sub20", url: abs("") },
@@ -40,6 +42,7 @@ const article = guide && {
   description,
   url: new URL(Astro.url.pathname, Astro.site).href,
   image: abs("share.jpg"),
+  dateModified: guide.checked,
   publisher: { "@type": "Organization", name: "Sub20", url: abs("") },
 };
 ---
@@ -52,6 +55,7 @@ const article = guide && {
       {guide && <nav class="doc__crumbs" aria-label="Breadcrumb"><a class="link" href={u("guides/")}>All guides</a></nav>}
       <h1 id="doc-h">{heading}</h1>
       {lead && <p class="doc__lead">{lead}</p>}
+      {guide && <p class="doc__checked">Checked against Sub20 on <time datetime={guide.checked}>{checked}</time></p>}
       <slot />
       {guide && (
         <>
