@@ -3,9 +3,11 @@ import Base from "../layouts/Base.astro";
 import Shot from "../components/Shot.astro";
 import { u, GITHUB, RELEASES } from "../lib/site";
 import { latestRelease, ROWS, cell, kindInText } from "../lib/release";
+import { GUIDES } from "../lib/guides";
 
 const release = await latestRelease();
-// The formats Sub20 opens (crates/core/src/watch.rs VIDEO_EXTENSIONS), for the marquee.
+// A size keeps its unit and "64-bit" its hyphen on one line.
+const keep = (t: string) => t.replace(/(\d) (MB|GB|KB)/g, "$1\u00a0$2").replace(/-bit/g, "\u2011bit");
 // What a search engine is told about Sub20: only what the page itself says.
 const software = {
   "@context": "https://schema.org",
@@ -22,62 +24,42 @@ const software = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   sameAs: [GITHUB],
 };
+// The questions, written once: the page shows them, and FAQPage tells search engines the same words.
+const FAQ = [
+  { q: "How do I make a video small enough for Discord?", html: "Drop it on Sub20, drag the yellow handles to keep the part worth sending, pick the size and press Compress. Sub20 works out the bitrate from the size and the length you kept, and encodes the clip again if it lands even a byte over." },
+  { q: "What is Discord's file size limit?", html: "20 MB on a free account, 50 MB with Nitro Basic, 500 MB in a boosted server and 1 GB with Nitro. Sub20's size picker names each one." },
+  { q: "Are my videos uploaded anywhere?", html: "No, and there is no account. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself." },
+  { q: "Why H.264 and not HEVC?", html: "H.264 plays in Discord on every computer and phone. HEVC and AV1 keep more detail at the same size, but may not play everywhere: HEVC on some computers, AV1 on phones. Both are in Options." },
+  { q: "Why does Windows warn me about the installer?", html: `Sub20 isn't code-signed yet. Click More info, then Run anyway; <a href="${u("download/")}">the install steps</a> show where.` },
+];
+const faqPage = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((q) => ({ "@type": "Question", name: q.q, acceptedAnswer: { "@type": "Answer", text: q.html.replace(/<[^>]+>/g, "") } })),
+};
+// The formats Sub20 opens (crates/core/src/watch.rs VIDEO_EXTENSIONS), for the marquee.
 const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG", "TS", "M2TS", "3GP", "MXF", "VOB"];
 ---
 
 <Base
-  title="Sub20: video compressor for Discord clips, on Windows and Linux"
-  description="Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits Discord's upload limit. Free and open source."
+  title="Compress video for Discord: Sub20, free for Windows and Linux"
+  description="Video too big for Discord? Trim it, pick a size, and Sub20 compresses it on your graphics card until it fits the 20 MB upload limit. Free and open source."
   moments
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(software)} />
-  <section class="hero hero--triptych" data-enter aria-labelledby="hero-h">
-    <div class="wrap">
-      <div class="hero-text grid hero__grid">
-        <div class="span-3">
-          <h1 id="hero-h">Video compressor for Discord clips</h1>
-          <p class="hero__lead">Trim each clip with two handles, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
-        </div>
-        <div class="ly-collage span-6 start-4" role="img" aria-label="Pieces of Sub20's window: the trim bar, the list of clips, the size picker with Discord's limits, a finished 19.4 MB file with Copy, a compress running on the NVIDIA GPU, the options, the watched-folder history and the phone layout">
-          <div class="ly-collage__set is-on">
-            <div class="ly-piece" style="left: 4%; top: 6%; width: 92%; aspect-ratio: 968 / 154"><Shot name="trim" alt="" sizes="(min-width: 1024px) 570px, 78vw" eager /></div>
-            <div class="ly-piece" style="left: 4%; top: 25%; width: 40%; aspect-ratio: 264 / 234"><Shot name="rail" alt="" sizes="(min-width: 1024px) 246px, 34vw" eager /></div>
-            <div class="ly-piece live-size" style="left: 50%; top: 25%; width: 46%">
-              <span class="is-on"><em><b>20</b> MB</em><small>Free</small></span>
-              <span><em><b>50</b> MB</em><small>Nitro Basic</small></span>
-              <span><em><b>500</b> MB</em><small>Server boost</small></span>
-              <span><em><b>1</b> GB</em><small>Nitro</small></span>
-            </div>
-            <div class="ly-piece live-result" style="left: 4%; bottom: 4%; width: 80%">
-              <span class="live-result__file"><i class="live-result__thumb"></i><span><b>harbour-drone-take3-20mb.mp4</b><small><em>19.4 MB</em>, down from 612 MB</small></span></span>
-              <span class="live-result__copy">Copy</span>
-            </div>
-          </div>
-          <div class="ly-collage__set" aria-hidden="true">
-            <div class="ly-piece" style="left: 4%; top: 6%; width: 92%; aspect-ratio: 968 / 146"><Shot name="running" alt="" sizes="(min-width: 1024px) 570px, 78vw" loading="eager" fetchpriority="low" /></div>
-            <div class="ly-piece" style="left: 4%; top: 24%; width: 44%; height: 72%"><Shot name="options" alt="" sizes="(min-width: 1024px) 271px, 39vw" style="object-position: 50% 0" loading="eager" fetchpriority="low" /></div>
-            <div class="ly-piece" style="right: 4%; bottom: 4%; width: 48%; aspect-ratio: 424 / 180"><Shot name="mix" alt="" sizes="(min-width: 1024px) 296px, 41vw" loading="eager" fetchpriority="low" /></div>
-          </div>
-          <div class="ly-collage__set" aria-hidden="true">
-            <div class="ly-piece" style="left: 4%; top: 6%; width: 50%; height: 62%"><Shot name="watch" alt="" sizes="(min-width: 1024px) 308px, 43vw" style="object-position: 50% 0" loading="eager" fetchpriority="low" /></div>
-            <div class="ly-piece" style="right: 4%; bottom: 4%; width: 38%; height: 82%"><Shot name="phone" alt="" sizes="(min-width: 1024px) 270px, (min-width: 640px) 248px, 43vw" style="object-position: 50% 0" loading="eager" fetchpriority="low" /></div>
-          </div>
-        </div>
-        <div class="span-3 start-10 hero__cta"><a class="btn btn--primary" href="#download">Download Sub20</a></div>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqPage)} />
+  <section class="hero hero--centred" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text">
+      <div class="hero__c">
+        <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
+        <h1 id="hero-h">Video compressor for Discord clips</h1>
+        <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="#download">Download Sub20</a><a class="btn btn--secondary" href="#features">See the features</a></div>
       </div>
-    </div>
-  </section>
-
-  <section class="section" id="app" aria-labelledby="app-h">
-    <div class="wrap">
-      <div class="grid">
-        <h2 class="span-5" id="app-h">Your clips and the trim in one window</h2>
-        <p class="span-6 start-7 app__lead">Drop videos on the window, pick one, and drag the yellow handles to the part worth sending. The line under the picture says what will come out: length, resolution and how it should look.</p>
+      <div class="hero__window" role="img" aria-label="Sub20's window: three clips on the left, a drone video on the stage with its yellow trim bar, 1080p planned, and Compress 3 videos at 20 MB">
+        <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 960px) 880px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
       </div>
-      <div class="app-shot fill">
-        <Shot name="app" alt="Sub20's window: three clips on the left, a drone video on the stage with its trim bar, 1080p planned, and Compress 3 videos at 20 MB" sizes="1270px" />
-      </div>
-    </div>
+    </div></div>
   </section>
 
   <section class="section g2" id="features" aria-labelledby="features-h">
@@ -131,10 +113,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
               const lean = cell(release, row, true);
               return (
                 <li data-os={row.os}>
-                  <span><b>{row.system}</b> <span class="muted">{row.detail}, {kindInText(row.kind)}</span></span>
+                  <span><b>{row.system}</b> <span class="muted">{keep(row.detail)}, {kindInText(row.kind)}</span></span>
                   <span class="downloads__links">
-                    <a class="link" href={full.href}>Sub20{full.size && `, ${full.size}`}</a>
-                    <a class="link" href={lean.href}>Without FFmpeg{lean.size && `, ${lean.size}`}</a>
+                    <a class="link" href={full.href}>Sub20{full.size && `, ${keep(full.size)}`}</a>
+                    <a class="link" href={lean.href}>Without FFmpeg{lean.size && `, ${keep(lean.size)}`}</a>
                   </span>
                 </li>
               );
@@ -172,21 +154,20 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     </div>
   </section>
 
-  <section class="section" id="faq" aria-labelledby="faq-h">
+  <section class="section" id="faq" aria-labelledby="faq-h" style="--hm: 2">
     <div class="wrap">
       <div class="grid">
         <div class="span-5 stack-4">
-          <h2 id="faq-h">Questions</h2>
-          <p class="muted">Something else, or something broken? Open an issue on GitHub.</p>
-          <a class="link" href="https://github.com/Y4dd/Sub20/issues/new/choose">Open an issue</a>
-          <Shot class="faq__shot" name="about" alt="Sub20's About line: Copy diagnostics for a bug report, and Sub20 sends nothing about you anywhere" sizes="(min-width: 640px) 424px, 327px" />
+          <h2 id="faq-h">Questions about Discord clips</h2>
+          <p class="muted">The guides go further, step by step. Something else, or something broken? Open an issue on GitHub.</p>
+          <ul class="faq__guides" role="list">
+            {GUIDES.map((g) => <li><a class="link" href={u(`guides/${g.slug}/`)}>{g.title}</a></li>)}
+            <li><a class="link" href={`${GITHUB}/issues/new/choose`}>Open an issue</a></li>
+          </ul>
+          <Shot class="faq__shot" name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) 485px, calc(100vw - 32px)" />
         </div>
         <div class="faq span-6 start-7">
-          <div class="faq__item"><h3>Is Sub20 free?</h3><p>Yes, with no account and no ads. The code is open under the MIT licence.</p></div>
-          <div class="faq__item"><h3>Are my videos uploaded anywhere?</h3><p>No. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself.</p></div>
-          <div class="faq__item"><h3>Which Discord size should I pick?</h3><p>20 MB for a free Discord account, 50 MB with Nitro Basic, 500 MB in a boosted server, 1 GB with Nitro.</p></div>
-          <div class="faq__item"><h3>Why H.264 and not HEVC?</h3><p>H.264 plays in Discord on every computer and phone. HEVC and AV1 keep more detail at the same size, but some devices won't play them in the chat: HEVC older computers, AV1 phones. Both are in Options.</p></div>
-          <div class="faq__item"><h3>Why does Windows warn me about the installer?</h3><p>Sub20 isn't code-signed yet. Click More info, then Run anyway; <a href={u("download/")}>the install steps</a> show where.</p></div>
+          {FAQ.map((q) => <div class="faq__item"><h3>{q.q}</h3><p set:html={q.html} /></div>)}
         </div>
       </div>
     </div>

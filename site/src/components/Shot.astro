@@ -1,7 +1,8 @@
 ---
 // One of the app's screenshots (src/assets/img), served through a srcset of widths up to its own,
 // so the browser takes the smallest that covers the slot named in `sizes`. Astro writes the width
-// and height, so nothing shifts while it loads.
+// and height, so nothing shifts while it loads. With `phone`, a phone (under 640px) gets another
+// screenshot through <picture>, and each screen downloads only its own.
 import { getImage } from "astro:assets";
 import type { ImageMetadata } from "astro";
 import type { HTMLAttributes } from "astro/types";
@@ -15,28 +16,58 @@ interface Props extends Omit<HTMLAttributes<"img">, "src" | "srcset" | "width" |
   sizes: string;
   /** In the first screen: load at once, and first. */
   eager?: boolean;
+  /** Another screenshot for phones, and its slot's width there. */
+  phone?: { name: string; sizes: string };
 }
 
-const { name, alt, sizes, eager = false, ...rest } = Astro.props;
-const file = files[`../assets/img/${name}.webp`];
-if (!file) throw new Error(`No screenshot named ${name} in src/assets/img`);
-const src = file.default;
+const { name, alt, sizes, eager = false, phone, ...rest } = Astro.props;
+
+function file(n: string): ImageMetadata {
+  const f = files[`../assets/img/${n}.webp`];
+  if (!f) throw new Error(`No screenshot named ${n} in src/assets/img`);
+  return f.default;
+}
 
 // Steps of at most a third, so the width picked is never far over the slot.
 const LADDER = [160, 200, 240, 300, 360, 440, 520, 640, 800, 1000, 1280, 1600, 1920, 2560];
-const widths = [...LADDER.filter((w) => w < src.width * 0.95), src.width];
-const image = await getImage({ src, widths, sizes, format: "webp" });
+async function ladder(src: ImageMetadata, slot: string) {
+  const widths = [...LADDER.filter((w) => w < src.width * 0.95), src.width];
+  return getImage({ src, widths, sizes: slot, format: "webp" });
+}
+
+const src = file(name);
+const image = await ladder(src, sizes);
+const small = phone && file(phone.name);
+const smallImage = small && (await ladder(small, phone.sizes));
 ---
 
-<img
-  src={image.src}
-  srcset={image.srcSet.attribute}
-  sizes={sizes}
-  width={src.width}
-  height={src.height}
-  alt={alt}
-  loading={eager ? "eager" : "lazy"}
-  decoding={eager ? "sync" : "async"}
-  fetchpriority={eager ? "high" : undefined}
-  {...rest}
-/>
+{small && smallImage ? (
+  <picture>
+    <source media="(max-width: 639px)" srcset={smallImage.srcSet.attribute} sizes={phone!.sizes} width={small.width} height={small.height} />
+    <img
+      src={image.src}
+      srcset={image.srcSet.attribute}
+      sizes={sizes}
+      width={src.width}
+      height={src.height}
+      alt={alt}
+      loading={eager ? "eager" : "lazy"}
+      decoding={eager ? "sync" : "async"}
+      fetchpriority={eager ? "high" : undefined}
+      {...rest}
+    />
+  </picture>
+) : (
+  <img
+    src={image.src}
+    srcset={image.srcSet.attribute}
+    sizes={sizes}
+    width={src.width}
+    height={src.height}
+    alt={alt}
+    loading={eager ? "eager" : "lazy"}
+    decoding={eager ? "sync" : "async"}
+    fetchpriority={eager ? "high" : undefined}
+    {...rest}
+  />
+)}

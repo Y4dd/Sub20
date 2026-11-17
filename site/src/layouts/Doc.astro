@@ -1,7 +1,11 @@
 ---
 // A text page (download, guides, compare, privacy, changelog): the site's
-// frame with one column of words that grows with them.
+// frame with one column of words that grows with them. A guide also gets the
+// way back to the guides above its heading, the other guides below its text,
+// and the same two things told to search engines (BreadcrumbList, Article).
 import Base from "./Base.astro";
+import { u } from "../lib/site";
+import { GUIDES } from "../lib/guides";
 
 interface Props {
   title: string;
@@ -13,14 +17,55 @@ interface Props {
   lead?: string;
 }
 const { title, description, current, heading, lead } = Astro.props;
+
+const abs = (path: string) => new URL(u(path), Astro.site).href;
+const slug = Astro.url.pathname.match(/\/guides\/([^/]+)\/?$/)?.[1];
+const guide = GUIDES.find((g) => g.slug === slug);
+const others = guide ? GUIDES.filter((g) => g !== guide) : [];
+
+const trail = [
+  { name: "Sub20", url: abs("") },
+  ...(guide ? [{ name: "Guides", url: abs("guides/") }] : []),
+  { name: heading, url: new URL(Astro.url.pathname, Astro.site).href },
+];
+const crumbs = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: trail.map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.name, item: t.url })),
+};
+const article = guide && {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: heading,
+  description,
+  url: new URL(Astro.url.pathname, Astro.site).href,
+  image: abs("share.jpg"),
+  publisher: { "@type": "Organization", name: "Sub20", url: abs("") },
+};
 ---
 
 <Base title={title} description={description} current={current} doc>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(crumbs)} />
+  {article && <script type="application/ld+json" slot="head" set:html={JSON.stringify(article)} />}
   <article class="doc" aria-labelledby="doc-h">
     <div class="wrap">
+      {guide && <nav class="doc__crumbs" aria-label="Breadcrumb"><a class="link" href={u("guides/")}>All guides</a></nav>}
       <h1 id="doc-h">{heading}</h1>
       {lead && <p class="doc__lead">{lead}</p>}
       <slot />
+      {guide && (
+        <>
+          <h2>More guides</h2>
+          <div class="cards">
+            {others.map((g) => (
+              <a href={u(`guides/${g.slug}/`)}>
+                <b>{g.title}</b>
+                <span>{g.summary}</span>
+              </a>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   </article>
 </Base>

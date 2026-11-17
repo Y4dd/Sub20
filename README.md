@@ -1,19 +1,25 @@
 <p align="center"><img src="public/icon.svg" width="96" alt="Sub20 icon"></p>
 
-# Sub20
+# Sub20: video compressor for Discord clips
 
-Trim a clip and get it under 20 MB, ready for Discord.
+Trim a video and compress it under Discord's file size limit: 20 MB on a
+free account, or 50 MB, 500 MB and 1 GB. Free and open source, for Windows
+and Linux.
 
-**[Download Sub20](https://github.com/Y4dd/Sub20/releases/latest)** for
-Windows 10 and 11 and Linux. It's free.
+**[Download Sub20](https://github.com/Y4dd/Sub20/releases/latest)** ·
+[Website](https://y4dd.github.io/Sub20/) ·
+[Guides](https://y4dd.github.io/Sub20/guides/) ·
 [Which file do I need?](#install)
 
-I kept cutting clips and re-encoding them by hand to fit under Discord's upload
-limit, so I made one app that does both. Drop videos in, trim each one with two
-handles, pick a size, and every result comes out under it. Encoding runs on the
-GPU when there is one (NVIDIA, Intel, AMD or Apple), and each result is
-measured: one that lands even a byte over the limit is encoded again until it
-fits. Hence the name: whatever you send comes out sub 20.
+<p align="center"><img src="site/src/assets/img/window.webp" width="880" alt="Sub20's window: three clips in a list, a drone video with its yellow trim handles, 1080p planned at 20 MB, and Compress 3 videos"></p>
+
+When Discord says your file is too large, you have to cut the clip and
+re-encode it smaller. I kept doing both by hand, so I made one app that does
+both. Drop videos in, trim each one with two handles, pick a size, and every
+result comes out under it. Encoding runs on the graphics card when there is
+one (NVIDIA, AMD or Intel), and each result is measured: one that lands even
+a byte over the limit is encoded again until it fits. Hence the name: whatever
+you send comes out sub 20.
 
 Sub20 is a native desktop app: a Rust engine that drives FFmpeg, in a
 [Tauri](https://tauri.app) window. It's free and open source, with no
@@ -155,6 +161,12 @@ kinds (Sub20, and Sub20 without FFmpeg) for Windows and Linux, and puts them on 
 5. When it is done, press Ctrl+C and paste into Discord, or drag the file
    from under the timeline into a channel.
 
+The website has guides for the usual cases:
+[Discord says your file is too large](https://y4dd.github.io/Sub20/guides/file-too-large/),
+[NVIDIA Instant Replay clips](https://y4dd.github.io/Sub20/guides/nvidia-instant-replay/),
+[iPhone videos](https://y4dd.github.io/Sub20/guides/iphone-video/) and
+[HEVC files that may not play](https://y4dd.github.io/Sub20/guides/hevc/).
+
 Results are saved next to the originals as `name-20mb.mp4`, or in one folder.
 To name a result yourself, double-click it in the list (or press F2 or `r`);
 a finished file is renamed on disk.
@@ -271,6 +283,6 @@ service the size presets are made for.
 
 ## Contributing
 
-Bug reports, test results from Intel, AMD and Apple GPUs, and pull requests
+Bug reports, test results from Intel and AMD GPUs, and pull requests
 are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), and
 [SECURITY.md](SECURITY.md) for security problems.

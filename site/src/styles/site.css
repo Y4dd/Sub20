@@ -1,24 +1,20 @@
 /* Page CSS: only what sits inside a visual and the kit lacks (the app's
    screenshots in their frames, the download rows, the document pages). */
 
+/* The hero's window: the app's own screenshot, lit from below in the trim yellow (the ground tokens in
+   Base.astro), so the dark window stands off the dark page. */
+.hero--centred .hero__window { background:
+  radial-gradient(60% 80% at 50% 108%, color-mix(in oklab, var(--ground-accent) 42%, var(--ground-bg)), transparent 72%),
+  linear-gradient(to bottom, color-mix(in oklab, var(--ground-bg) 60%, var(--p-bg)), var(--ground-bg)); }
+.hero__window .ly-piece { overflow: hidden; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--p-ink) 16%, transparent);
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8); background: #15171c; }
+.hero__window .ly-piece :is(picture, img) { display: block; width: 100%; height: auto; }
+/* Running text in grey is kept at 7:1 (the checker's bar for body text); the secondary button gets an
+   outline, so it stands off the dark ground. */
+.hero--centred .hero__lead, #faq .stack-4 > p.muted { color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+:root .hero--centred .btn--secondary, :root .hero--centred .btn--secondary:hover { border-color: color-mix(in srgb, var(--p-ink) 30%, transparent); }
+
 .nav__logo .logo { width: 28px; height: 28px; border-radius: 7px; }
-.menu-card .panel { --p-h: 200px; }
-.menu-card .panel img { object-fit: cover; object-position: 0 0; }
-
-/* The collage pieces are the app's own screenshots, at their own ratio. */
-.ly-collage .ly-piece { border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); }
-.ly-collage .ly-piece > img { object-position: 0 0; }
-
-/* The app's window, across the wrap. */
-.app__lead { font-size: var(--t-lead); line-height: 1.5; }
-.app-shot {
-  margin-top: var(--s-7);
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent);
-  border-radius: var(--r-lg);
-  background: #15171c;
-}
-.app-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 0 0; }
 
 /* Screenshots in card panels: the app's own ground behind them, the whole
    shot inside the panel's padding. */
@@ -33,29 +29,10 @@
 #features > .wrap { grid-template-columns: minmax(0, 1fr); }
 .formats { margin-bottom: var(--s-7); min-width: 0; }
 
-/* Two collage pieces drawn live, as the app draws them (Dock's size tiles,
-   the finished clip's file chip and Copy). */
-.live-size, .live-result { background: #1c1f26; font-family: var(--font-text); color: #eceef2; }
-.live-size { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; padding: 6%; border-radius: 12px; container-type: inline-size; }
-.live-size span { display: grid; gap: 2px; padding: 8% 10%; border-radius: 8px; border: 1px solid #343843; font-size: clamp(9px, 5.4cqi, 15px); color: #9aa1ae; }
-.live-size em { font-style: normal; white-space: nowrap; }
-.live-size b { font-size: 1.5em; font-weight: 700; color: #eceef2; }
-.live-size small { font-size: 1em; color: #9aa1ae; }
-.live-size .is-on { background: #ffd02b; border-color: transparent; color: #15171c; }
-.live-size .is-on b, .live-size .is-on small { color: #15171c; }
-.live-result { display: grid; grid-template-columns: 1fr auto; gap: 3%; align-items: stretch; padding: 3%; border-radius: 12px; container-type: inline-size; font-size: clamp(8px, 2.6cqi, 14px); }
-.live-result__file { display: flex; align-items: center; gap: 4%; padding: 2.5% 3%; border-radius: 10px; border: 1px solid #343843; min-width: 0; }
-.live-result__file > span { display: grid; gap: 2px; min-width: 0; }
-.live-result__file b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.live-result__file small { font-size: 1em; color: #9aa1ae; }
-.live-result__file em { font-style: normal; font-weight: 600; color: #57d19a; }
-.live-result__thumb { flex: none; width: 18%; aspect-ratio: 16 / 10; border-radius: 6px; background: radial-gradient(circle at 60% 30%, #f29aa3 0 7%, transparent 8%), linear-gradient(#2b5d8a, #1b3a5a 55%, #1f4a3c 56%, #163a2e); }
-.live-result__copy { display: grid; place-items: center; padding: 0 1.4em; border-radius: 10px; border: 1px solid #343843; font-weight: 600; }
-
 /* Downloads: a list of systems beside the app's first screen. */
 .downloads { display: grid; gap: var(--s-5); align-content: start; }
 .downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-4); }
-.downloads__list li { display: grid; gap: var(--s-1); }
+.downloads__list li { display: grid; gap: var(--s-1); text-wrap: pretty; }
 .downloads__list b { font-weight: 500; }
 /* The visitor's system (data-os on <html>, set by Base's head script): a bar beside its rows,
    drawn outside the flow so nothing moves, and nothing at all without JavaScript. */
@@ -67,11 +44,16 @@
 :is(.downloads__list li, .doc tbody tr > th)::before { opacity: var(--os-mark, 0); }
 .downloads__list .muted { color: color-mix(in srgb, var(--p-ink) 72%, var(--p-bg)); }
 .downloads__links { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-5); }
+/* From 640px, two columns of the same width in every row, so the second links line up whatever the sizes say. */
+@media (min-width: 640px) { .downloads__links { display: grid; grid-template-columns: 10em auto; justify-content: start; } }
 .downloads__after { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
 .downloads__after a:not(.link) { color: var(--p-ink); }
 .downloads__frame { background: #15171c; }
 .downloads__frame > .frame__img { inset: var(--s-7); width: calc(100% - 2 * var(--s-7)); height: calc(100% - 2 * var(--s-7)); object-fit: contain; }
-.faq__shot { display: block; width: min(100%, 424px); height: auto; margin-top: var(--s-5); border-radius: var(--r-md); border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); }
+
+/* The questions' guide links, one under the other. */
+.faq__shot { display: block; width: min(100%, 485px); height: auto; margin-top: var(--s-5); border-radius: var(--r-md); border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); }
+.faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-1); justify-items: start; text-wrap: pretty; }
 
 /* Lite: the phone rising out of the frame's foot. */
 .lite__text { display: grid; gap: var(--s-5); align-content: start; }
@@ -120,6 +102,7 @@
 .doc .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-5); margin-top: var(--s-7); }
 .doc .cards a { display: grid; gap: var(--s-2); padding: var(--s-6); border-radius: var(--r-lg); background: var(--p-surface); text-decoration: none; color: var(--p-ink); }
 .doc .cards a span { color: var(--p-muted); line-height: 1.5; }
+.doc .cards a:not(.btn):not(.link) { text-decoration: none; } /* a card is the link; its words stay plain */
 @media (max-width: 639px) {
   .is-doc main > .doc { padding-top: calc(var(--nav) + var(--s-7)); }
   .doc table { font-size: var(--t-small); }
@@ -130,3 +113,13 @@
 .changelog h2 { font-size: clamp(26px, 1vw + 22px, 34px); margin-top: var(--s-8); }
 .changelog h3 { font-size: var(--t-lead); margin-top: var(--s-6); }
 .changelog > * + * { margin-top: var(--s-4); }
+
+/* A guide's way back to the guides, above its heading. */
+.doc .doc__crumbs + h1 { margin-top: var(--s-3); }
+
+/* A phone: the questions take two screens (--hm: 2), and the room the second screen has to spare is
+   shared out between the questions, not left in one gap or under the last answer. */
+@media (max-width: 639px) {
+  #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
+  #faq .faq { display: flex; flex-direction: column; justify-content: space-between; }
+}

@@ -193,6 +193,40 @@ invented.
       headless Edge on a phone profile, `/app/` has no installability
       errors, its worker takes control, it opens offline, a clip compresses,
       and axe is clean. The repository homepage points to the site.
+- [ ] **1.12 A calmer home page, and search basics** (owner, 16 November
+      2026: "more UI/UX friendly and less cluttered", and better SEO for
+      the site and the README). The hero becomes one app window under a
+      centred headline (the dealt `centred` hero) in place of the cycling
+      collage, and takes over the `#app` section, so the page loses a
+      screen; the nav's three screenshot cards become plain links; the
+      card panels get a ground in the app's yellow instead of the kit's
+      beige; the FAQ's About screenshot gives way to links to the guides,
+      and the FAQ answers the questions people search for. Search: titles
+      and descriptions shaped like the searches, `twitter:` title and
+      description, `og:url`, a sitemap link, `FAQPage` from the visible
+      questions, `Article` and `BreadcrumbList` on guides. The README gets
+      its keywords into the heading and first lines, a screenshot and links
+      to the site and guides. Still no canonical link (no domain yet), and
+      no `robots.txt` (crawlers only read it at the host's root, which
+      `/Sub20` isn't).
+      *Done when:* the gate passes on the new page, Lighthouse on a phone
+      stays at 95 or more, and the shots at 1440 and 390 show nothing cut
+      off or empty.
+      Built 16 November 2026: the gate passed in round 3 (round 1: the
+      questions ran 1.77 phone screens, so the footer showed in their
+      second; round 2: `--hm: 2` left the gap at the foot, so the spare
+      room now sits between the guides and the questions). `check.mjs` at
+      five sizes finds only the waived marquee tracks; `copy-lint` 0 FAIL,
+      0 WARN on the home page, the guides, download and compare; `perf.mjs`
+      0 FAIL (two WARNs for the size and watch shots drawn smaller than
+      their boxes, as before). The questions gained a picture (`done.webp`,
+      the finished file and Copy) for `text-only`. Left: Lighthouse on a
+      phone (not installed on this machine), and the live check after the
+      Pages workflow runs. The repository's description and topics were
+      updated for search on 17 November 2026 (owner's yes): the
+      description opens "Video compressor for Discord", and ten topics
+      were added (discord-video, video-compressor, compress-video and
+      others).
 
 ## Needs the owner
 
