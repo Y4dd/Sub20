@@ -267,6 +267,17 @@ invented.
       and Copilot draw on. The subdomain is set aside for now (owner,
       17 November 2026), so this is done on `y4dd.github.io/Sub20`; a move
       later means a new property and a redirect.
+      17 November 2026: Google verified (the tag in `Base.astro`), the
+      sitemap submitted at `/Sub20/sitemap-index.xml` (Search Console
+      showed "Couldn't fetch" at first, while URL inspection said it was
+      available to Google), indexing requested for the home page,
+      `compress-video-for-discord`, `file-too-large`, the guides page and
+      download. 18 November 2026: indexing requested for the other three
+      guides; Bing Webmaster Tools set up (imported from Search Console,
+      sitemap and URLs in); nothing indexed by Google yet, and its
+      Sitemaps report still says "Couldn't fetch" on day two. Next: add
+      `sitemap-0.xml` beside the index, then watch Indexing → Pages for a
+      week or two.
 - [ ] Optional, any time before plan 5: buy a domain (a `.app` name is
       about $15 a year). Until then the address is `y4dd.github.io/Sub20`.
       15 November 2026: the owner has `amjad.sh` (Porkbun) and would use a
