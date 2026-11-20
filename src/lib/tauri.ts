@@ -99,10 +99,9 @@ export const tauriBackend: Backend = {
     if (!picked) return [];
     return Array.isArray(picked) ? picked : [picked];
   },
-  pickFolder: async () => {
-    const picked = await open({ directory: true, multiple: false, title: "Choose a folder" });
-    return typeof picked === "string" ? picked : null;
-  },
+  // The shell opens this dialog, so it knows which folders were really
+  // chosen: it takes a new FFmpeg folder only from those.
+  pickFolder: () => invoke<string | null>("pick_folder"),
   onJob: (handler) => listen<JobEvent>("job", (event) => handler(event.payload)),
   onOpened: (handler) => listen<string[]>("opened", (event) => handler(event.payload)),
   onNotice: (handler) => listen<string[]>("notice", (event) => handler(event.payload)),

@@ -75,7 +75,9 @@ impl MediaInfo {
 #[cfg(feature = "engine")]
 pub async fn probe(tools: &Tools, path: &Path) -> Result<MediaInfo> {
     let mut cmd = tools.ffprobe();
-    cmd.args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"]).arg(path);
+    cmd.args(crate::command::LOCAL_ONLY)
+        .args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"])
+        .arg(path);
     let out = ffmpeg::run(&mut cmd, Duration::from_secs(30)).await?;
     if !out.ok {
         return Err(Error::Unreadable(path.to_path_buf(), ffmpeg::tail(&out.stderr, 2)));

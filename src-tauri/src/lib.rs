@@ -52,6 +52,9 @@ struct AppState {
     fetched_ffmpeg: PathBuf,
     /// Scratch for a download in progress.
     fetch_dir: PathBuf,
+    /// Folders the user chose in `pick_folder` this session. A new FFmpeg
+    /// folder must be one of them, since the FFmpeg found there runs.
+    picked: Mutex<HashSet<PathBuf>>,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -293,6 +296,7 @@ async fn filmstrip(
     count: usize,
     on_thumb: Channel<Thumb>,
 ) -> CommandResult<Vec<PathBuf>> {
+    local(&path)?;
     let tools = state.engine.tools().map_err(text)?;
     thumbs::filmstrip(&tools, &path, duration, count, 96, &state.thumbs_dir, |index, path| {
         let _ = on_thumb.send(Thumb { index, path: path.to_path_buf() });
@@ -304,6 +308,7 @@ async fn filmstrip(
 /// One frame as a `data:` URL, for sources the window cannot play itself.
 #[tauri::command]
 async fn preview_frame(state: State<'_, AppState>, path: PathBuf, at: f64) -> CommandResult<String> {
+    local(&path)?;
     let tools = state.engine.tools().map_err(text)?;
     let jpeg = thumbs::frame(&tools, &path, at, 720).await.map_err(text)?;
     Ok(format!("data:image/jpeg;base64,{}", base64::engine::general_purpose::STANDARD.encode(jpeg)))
@@ -330,6 +335,9 @@ struct Request {
 /// Queues one job per video and returns their ids in the same order.
 #[tauri::command]
 async fn compress(state: State<'_, AppState>, jobs: Vec<Request>) -> CommandResult<Vec<JobId>> {
+    for job in &jobs {
+        local(&job.path)?;
+    }
     state.engine.tools().map_err(text)?;
     let settings = state.engine.settings().get();
     let output_dir = match settings.output_mode {
@@ -367,6 +375,13 @@ async fn cancel_all(state: State<'_, AppState>) -> CommandResult<()> {
 #[tauri::command]
 async fn save_settings(state: State<'_, AppState>, settings: Settings) -> CommandResult<Settings> {
     let before = state.engine.settings().get();
+    if let Some(folder) = &settings.ffmpeg_folder {
+        let known =
+            before.ffmpeg_folder.as_ref() == Some(folder) || state.picked.lock().expect("picked lock").contains(folder);
+        if !known {
+            return Err("That FFmpeg folder wasn't chosen in the folder dialog. Choose it again.".into());
+        }
+    }
     let saved = state.engine.settings().set(settings).map_err(text)?;
     if saved.ffmpeg_folder != before.ffmpeg_folder {
         state.engine.forget_tools().await;
@@ -382,6 +397,25 @@ async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Comman
     }
     state.engine.settings_changed();
     Ok(saved)
+}
+
+/// A folder chosen in the system's dialog, or `None` if it was closed. The
+/// shell opens the dialog, not the window, so it knows which folders the
+/// user really chose (`AppState::picked`).
+#[tauri::command]
+async fn pick_folder(app: AppHandle, state: State<'_, AppState>) -> CommandResult<Option<PathBuf>> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let mut dialog = app.dialog().file().set_title("Choose a folder");
+    if let Some(window) = app.get_webview_window("main") {
+        dialog = dialog.set_parent(&window);
+    }
+    dialog.pick_folder(move |folder| {
+        let _ = tx.send(folder);
+    });
+    let Some(folder) = rx.await.map_err(text)? else { return Ok(None) };
+    let path = folder.into_path().map_err(text)?;
+    state.picked.lock().expect("picked lock").insert(path.clone());
+    Ok(Some(path))
 }
 
 /// Which encoders work on this machine. `refresh` runs the tests again.
@@ -432,13 +466,32 @@ fn reveal(app: AppHandle, path: PathBuf) -> CommandResult<()> {
     app.opener().reveal_item_in_dir(&path).map_err(text)
 }
 
-/// Opens a finished video in the default player.
+/// Opens a finished video in the default player, or FFmpeg's licence
+/// notice. Nothing else: the system's default program for a path the
+/// window names could be the program itself.
 #[tauri::command]
-fn open_file(app: AppHandle, path: PathBuf) -> CommandResult<()> {
-    if !path.exists() {
-        return Err("That file is no longer there.".into());
+fn open_file(app: AppHandle, state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
+    let notice =
+        state.ffmpeg_notice.as_deref() == Some(path.as_path()) || path == state.fetched_ffmpeg.join("FFMPEG.txt");
+    if notice {
+        if !path.is_file() {
+            return Err("That file is no longer there.".into());
+        }
+    } else {
+        produced(&state, &path)?;
     }
     app.opener().open_path(path.to_string_lossy(), None::<&str>).map_err(text)
+}
+
+/// Refuses a source that isn't an absolute path. FFmpeg reads `http://…` or
+/// `concat:…` as a URL; what the window sends always came from a drop, a
+/// dialog or the system, and those are absolute.
+fn local(path: &Path) -> CommandResult<()> {
+    if path.is_absolute() {
+        Ok(())
+    } else {
+        Err("That isn't a file Sub20 can read.".into())
+    }
 }
 
 /// Refuses paths this app did not write.
@@ -902,6 +955,7 @@ pub fn run() {
                 ffmpeg_notice,
                 fetched_ffmpeg,
                 fetch_dir: cache_dir.join("ffmpeg-download"),
+                picked: Mutex::default(),
             });
             Ok(())
         })
@@ -918,6 +972,7 @@ pub fn run() {
             cancel,
             cancel_all,
             save_settings,
+            pick_folder,
             encoders,
             history_list,
             history_remove,

@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -39,7 +40,7 @@ impl MediaServer {
                 let Ok((stream, _)) = listener.accept().await else { continue };
                 let (token, files) = (shared_token.clone(), shared_files.clone());
                 tokio::spawn(async move {
-                    let _ = serve(stream, &token, &files).await;
+                    let _ = serve(stream, &token, &files, HEAD_WAIT).await;
                 });
             }
         });
@@ -99,19 +100,34 @@ async fn reply(stream: &mut TcpStream, status: &str, extra: &str) -> std::io::Re
     stream.write_all(head.as_bytes()).await
 }
 
-async fn serve(mut stream: TcpStream, token: &str, files: &Files) -> std::io::Result<()> {
-    // Read the request head.
-    let mut head = Vec::with_capacity(1024);
-    let mut chunk = [0u8; 1024];
-    while !head.windows(4).any(|w| w == b"\r\n\r\n") {
-        let n = stream.read(&mut chunk).await?;
-        if n == 0 {
-            return Ok(());
+/// How long a connection may take to send its request head. Without a limit
+/// a local process could hold connections open until the server runs out.
+const HEAD_WAIT: Duration = Duration::from_secs(10);
+
+/// Most a request head may be.
+const HEAD_MOST: usize = 16 * 1024;
+
+async fn serve(mut stream: TcpStream, token: &str, files: &Files, wait: Duration) -> std::io::Result<()> {
+    // Read the request head: `None` if the client went away.
+    let read = async {
+        let mut head = Vec::with_capacity(1024);
+        let mut chunk = [0u8; 1024];
+        while !head.windows(4).any(|w| w == b"\r\n\r\n") && head.len() <= HEAD_MOST {
+            let n = stream.read(&mut chunk).await?;
+            if n == 0 {
+                return Ok(None);
+            }
+            head.extend_from_slice(&chunk[..n]);
         }
-        head.extend_from_slice(&chunk[..n]);
-        if head.len() > 16 * 1024 {
-            return reply(&mut stream, "431 Request Header Fields Too Large", "").await;
-        }
+        std::io::Result::Ok(Some(head))
+    };
+    let head = match tokio::time::timeout(wait, read).await {
+        Ok(Ok(Some(head))) => head,
+        Ok(Ok(None)) | Err(_) => return Ok(()),
+        Ok(Err(e)) => return Err(e),
+    };
+    if head.len() > HEAD_MOST {
+        return reply(&mut stream, "431 Request Header Fields Too Large", "").await;
     }
     let head = String::from_utf8_lossy(&head);
     let mut lines = head.split("\r\n");
@@ -242,5 +258,20 @@ mod tests {
         let _ = std::fs::remove_file(&file);
         let _ = std::fs::remove_file(&secret);
         let _ = std::fs::remove_dir(&dir);
+    }
+
+    #[tokio::test]
+    async fn a_connection_that_sends_no_request_is_let_go() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let mut client = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+        let (stream, _) = listener.accept().await.unwrap();
+        // Half a request, then nothing.
+        client.write_all(b"GET / HTTP/1.1\r\n").await.unwrap();
+        let files: Files = Arc::default();
+        let served =
+            tokio::time::timeout(Duration::from_secs(5), serve(stream, "token", &files, Duration::from_millis(200)))
+                .await;
+        assert!(matches!(served, Ok(Ok(()))), "{served:?}");
     }
 }

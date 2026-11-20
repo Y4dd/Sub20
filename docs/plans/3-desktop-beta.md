@@ -253,6 +253,30 @@ people, the AI works on plan 4 or on plan 5's drafts.
       updated to it through the updater, and the policy page is live; or
       SignPath declined, its reason is here, and the owner has chosen
       what next.
+- [x] **3.9 Trust the window less** (security review, 20 November 2026).
+      Nothing found is reachable from outside: the window would have to be
+      compromised first, and its CSP allows no inline script and no
+      network. But some commands took whatever path the window sent:
+      1. `open_file` opened any existing path with the system's default
+         program, so an `.exe` would run. It now opens only results
+         (`produced`) and FFmpeg's licence notice.
+      2. `save_settings` took `ffmpeg_folder` as given, and the FFmpeg
+         found there runs. Folders are now picked by the shell
+         (`pick_folder`), which remembers them, and a new FFmpeg folder is
+         accepted only if it was picked that way this session.
+      3. Source paths reached FFmpeg as given, and FFmpeg reads strings
+         like `http://…` and `concat:…` as URLs. Every source input now
+         gets `-protocol_whitelist file`, and `find_videos` drops paths
+         that aren't absolute (drops, picks and opened files always are).
+      4. The Linux media server waited forever on an idle connection. The
+         request head now has to arrive within 10 seconds.
+      Left as they are: `reveal` only shows a file and History needs it
+      for old entries; a UNC path still reaches the network when it is
+      checked, which a share the user picked needs.
+      *Done when:* each has a test where one is possible, and fmt, clippy,
+      the tests and svelte-check are clean. Done 20 November 2026 on
+      Windows: all clean, the e2e encodes pass with the whitelist. Not yet
+      tried in the real window: choosing a folder through `pick_folder`.
 
 ## Needs the owner and testers
 

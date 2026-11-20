@@ -29,11 +29,16 @@ pub struct Found {
 /// the videos in it and in its subfolders, leaving out Sub20's own results
 /// (`clip-20mb.mp4`), unfinished files (`.part.`), anything hidden (a name
 /// starting with a dot) and links to other folders, which could loop.
+/// A path that isn't absolute is left out: drops, choices and opened files
+/// always are, and FFmpeg would read `http://…` or `concat:…` as a URL.
 pub fn find_videos(paths: &[PathBuf]) -> Found {
     let mut found = Found::default();
     for path in paths {
         if found.capped {
             break;
+        }
+        if !path.is_absolute() {
+            continue;
         }
         if path.is_dir() {
             search(path, &mut found);
@@ -157,6 +162,17 @@ mod tests {
         touch(&r.join("v.mp4"));
         let found = find_videos(&[r.join("odd.bin"), r.to_path_buf(), r.join("v.mp4")]);
         assert_eq!(names(&found, r), ["odd.bin", "v.mp4"]);
+    }
+
+    #[test]
+    fn only_absolute_paths_are_kept() {
+        let root = tempfile::tempdir().unwrap();
+        let v = root.path().join("v.mp4");
+        touch(&v);
+        let given = ["http://example.com/a.mp4", "concat:a.mp4|b.mp4", "-i", "v.mp4"].map(PathBuf::from);
+        let mut all = given.to_vec();
+        all.push(v.clone());
+        assert_eq!(find_videos(&all).files, [v]);
     }
 
     #[test]

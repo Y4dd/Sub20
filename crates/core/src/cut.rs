@@ -104,6 +104,7 @@ pub fn args(input: &Path, start: f64, end: f64, output: &Path) -> Vec<OsString> 
     if seek > 0.0 {
         a.extend(["-ss".into(), format!("{seek:.3}").into()]);
     }
+    a.extend(crate::command::LOCAL_ONLY.map(OsString::from));
     a.extend(["-i".into(), input.as_os_str().to_owned()]);
     a.extend(["-t".into(), format!("{:.3}", end - seek).into()]);
     a.extend(["-map", "0", "-c", "copy", "-sn", "-dn"].map(OsString::from));
@@ -118,7 +119,8 @@ pub fn args(input: &Path, start: f64, end: f64, output: &Path) -> Vec<OsString> 
 #[cfg(feature = "engine")]
 pub async fn keyframes(tools: &crate::ffmpeg::Tools, path: &Path) -> Result<Vec<f64>> {
     let mut cmd = tools.ffprobe();
-    cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time,flags", "-of", "csv=p=0"])
+    cmd.args(crate::command::LOCAL_ONLY)
+        .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time,flags", "-of", "csv=p=0"])
         .arg(path);
     let out = crate::ffmpeg::run(&mut cmd, std::time::Duration::from_secs(120)).await?;
     if !out.ok {
@@ -190,14 +192,14 @@ mod tests {
         let text = |a: Vec<OsString>| a.iter().map(|s| s.to_string_lossy().into_owned()).collect::<Vec<_>>().join(" ");
         assert_eq!(
             text(args(Path::new("/r/clip-20mb.mp4"), 3.25, 9.5, Path::new("/r/.clip.1.part.mp4"))),
-            "-y -ss 3.250 -i /r/clip-20mb.mp4 -t 6.250 -map 0 -c copy -sn -dn -movflags +faststart /r/.clip.1.part.mp4"
+            "-y -ss 3.250 -protocol_whitelist file -i /r/clip-20mb.mp4 -t 6.250 -map 0 -c copy -sn -dn -movflags +faststart /r/.clip.1.part.mp4"
         );
         assert_eq!(
             text(args(Path::new("/r/clip-20mb.mkv"), 4.0, 9.5, Path::new("/r/.clip.1.part.mkv"))),
-            "-y -ss 4.500 -i /r/clip-20mb.mkv -t 5.000 -map 0 -c copy -sn -dn /r/.clip.1.part.mkv"
+            "-y -ss 4.500 -protocol_whitelist file -i /r/clip-20mb.mkv -t 5.000 -map 0 -c copy -sn -dn /r/.clip.1.part.mkv"
         );
         let from_start = text(args(Path::new("/r/a.mkv"), 0.0, 3.0, Path::new("/r/b.mkv")));
-        assert!(from_start.starts_with("-y -i /r/a.mkv -t 3.000 "), "{from_start}");
+        assert!(from_start.starts_with("-y -protocol_whitelist file -i /r/a.mkv -t 3.000 "), "{from_start}");
         assert!(!from_start.contains("movflags"), "{from_start}");
     }
 }

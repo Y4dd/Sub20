@@ -9,6 +9,7 @@ use std::time::{Duration, SystemTime};
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 
+use crate::command::LOCAL_ONLY;
 use crate::error::{Error, IoContext, Result};
 use crate::ffmpeg::{self, Tools};
 
@@ -67,6 +68,7 @@ pub async fn filmstrip(
             // Thumbnails need not be frame-exact: take the keyframe at the
             // seek point instead of decoding forward to the exact time.
             cmd.args(["-y", "-loglevel", "error", "-noaccurate_seek", "-ss", &format!("{at:.3}")])
+                .args(LOCAL_ONLY)
                 .arg("-i")
                 .arg(&input)
                 .args(["-frames:v", "1", "-an", "-sn", "-dn"])
@@ -105,6 +107,7 @@ pub async fn filmstrip(
 pub async fn frame(tools: &Tools, input: &Path, at: f64, max_height: u32) -> Result<Vec<u8>> {
     let mut cmd = tools.ffmpeg();
     cmd.args(["-loglevel", "error", "-ss", &format!("{:.3}", at.max(0.0))])
+        .args(LOCAL_ONLY)
         .arg("-i")
         .arg(input)
         .args(["-frames:v", "1", "-an", "-sn", "-dn"])

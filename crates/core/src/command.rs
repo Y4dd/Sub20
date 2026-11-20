@@ -209,6 +209,11 @@ fn rate_flags(encoder: Encoder, kbps: u32) -> Vec<String> {
     flags
 }
 
+/// Goes before every source's `-i`, and to FFprobe. FFmpeg reads an input
+/// as a URL, so a "path" such as `http://…` or `concat:a|b` would reach the
+/// network or other files; a source is always a local file.
+pub const LOCAL_ONLY: [&str; 2] = ["-protocol_whitelist", "file"];
+
 /// Seconds between keyframes in a result. A result is cut by copying its
 /// packets (`cut`), and a copy can only start on a keyframe; the encoders'
 /// own default (250 frames, over 8 seconds at 30 fps) made that cut too
@@ -285,6 +290,7 @@ pub fn build(args: &EncodeArgs) -> Vec<OsString> {
     if plan.trimmed && plan.start > 0.0 {
         a.push("-ss").push(seconds(plan.start));
     }
+    a.extend(LOCAL_ONLY);
     a.push("-i").push(args.input.as_os_str());
     if plan.trimmed {
         a.push("-t").push(seconds(plan.duration));
@@ -437,7 +443,7 @@ mod tests {
     fn x264_with_trim_scale_and_fps_cap() {
         let options = EncodeOptions { target_mb: 8.0, max_fps: Some(30.0), ..Default::default() };
         let cmd = render(&source(), Some(Trim { start: 5.0, end: 35.0 }), &options, "libx264", Pass::Single);
-        assert!(cmd.starts_with("-y -ss 5.000 -i /in/clip.mov -t 30.000 -map 0:V:0"), "{cmd}");
+        assert!(cmd.starts_with("-y -ss 5.000 -protocol_whitelist file -i /in/clip.mov -t 30.000 -map 0:V:0"), "{cmd}");
         assert!(cmd.contains("-vf fps=fps=30 "), "{cmd}");
         assert!(
             cmd.contains("-c:v libx264 -pix_fmt yuv420p -profile:v high -b:v 2057k -maxrate 2468k -bufsize 4114k"),
@@ -497,7 +503,12 @@ mod tests {
     fn vaapi_and_qsv_upload_frames_to_the_chosen_device() {
         let options = EncodeOptions { target_mb: 3.0, ..Default::default() };
         let cmd = render(&source(), None, &options, "h264_vaapi", Pass::Single);
-        assert!(cmd.starts_with("-y -init_hw_device vaapi=va:/dev/dri/renderD129 -filter_hw_device va -i"), "{cmd}");
+        assert!(
+            cmd.starts_with(
+                "-y -init_hw_device vaapi=va:/dev/dri/renderD129 -filter_hw_device va -protocol_whitelist file -i"
+            ),
+            "{cmd}"
+        );
         // The planner picks the size; this checks only what VAAPI adds after it.
         assert!(cmd.contains("-vf scale="), "{cmd}");
         assert!(cmd.contains(":flags=bicubic,format=nv12|vaapi,hwupload -c:v h264_vaapi -b:v"), "{cmd}");
