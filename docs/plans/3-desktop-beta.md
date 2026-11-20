@@ -275,8 +275,11 @@ people, the AI works on plan 4 or on plan 5's drafts.
       checked, which a share the user picked needs.
       *Done when:* each has a test where one is possible, and fmt, clippy,
       the tests and svelte-check are clean. Done 20 November 2026 on
-      Windows: all clean, the e2e encodes pass with the whitelist. Not yet
-      tried in the real window: choosing a folder through `pick_folder`.
+      Windows: all clean, the e2e encodes pass with the whitelist. The
+      owner tried it in a dev build the same day: the folder dialog opens
+      over the window for the FFmpeg folder and a folder of videos, Cancel
+      changes nothing, and from DevTools `open_file` on Notepad, a URL to
+      `preview_frame` and an unpicked `ffmpegFolder` were all refused.
 
 ## Needs the owner and testers
 
