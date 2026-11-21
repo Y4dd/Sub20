@@ -327,3 +327,13 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 .dl__end { white-space: nowrap; }
 /* What each download is, under its column's name in /download/'s table. */
 .doc thead .dl-note { font-weight: 400; }
+
+/* The download section, sized to what it holds. */
+
+/* Lite and the questions. */
+
+/* The hero's words and buttons, and the close. */
+
+/* The formats rail, quieter. */
+
+/* The hero's window and the feature cards. */
