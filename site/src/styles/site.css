@@ -425,3 +425,11 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
   #features .card--row > p { margin: 0; max-width: 60ch; min-height: 0; padding-inline-end: var(--s-6); }
   #features .card--row > .panel { grid-column: 1 / -1; align-self: stretch; }
 }
+
+/* Round 3: phones, tablets and Macs. */
+
+/* Round 3: the payoff, before and after. */
+
+/* Round 3: Windows's warning. */
+
+/* Round 3: the room between sections, and the small fixes. */
