@@ -31,6 +31,15 @@
   main > .hero--centred { padding-bottom: calc(var(--s-6) + var(--bar, 0px)); }
   .hero--centred .hero__window { min-height: clamp(200px, 28svh, 340px); }
 }
+/* A tablet held upright (820x1180): the window is as wide as the page allows and still short, so a frame
+   that takes the rest of the screen left it floating in empty ground. There the frame holds the window
+   alone (no size container: it is as tall as its window), and the room left over goes above the words
+   and under the frame alike, so the first screen is one composition in its middle. */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: portrait) {
+  .hero--centred > .wrap > .hero-text { justify-content: center; }
+  .hero--centred .hero__window { container-type: normal; flex: none; min-height: 0; }
+  .hero--centred .hero__window > .ly-piece { width: 100%; }
+}
 /* A phone: the narrow screenshot (1120 x 1200), the frame's width. */
 @media (max-width: 639px) {
   .hero--centred .hero__window { padding: var(--s-4) var(--s-4) calc(var(--s-5) + 20px); }
@@ -49,44 +58,36 @@
 #features .panel { --p-h: 340px; }
 #features .panel.shot--low { --p-h: 264px; }
 /* a phone: each shot is its own narrow crop (Shot's phone), as wide as the panel, with a smaller inset */
-@media (max-width: 639px) { #features .panel, #features .panel.shot--low { --p-h: 184px; } #features .panel.shot img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } .formats { margin-bottom: var(--s-5); } }
+@media (max-width: 639px) { #features .panel, #features .panel.shot--low { --p-h: 184px; } #features .panel.shot img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } }
 /* With the id it outweighs the kit's mesh for tech pages (cards.css), which drew an olive haze here. */
 #features .panel.shot { background: #15171c; overflow: hidden; }
 /* Out of the flow, so the panel keeps its own height and the shot is never drawn larger than its file. */
 .panel.shot img { position: absolute; inset: var(--s-5); width: calc(100% - 2 * var(--s-5)); height: calc(100% - 2 * var(--s-5)); max-width: none; object-fit: scale-down; }
-/* The marquee's rail is as wide as its two tracks; one column the width of the wrap keeps it from widening both groups. */
-#features > .wrap { grid-template-columns: minmax(0, 1fr); }
-.formats { margin-bottom: var(--s-7); min-width: 0; }
 
 /* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
    other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
-   tell, every file in a list. Where the desktop app doesn't run (data-lite), Sub20 Lite leads. */
+   tell, every file in a list. Where the desktop app doesn't run (data-lite), a line for that device and
+   every file in the list, for the computer the visitor came to download for. */
 .downloads { display: grid; gap: var(--s-6); align-content: start; }
 .downloads > h2 { max-width: 10em; }
 /* Only where no button below fits the visitor (no JavaScript, or a system the page can't tell). */
 :root:is([data-lite], [data-os="windows"], [data-os="linux"]) .downloads__fallback { display: none; }
-#download { --dl-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v6.5M3 5.25 6 8.25l3-3M2 10.5h8' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  --dl-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+#download { --dl-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .downloads__pick, .downloads__lite { display: grid; gap: var(--s-3); justify-items: start; }
-.downloads__lite { gap: var(--s-5); }
 .downloads__pick { display: none; }
 :root[data-os="windows"]:not([data-lite]) .downloads__pick[data-for="windows"],
 :root[data-os="linux"]:not([data-lite]) .downloads__pick[data-for="linux"] { display: grid; }
-.downloads__btn { height: 52px; padding-inline: var(--s-6); font-size: 17px; margin-bottom: var(--s-2); }
+/* The kit's one button size; on a phone it runs the column's width, and its label may wrap on the narrowest. */
+.downloads__pick > .btn { margin-bottom: var(--s-2); }
+@media (max-width: 639px) {
+  .downloads__pick > .btn { width: 100%; height: auto; min-height: var(--btn-h); padding-block: var(--s-3); white-space: normal; text-align: center; line-height: 1.3; }
+}
 .downloads__note, .downloads__lite > p, .downloads__fallback, .downloads__all > p:first-child { max-width: 50ch; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
 .downloads__note b, .downloads__all b { color: var(--p-ink); font-weight: 500; }
 .downloads__note .link { display: inline; white-space: nowrap; }
 .downloads__note .link:not(.dl)::after { margin-left: 0.3em; }
-/* A link or button that starts a download: its size in the label, and a drawn arrow into a tray in
-   place of the page arrow (a button leads with it). Without a release they go to the releases page,
-   carry no .dl, and keep the page arrow. */
-#download .dl::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor;
-  -webkit-mask: var(--dl-glyph) center / contain no-repeat; mask: var(--dl-glyph) center / contain no-repeat; }
-#download .link.dl::after { display: inline-block; margin-left: var(--s-2); vertical-align: -1px; }
-#download .btn.dl::after { content: none; }
-#download .btn.dl::before { content: ""; flex: none; width: 15px; height: 15px; background: currentColor;
-  -webkit-mask: var(--dl-glyph) center / contain no-repeat; mask: var(--dl-glyph) center / contain no-repeat; }
-@media (hover: hover) and (pointer: fine) { #download .link.dl:hover::after { transform: translateY(2px); } }
+/* A button or link that starts a download ends in DownloadMark (the rules are under "Words and links").
+   Without a release they go to the releases page, carry no mark, and keep the page arrow. */
 .downloads__size { font-weight: 400; }
 /* "Other systems and downloads": a text link that opens the list, its chevron turning down. */
 .downloads__more > summary { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 44px; cursor: pointer; list-style: none;
@@ -96,11 +97,11 @@
 .downloads__more > summary::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor; transition: rotate var(--dur) var(--ease);
   -webkit-mask: var(--dl-chevron) center / contain no-repeat; mask: var(--dl-chevron) center / contain no-repeat; }
 .downloads__more[open] > summary::after { rotate: 90deg; }
-/* With no button above it (no JavaScript, or a system the page can't tell), the list stands open without its summary. */
-:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__more > summary { display: none; }
+/* With no button above it (no JavaScript, a system the page can't tell, or data-lite), the list stands open without its summary. */
+:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__more > summary { display: none; }
 .downloads__all { display: grid; gap: var(--s-5); padding-top: var(--s-3); }
 .downloads__all > p:first-child { max-width: 72ch; }
-:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__all { padding-top: 0; }
+:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__all { padding-top: 0; }
 .downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-5) var(--gutter); }
 /* A column a system: four side by side on a computer, two on a tablet. */
 @media (min-width: 640px) { .downloads__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -118,12 +119,20 @@
 .downloads__after a:not(.link) { color: var(--p-ink); }
 /* Beside it, the finished clip (what the download is for): the result's file and Copy, cropped out of the
    app's result row (src/assets/img/done.webp, 970 × 180) at --cx, --cy, --cw × --ch, in the source's pixels. */
-.downloads__frame { background: #15171c; --ratio: 40%; padding: var(--s-6); }
+.downloads__frame { background: #15171c; --ratio: 48%; padding: var(--s-6); }
 .downloads__crop { --cx: 16; --cy: 8; --cw: 936; --ch: 118; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; }
 .downloads__crop > img { position: absolute; max-width: none; height: auto; width: calc(970 / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
+/* The five questions fit one screen at 1440x900 (723px of the 708 the kit's screen holds at the kit's 24px
+   rows, so the section ran 15px long and the close started off its screen): 16px rows, as on a phone. */
+#faq .faq > .faq__item:not(:first-child) { padding-top: var(--s-4); }
+#faq .faq > .faq__item { padding-bottom: var(--s-4); }
+
 /* The questions' guide links, one under the other. */
 .faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-1); justify-items: start; text-wrap: pretty; }
+
+/* The footer's line about Sub20 runs to three lines at the lead size: the kit's 1.25 is a heading's leading. */
+.closing__links .footer__lede { line-height: 1.4; }
 
 /* Lite: the phone rising out of the frame's foot. */
 .lite__text { display: grid; gap: var(--s-5); align-content: start; }
@@ -136,6 +145,8 @@
 /* Stacked under the words (below 1024px), the two split frames keep their own ratio and the section
    grows to hold them, instead of sharing what the screen leaves. */
 @media (max-width: 1023px) {
+  #download > .wrap > .grid { row-gap: var(--s-7); } /* stacked, the finished clip stands apart from the words above it */
+  .downloads__frame { --ratio: 24%; } /* and, the page's width, it needs no height to stand beside them */
   :is(#download, #lite) > .wrap > .grid.fill { flex: 0 0 auto; }
   :is(#download, #lite) .grid.fill > .frame--fill { flex: none; }
   #lite .frame--split { --ratio: 120%; }
@@ -143,6 +154,12 @@
 @media (max-width: 639px) {
   /* the result's name and size alone, from inside its file chip and on the chip's own ground, so they stay readable on a phone */
   .downloads__frame { --ratio: 0px; padding: var(--s-4) var(--s-5); background: #1c2028; }
+  .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
+}
+/* The same from 1024 to 1279px, where the frame beside the words is too narrow for the whole row
+   (its text came out about 10px at 1024): the name and size, on the chip's ground, in the frame's middle. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .downloads__frame { background: #1c2028; }
   .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
 }
 
@@ -192,23 +209,37 @@
 /* A guide's way back to the guides, above its heading. */
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 
-/* A phone: the questions take two screens (--hm: 2), and the room the second screen has to spare is
-   shared out between the questions, not left in one gap or under the last answer. */
+/* A phone: the questions take two screens (--hm: 2) but fill about 1.75 (1,336px at 390x844). The
+   questions keep their own 16px rows, and the room to spare (about 200px) goes above them, so the
+   guides and the questions read as two groups. Shared out between the questions it opened 80px gaps
+   inside one list; under the last answer it made the gap to the close a third wider than the page's
+   others. The guide links that wrap keep their arrow after their last word (a block, not the kit's
+   flex row, which pushed it to the right edge), 44px tall on one line. */
 @media (max-width: 639px) {
   #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
-  #faq .faq { display: flex; flex-direction: column; justify-content: space-between; }
+  #faq .faq { display: flex; flex-direction: column; justify-content: flex-end; }
+  .faq__guides { gap: 0; }
+  .faq__guides > li { display: flex; align-items: center; min-height: 44px; }
+  html .faq__guides .link { display: block; min-height: 0; padding-block: 10px; line-height: 1.5; text-wrap: balance; }
+  html .faq__guides .link::after { margin-left: var(--s-2); }
+  html:not([data-motion="off"]) .faq__guides .link { padding-block: 10px; background: none; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 }
 
 /* Where the desktop app doesn't run (a phone, a tablet, a Mac: data-lite, set by Base's head script),
    .if-lite shows and .if-app hides. Without JavaScript the computer's parts show. */
 :root:not([data-lite]) .if-lite, :root[data-lite] .if-app { display: none !important; }
 
-/* The download block. */
-/* From 1280px a section is exactly a screen tall; the opened list (or the whole list without JavaScript)
-   can be taller on a short screen, so this one grows with it instead of running into Lite. */
-@media (min-width: 1280px) { #download { height: auto; min-height: 100vh; min-height: 100svh; } }
-
-/* The hero, and Lite. */
+/* From 1280px the kit makes every section exactly a screen tall. On a short screen (1366x700, 1280x720)
+   the questions, the opened download list, or the whole list without JavaScript are taller than that,
+   and ran under the next section (the last question under the close, the close's button crushed). So
+   from 1280px too a section is at least a screen and grows with what it holds: the kit's own rule for
+   640-1279px. Where the content fits (1440x900) nothing moves. */
+@media (min-width: 1280px) {
+  main > :is(section, .section):not(.hero, .section--hero), footer.closing { height: auto; min-height: 100vh; min-height: 100svh; }
+  :where(main > :is(section, .section):not(.hero, .section--hero), footer.closing) { display: flex; flex-direction: column; }
+  main > :is(section, .section):not(.hero, .section--hero) > :is(.wrap, .container), footer.closing > .wrap { flex: 1 0 auto; height: auto; min-height: 0; }
+}
+.closing__cta > .btn--xl { flex: none; }
 
 /* The feature shots, and the room between sections. */
 /* The features are as tall as their cards, not two whole screens, so the heading follows the hero
@@ -279,10 +310,16 @@
 .doc__back .m-arrow { transform: scaleX(-1); margin: 0 0 0 -2px; }
 html:not([data-motion="off"]) .doc .doc__back { background-size: 0% 1px, calc(100% - 10px - var(--s-2)) 1px; background-position: 100% 100%, 100% 100%; }
 html:not([data-motion="off"]) .doc .doc__back:is(:hover, :focus-visible) { background-size: calc(100% - 10px - var(--s-2)) 1px, calc(100% - 10px - var(--s-2)) 1px; background-position: 100% 100%, 100% 100%; }
-/* A link that starts a file download: a drawn down-arrow after its words, never the page-link arrow.
-   Reusable anywhere: <svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v6.5M3 5.5 6 8.5l3-3M2 10.5h8"/></svg>. */
+/* A link or button that starts a file download: a drawn arrow into a tray after its words
+   (src/components/DownloadMark.astro), never the page-link arrow. In a flex button or .link the gap
+   spaces it; in running text its own margin does. The kit's .link underline stops short of it. */
 .dl-mark { display: inline-block; flex: none; width: 12px; height: 12px; margin-left: 6px; vertical-align: -1px; overflow: visible;
   fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur) var(--ease); }
+:is(.btn, .link):has(.dl-mark)::after { content: none; display: none; }
+:is(.btn, .link) > .dl-mark { margin-left: 0; }
+.downloads__note .link > .dl-mark { margin-left: var(--s-2); } /* an inline link there: no gap to space it */
+html:not([data-motion="off"]) .link:has(> .dl-mark) { background-size: 0% 1px, calc(100% - 12px - var(--s-2)) 1px; }
+html:not([data-motion="off"]) .link:has(> .dl-mark):is(:hover, :focus-visible) { background-size: calc(100% - 12px - var(--s-2)) 1px, calc(100% - 12px - var(--s-2)) 1px; }
 @media (hover: hover) and (pointer: fine) { a:hover .dl-mark { transform: translateY(2px); } }
 a:focus-visible .dl-mark { transform: translateY(2px); }
 @media (prefers-reduced-motion: reduce) { .dl-mark { transition: none; } a:is(:hover, :focus-visible) .dl-mark { transform: none; } }

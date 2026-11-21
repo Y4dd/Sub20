@@ -128,7 +128,7 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
         <div class="closing__cta close--type">
           <div class="section-head">
             <h2 id="close-h">Fit your next clip under <span class="trim">20&nbsp;MB</span></h2>
-            <p class="t-small muted">Free for Windows and Linux. No account, MIT licence.</p>
+            <p class="t-small muted"><span class="if-app">Free for Windows and Linux. No account, MIT licence.</span><span class="if-lite">Free in your browser, with nothing to install. No account, MIT licence.</span></p>
           </div>
           <a class="btn btn--primary btn--xl btn--wide if-app" href={current === "download" ? "#downloads" : u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
         </div>

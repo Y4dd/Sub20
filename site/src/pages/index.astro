@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import Shot from "../components/Shot.astro";
+import DownloadMark from "../components/DownloadMark.astro";
 import { u, GITHUB, RELEASES } from "../lib/site";
 import { latestRelease, ROWS, cell, kindInText } from "../lib/release";
 import { GUIDES } from "../lib/guides";
@@ -53,7 +54,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
         <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
-        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for your computer</a></div>
+        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
       </div>
       <div class="hero__window" role="img" aria-label="Sub20's window: a drone clip with the yellow trim bar over its frames, planned at 1080p and marked Should look good, and at the foot the size, 20 MB, and Compress 3 videos">
         <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1280px) and (min-height: 1000px) 1120px, (min-width: 960px) 960px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
@@ -105,10 +106,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     <div class="wrap">
       <div class="grid">
         <div class="span-5 downloads">
-          <h2 id="download-h"><span class="if-app">Download Sub20 for Windows and Linux</span> <span class="if-lite">Use Sub20 Lite on this device</span></h2>
+          <h2 id="download-h">Download Sub20 for Windows and Linux</h2>
           <p class="downloads__fallback">Free and open source, for Windows 10 and 11 and {keep("64-bit")} Linux. Pick your system below.</p>
           {/* One button for the visitor's system (data-os, set by Base's head script); none without JavaScript.
-              A button or link that starts a download carries .dl (a drawn arrow into a tray, never the page arrow);
+              A button or link that starts a download carries .dl and ends in DownloadMark (never the page arrow);
               without a release to read, they go to the releases page and stay page links. */}
           {(() => {
             const win = cell(release, ROWS[0], false);
@@ -119,33 +120,34 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             return (
               <>
                 <div class="downloads__pick" data-for="windows">
-                  <a class:list={["btn btn--primary downloads__btn", { dl: win.size }]} href={win.href}><span>Download for Windows{win.size && <span class="downloads__size">, {keep(win.size)}</span>}</span></a>
+                  <a class:list={["btn btn--primary", { dl: win.size }]} href={win.href}><span>Download for Windows{win.size && <span class="downloads__size">, {keep(win.size)}</span>}</span>{win.size && <DownloadMark />}</a>
                   <p class="downloads__note">Windows 10 and 11, {keep("64-bit")} installer{version}.</p>
                   <p class="downloads__note">Windows will warn you because Sub20 isn't code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>See the install steps</a></p>
                 </div>
                 <div class="downloads__pick" data-for="linux">
-                  <a class:list={["btn btn--primary downloads__btn", { dl: deb.size }]} href={deb.href}><span>Download for Linux (.deb){deb.size && <span class="downloads__size">, {keep(deb.size)}</span>}</span></a>
+                  <a class:list={["btn btn--primary", { dl: deb.size }]} href={deb.href}><span>Download for Linux (.deb){deb.size && <span class="downloads__size">, {keep(deb.size)}</span>}</span>{deb.size && <DownloadMark />}</a>
                   <p class="downloads__note">The {keep("64-bit")} package for Ubuntu, Debian and Mint{version}.</p>
-                  <p class="downloads__note">Fedora or openSUSE: <a class:list={["link", { dl: rpm.size }]} href={rpm.href}>the .rpm{rpm.size && `, ${keep(rpm.size)}`}</a>. Any other Linux: <a class:list={["link", { dl: app.size }]} href={app.href}>the AppImage{app.size && `, ${keep(app.size)}`}</a>.</p>
+                  <p class="downloads__note">Fedora or openSUSE: <a class:list={["link", { dl: rpm.size }]} href={rpm.href}>the .rpm{rpm.size && `, ${keep(rpm.size)}`}{rpm.size && <DownloadMark />}</a>. Any other Linux: <a class:list={["link", { dl: app.size }]} href={app.href}>the AppImage{app.size && `, ${keep(app.size)}`}{app.size && <DownloadMark />}</a>.</p>
                 </div>
               </>
             );
           })()}
+          {/* Where the desktop app doesn't run (data-lite): the files stay open below for the computer the visitor came to download for, and Lite is named for this device. */}
           <div class="downloads__lite if-lite">
-            <p>The desktop app is for Windows and Linux. Sub20 Lite is the same window in your browser, with nothing to install and nothing uploaded.</p>
-            <a class="btn btn--primary downloads__btn" href={u("app/")}>Open Sub20 Lite</a>
+            <p>Sub20 is a desktop app for Windows and Linux: open this page on a Windows or Linux computer to download it, or pick its file below. On this device, Sub20 Lite runs in your browser.</p>
+            <a class="link" href={u("app/")}>Open Sub20 Lite</a>
           </div>
         </div>
         {/* The finished clip, what the download is for: its file and Copy, cropped from the app's result row. */}
-        <div class="frame span-7 start-6 downloads__frame">
+        <div class="frame span-6 start-7 downloads__frame">
           <div class="downloads__crop">
-            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1023px) 900px, 700px" />
+            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1279px) 900px, 700px" />
           </div>
         </div>
         {/* Every file. Open as written, so it is the whole list without JavaScript or on a system the page
-            can't tell; the script under it closes it where a button above already offers the right file. */}
+            can't tell, or where the desktop app doesn't run; the script under it closes it where a button above already offers the right file. */}
         <details class="downloads__more" open>
-          <summary><span class="if-app">Other systems and downloads</span> <span class="if-lite">Downloads for Windows and Linux</span></summary>
+          <summary>Other systems and downloads</summary>
           <div class="downloads__all">
             <p>Each system has two downloads. <b>Sub20</b> has FFmpeg, the part that does the compressing, built in: take this one. <b>Without FFmpeg</b> is smaller because it leaves FFmpeg out: it uses the one already on your computer, or offers to download it the first time it opens.</p>
             <ul class="downloads__list" role="list">
@@ -156,8 +158,8 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
                   <li>
                     <span><b>{row.system}</b> <span class="muted">{keep(row.detail)}, {kindInText(row.kind)}</span></span>
                     <span class="downloads__links">
-                      <a class:list={["link", { dl: full.size }]} href={full.href}><span>Sub20{full.size && <span class="downloads__size">, {keep(full.size)}</span>}</span></a>
-                      <a class:list={["link", { dl: lean.size }]} href={lean.href}><span>Without FFmpeg{lean.size && <span class="downloads__size">, {keep(lean.size)}</span>}</span></a>
+                      <a class:list={["link", { dl: full.size }]} href={full.href}><span>Sub20{full.size && <span class="downloads__size">, {keep(full.size)}</span>}</span>{full.size && <DownloadMark />}</a>
+                      <a class:list={["link", { dl: lean.size }]} href={lean.href}><span>Without FFmpeg{lean.size && <span class="downloads__size">, {keep(lean.size)}</span>}</span>{lean.size && <DownloadMark />}</a>
                     </span>
                   </li>
                 );
@@ -169,7 +171,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             </p>
           </div>
         </details>
-        <script is:inline>(()=>{const d=document.documentElement.dataset;if("lite"in d||d.os==="windows"||d.os==="linux")document.currentScript.previousElementSibling.open=false})()</script>
+        <script is:inline>(()=>{const d=document.documentElement.dataset;if(!("lite"in d)&&(d.os==="windows"||d.os==="linux"))document.currentScript.previousElementSibling.open=false})()</script>
       </div>
     </div>
   </section>

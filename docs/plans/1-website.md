@@ -253,6 +253,52 @@ invented.
       copy-lint 0 FAIL and 0 WARN on the new guide, the guides page and
       `file-too-large`. Left: it goes live with the next Pages run, and
       indexing waits on the owner (below).
+- [ ] **1.14 The home page after the critique** (20 and 21 November 2026;
+      the critique is `.impeccable/critique/2026-11-21T02-56-26Z__site-src-pages-index-astro.md`).
+      Five fixes, merged at `3b02c9c`: links that say where they go and a
+      download mark; the trim bracket round the headline and the close,
+      and the formats as the app's timeline (`.kinds`) in place of the
+      marquee; legible feature shots in features as tall as their cards;
+      phones and Macs offered Sub20 Lite first; one download button for
+      the visitor's system, the rest behind "Other systems and downloads".
+      Then a polish pass: one download mark (`DownloadMark.astro`) after
+      the words everywhere; the download button at the kit's one size; on
+      phones, tablets and Macs the download block lists the files for the
+      visitor's computer and the close names Lite's terms; a section at
+      least a screen and growing from 1280px too (at 1366x700 the last
+      question ran under the close); the questions in one screen at
+      1440x900; the phone's questions in their own rows; the upright
+      tablet's hero frame holding its window alone; the marquee's leftover
+      CSS gone.
+      The marquee's three waivers went with it. `.taste-skill/waivers.json`
+      now waives two findings about the formats rail: `row-lines` (its
+      handles stand on the container's lines, so the frames start 16px in)
+      and `one-section` (the rail reads as a band; it is the app's
+      filmstrip). The main checkout's git-ignored copy still holds the
+      three marquee waivers until it is replaced.
+      Checks on 21 November 2026 (skill 2.5.1, where `check.mjs` is
+      `assets/layout/check.mjs`; Edge's launcher exits at once under
+      `consistency.mjs`, so Chrome from Playwright): copy-lint 0 FAIL,
+      0 WARN on the home page, download and the first guide; `perf.mjs`
+      0 FAIL (3 WARN, as before); `check.mjs` at five sizes finds only
+      `#features` (1.5 screens at 1440, 2.16 at 768x1024, 2.08 on a phone)
+      and the neighbour it lets show. `consistency.mjs --quick` 16 FAIL
+      (22 after the five fixes, 1 before them); with `--rhythm-widths 390`
+      the questions are exactly two phone screens, and Lite and the close
+      run 1.2 (as on 16 November). Open,
+      for the owner: `#features` is 1.5 screens at 1440x900 by the
+      features fix, which fails the kit's one-or-two-screens rhythm there
+      and moves every later section off the screen grid (`section-height`
+      5, `one-section` 3); this can't be waived (one waiver a finding,
+      five at most): either features go back to two screens with the room
+      that brings, or the rhythm rule is set aside. `no-visual` on
+      `#download` and `text-only` on `#faq` (the finished clip moved from
+      the questions to the downloads, and a single download button leaves
+      the downloads 44% full, `section-gaps` and `section-air` with it)
+      need a picture: a fresh capture of the finished window would serve
+      both.
+      *Done when:* the owner has decided the rhythm and the pictures, and
+      the gate passes again.
 
 ## Needs the owner
 
