@@ -37,7 +37,7 @@ const faqPage = {
   "@type": "FAQPage",
   mainEntity: FAQ.map((q) => ({ "@type": "Question", name: q.q, acceptedAnswer: { "@type": "Answer", text: q.html.replace(/<[^>]+>/g, "") } })),
 };
-// The formats Sub20 opens (crates/core/src/watch.rs VIDEO_EXTENSIONS, less its second spellings), in a trim bracket.
+// Formats Sub20 opens, from crates/core/src/watch.rs VIDEO_EXTENSIONS (not all: MPG, 3G2, MTS and OGV are left out), in a trim bracket.
 const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG", "TS", "M2TS", "3GP", "MXF", "VOB"];
 ---
 
