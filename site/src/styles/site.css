@@ -31,6 +31,15 @@
   main > .hero--centred { padding-bottom: calc(var(--s-6) + var(--bar, 0px)); }
   .hero--centred .hero__window { min-height: clamp(200px, 28svh, 340px); }
 }
+/* A tablet held upright (820x1180): the window is as wide as the page allows and still short, so a frame
+   that takes the rest of the screen left it floating in empty ground. There the frame holds the window
+   alone (no size container: it is as tall as its window), and the room left over goes above the words
+   and under the frame alike, so the first screen is one composition in its middle. */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: portrait) {
+  .hero--centred > .wrap > .hero-text { justify-content: center; }
+  .hero--centred .hero__window { container-type: normal; flex: none; min-height: 0; }
+  .hero--centred .hero__window > .ly-piece { width: 100%; }
+}
 /* A phone: the narrow screenshot (1120 x 1200), the frame's width. */
 @media (max-width: 639px) {
   .hero--centred .hero__window { padding: var(--s-4) var(--s-4) calc(var(--s-5) + 20px); }
