@@ -1,12 +1,10 @@
 ---
 import Doc from "../../layouts/Doc.astro";
+import DownloadMark from "../../components/DownloadMark.astro";
 import { u, RELEASES } from "../../lib/site";
-import { latestRelease, ROWS, cell, sums } from "../../lib/release";
+import { latestRelease, ROWS, cell, sums, kindInText } from "../../lib/release";
 
 const release = await latestRelease();
-// A link that starts a download carries a drawn down-arrow (.dl-mark), never the page-link arrow;
-// the releases page, where a file is missing, is a page and gets neither.
-const mark = '<svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v6.5M3 5.5 6 8.5l3-3M2 10.5h8"></path></svg>';
 ---
 
 <Doc
@@ -34,9 +32,9 @@ const mark = '<svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path 
           const lean = cell(release, row, true);
           return (
             <tr data-os={row.os}>
-              <th scope="row">{row.system}<br /><span class="muted">{row.detail}, {row.kind}</span></th>
-              <td>{full.size ? <a class="dl" href={full.href}>Download, <span class="dl__end">{full.size}<Fragment set:html={mark} /></span></a> : <a href={full.href}>Releases page</a>}</td>
-              <td>{lean.size ? <a class="dl" href={lean.href}>Download, <span class="dl__end">{lean.size}<Fragment set:html={mark} /></span></a> : <a href={lean.href}>Releases page</a>}</td>
+              <th scope="row">{row.system}<br /><span class="muted">{row.detail}, {kindInText(row.kind)}</span></th>
+              <td>{full.size ? <a class="dl" href={full.href}>Download, <span class="dl__end">{full.size}<DownloadMark /></span></a> : <a href={full.href}>Releases page</a>}</td>
+              <td>{lean.size ? <a class="dl" href={lean.href}>Download, <span class="dl__end">{lean.size}<DownloadMark /></span></a> : <a href={lean.href}>Releases page</a>}</td>
             </tr>
           );
         })}
@@ -59,7 +57,7 @@ const mark = '<svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path 
   <p><code>chmod +x Sub20*.AppImage</code></p>
 
   <h2>Checksums</h2>
-  <p>Each release lists the SHA-256 of every file in {sums(release) === RELEASES ? <a href={RELEASES}>SHA256SUMS.txt</a> : <a class="dl" href={sums(release)}><span class="dl__end">SHA256SUMS.txt<Fragment set:html={mark} /></span></a>}. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on Linux, <code>sha256sum</code> with the file's name. The result should match the file's line.</p>
+  <p>Each release lists the SHA-256 of every file in {sums(release) === RELEASES ? <a href={RELEASES}>SHA256SUMS.txt</a> : <a class="dl" href={sums(release)}><span class="dl__end">SHA256SUMS.txt<DownloadMark /></span></a>}. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on Linux, <code>sha256sum</code> with the file's name. The result should match the file's line.</p>
 
   <h2>What it needs</h2>
   <ul>
