@@ -334,6 +334,8 @@ export const mockBackend: Backend = {
     bundled: false,
     ffmpegNotice: null,
     ffmpegOffer: DEMO_OFFER,
+    watched: [],
+    notice: null,
     // `?clips` opens the demo clips at startup, so a headless screenshot can
     // show the bench without clicking.
     openedWith: new URLSearchParams(location.search).has("clips")

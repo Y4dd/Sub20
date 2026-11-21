@@ -22,6 +22,7 @@ use sub20_core::job::{EncodeOptions, JobEvent, JobId, JobSpec, Origin, Trim};
 use sub20_core::plan::{self, Plan};
 use sub20_core::settings::{OutputMode, Settings};
 use sub20_core::watch::{self, WatchStatus, Watcher};
+use sub20_core::watched::{WatchedJob, WatchedJobs};
 use sub20_core::{fetch, thumbs, Engine, MediaInfo};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WindowEvent};
@@ -55,6 +56,9 @@ struct AppState {
     /// Folders the user chose in `pick_folder` this session. A new FFmpeg
     /// folder must be one of them, since the FFmpeg found there runs.
     picked: Mutex<HashSet<PathBuf>>,
+    /// This session's watch jobs, kept here so a window built again after
+    /// closing still lists them.
+    watched: Arc<Mutex<WatchedJobs>>,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -104,21 +108,32 @@ struct Bootstrap {
     ffmpeg_notice: Option<PathBuf>,
     /// The FFmpeg this system can download when it has none.
     ffmpeg_offer: Option<fetch::Offer>,
+    /// This session's watch jobs, newest first.
+    watched: Vec<WatchedJob>,
+    /// A watch notice clicked while there was no window: the results it
+    /// names, for the window to open.
+    notice: Option<Vec<PathBuf>>,
 }
 
 /// Everything the window needs when it opens.
 #[tauri::command]
 async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
+    // From here on, opened videos and notice clicks go to the window as
+    // events. Both locks are held while it becomes ready, so nothing slips
+    // between being held for it and being sent to it.
+    let (opened_with, notice) = {
+        let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+        let mut notice = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
+        WINDOW_READY.store(true, Ordering::SeqCst);
+        (in_name_order(std::mem::take(&mut *waiting)), notice.take())
+    };
     Ok(Bootstrap {
         settings: state.engine.settings().get(),
         ffmpeg: ffmpeg_state(&state.engine).await,
         version: env!("CARGO_PKG_VERSION"),
-        opened_with: {
-            // From here on, opened videos go to the window as events.
-            let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
-            WINDOW_READY.store(true, Ordering::SeqCst);
-            in_name_order(std::mem::take(&mut *waiting))
-        },
+        watched: state.watched.lock().expect("watched lock").list(),
+        notice,
+        opened_with,
         bundled: bundled(),
         ffmpeg_notice: state.ffmpeg_notice.clone(),
         ffmpeg_offer: fetch::offer(),
@@ -571,8 +586,43 @@ fn copy_file(state: State<'_, AppState>, path: PathBuf) -> CommandResult<()> {
 /// exists.
 static OPENED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 /// Set when the window takes the waiting videos; later ones are sent to it
-/// as `opened` events.
+/// as `opened` events. Cleared when the window is destroyed, so they wait
+/// again for the next one.
 static WINDOW_READY: AtomicBool = AtomicBool::new(false);
+/// A watch notice clicked while no window was ready to hear it: the results
+/// it names, until `bootstrap` takes them.
+static NOTICE: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
+
+/// Brings the main window forward, building it again from its config if it
+/// was closed.
+pub(crate) fn show_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+        return;
+    }
+    let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else { return };
+    if let Err(e) = tauri::WebviewWindowBuilder::from_config(app, config).and_then(|b| b.build()) {
+        log::warn!("could not open the window: {e}");
+    }
+}
+
+/// A watch notice was clicked: the window comes forward, built again if it
+/// was closed, and opens the results it names (see `notify::listen`).
+pub(crate) fn notice_clicked(app: &AppHandle, results: Vec<PathBuf>) {
+    {
+        let mut held = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
+        if !WINDOW_READY.load(Ordering::SeqCst) {
+            *held = Some(results);
+            drop(held);
+            show_window(app);
+            return;
+        }
+    }
+    show_window(app);
+    let _ = app.emit("notice", results);
+}
 /// A batch of opened videos is being gathered for the window.
 static GATHERING: AtomicBool = AtomicBool::new(false);
 /// How long no more videos must arrive before a batch goes to the window.
@@ -634,15 +684,12 @@ fn opened_paths<P: Into<PathBuf>>(args: impl IntoIterator<Item = P>, cwd: &Path)
         .collect()
 }
 
-/// Brings the window forward with the videos it was asked to open.
+/// Brings the window forward, built again if it was closed, with the videos
+/// a second launch asked to open (none for a plain launch).
 fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
+    show_window(app);
     if paths.is_empty() {
         return;
-    }
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.unminimize();
-        let _ = window.show();
-        let _ = window.set_focus();
     }
     let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
     waiting.extend(paths);
@@ -656,8 +703,13 @@ fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
                 std::thread::sleep(OPENED_QUIET);
                 let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
                 if waiting.len() == counted {
-                    let batch = in_name_order(std::mem::take(&mut *waiting));
                     GATHERING.store(false, Ordering::SeqCst);
+                    // The window closed while they gathered: they wait for
+                    // the next one.
+                    if !WINDOW_READY.load(Ordering::SeqCst) {
+                        return;
+                    }
+                    let batch = in_name_order(std::mem::take(&mut *waiting));
                     drop(waiting);
                     let _ = app.emit("opened", batch);
                     return;
@@ -911,10 +963,13 @@ pub fn run() {
             let window = app.handle().clone();
             notify::listen(app.handle());
             let notices = Arc::new(notify::Notices::default());
+            let watched: Arc<Mutex<WatchedJobs>> = Arc::default();
+            let following = watched.clone();
             let sink = Arc::new(move |event: JobEvent| {
                 if let JobEvent::Done { result, .. } = &event {
                     produced.lock().expect("results lock").insert(result.output.clone());
                 }
+                following.lock().expect("watched lock").see(&event);
                 notices.see(&window, &event, || {
                     window.try_state::<AppState>().is_some_and(|state| state.engine.settings().get().watch.notify)
                 });
@@ -930,9 +985,10 @@ pub fn run() {
                 let _ = warm_engine.hardware(false).await;
             });
 
-            // Files handed over by "Open with" or dropped on the app icon.
+            // Files handed over by "Open with" or dropped on the app icon wait
+            // for the window, which is built below once the state exists.
             let cwd = std::env::current_dir().unwrap_or_default();
-            hand_over(app.handle(), opened_paths(std::env::args_os().skip(1), &cwd));
+            OPENED.lock().unwrap_or_else(|e| e.into_inner()).extend(opened_paths(std::env::args_os().skip(1), &cwd));
 
             let media = if cfg!(target_os = "linux") {
                 tauri::async_runtime::block_on(media::MediaServer::start())
@@ -956,7 +1012,12 @@ pub fn run() {
                 fetched_ffmpeg,
                 fetch_dir: cache_dir.join("ffmpeg-download"),
                 picked: Mutex::default(),
+                watched,
             });
+            // The window isn't made from the config at startup (`create:
+            // false`), so it is built the same way here as when it comes
+            // back after closing.
+            show_window(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -999,6 +1060,12 @@ pub fn run() {
             if !may_quit(app) {
                 api.prevent_close();
             }
+        }
+        RunEvent::WindowEvent { label, event: WindowEvent::Destroyed, .. } if label == "main" => {
+            // Opened videos and notice clicks wait for the next window.
+            let _waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+            let _notice = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
+            WINDOW_READY.store(false, Ordering::SeqCst);
         }
         RunEvent::ExitRequested { api, .. } => {
             if !may_quit(app) {

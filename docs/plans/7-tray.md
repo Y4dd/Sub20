@@ -49,7 +49,13 @@ until after the owner's Arch sitting.
       *Done when:* the numbers are in the record and say whether
       WebView2's processes exit with the window. If the process tree stays
       over 100 MB, stop here: the plan goes back to plan 6.
-- [ ] **7.2 A window that can come back.** The main window is no longer
+- [x] **7.2 A window that can come back.** Done 20 November 2026: in a
+      release test copy, a minimised window came forward on a plain second
+      launch and that launch quit, a second launch with two clips added
+      them, and closing still quits (until 7.4). The watch-job list is
+      `sub20_core::watched` with three tests; fmt, clippy, the tests and
+      svelte-check are clean. Not looked at: the rebuilt window's own
+      frame, which 7.4 checks. The main window is no longer
       made at startup (`create: false`, in `tauri.conf.json` and
       `tauri.windows.conf.json`, since each declares the whole window). One
       shell function shows it, building it if it is gone, and everything

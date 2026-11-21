@@ -301,6 +301,8 @@ export const webBackend: Backend = {
       bundled: false,
       ffmpegNotice: null,
       ffmpegOffer: null,
+      watched: [],
+      notice: null,
     };
   },
   ffmpegStatus: async () => {

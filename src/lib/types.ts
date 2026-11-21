@@ -221,6 +221,22 @@ export interface Bootstrap {
   ffmpegNotice: string | null;
   /** The FFmpeg this system can download when it has none. */
   ffmpegOffer: FfmpegOffer | null;
+  /** This session's watch jobs, newest first, kept by the shell so a
+   *  window built again after closing still lists them. */
+  watched: ShellWatchedJob[];
+  /** A watch notice clicked while there was no window: the results it
+   *  names, to open as a click would. */
+  notice: string[] | null;
+}
+
+/** Mirrors `sub20_core::watched::WatchedJob`. */
+export interface ShellWatchedJob {
+  id: string;
+  input: string;
+  status: "queued" | "running" | "done" | "failed" | "canceled";
+  percent: number;
+  result: JobResult | null;
+  error: string | null;
 }
 
 /** An FFmpeg Sub20 can download (`fetch::Offer`). */

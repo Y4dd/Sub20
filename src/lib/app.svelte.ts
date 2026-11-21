@@ -7,7 +7,7 @@ import { webBackend } from "./web/backend";
 import { baseName, plain } from "./format";
 import type {
   Added, Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
-  UpdateInfo, WatchStatus,
+  ShellWatchedJob, UpdateInfo, WatchStatus,
 } from "./types";
 
 /** Sub20 Lite: the web build, or `?lite` under `npm run dev`. Both are
@@ -136,16 +136,15 @@ export function snapStart(keyframes: number[], time: number): number {
 export type Sheet = "options" | "settings" | "history" | "keys" | null;
 
 /** A clip the folder watch is compressing or has compressed, this session. */
-export interface WatchedJob {
-  id: string;
-  input: string;
+export interface WatchedJob extends ShellWatchedJob {
   name: string;
-  status: "queued" | "running" | "done" | "failed" | "canceled";
-  percent: number;
-  result: JobResult | null;
-  error: string | null;
   /** Just copied; the row's Copy says so for a moment. */
   copied: boolean;
+}
+
+/** A watch job as History shows it. */
+function watchedJob(job: ShellWatchedJob): WatchedJob {
+  return { ...job, name: job.input.split(/[\\/]/).pop() ?? job.input, copied: false };
 }
 
 /** How often the watch's state is asked for while one is on. */
@@ -245,6 +244,8 @@ class App {
     this.bundled = boot.bundled;
     this.ffmpegNotice = boot.ffmpegNotice;
     this.ffmpegOffer = boot.ffmpegOffer;
+    // A window built again after closing lists what the watch did meanwhile.
+    this.watched = boot.watched.map(watchedJob);
     this.loadProfile(boot.settings.defaultProfile);
     if (boot.settings.lastOptions) this.#restore(boot.settings.lastOptions);
     this.#rememberOptions();
@@ -262,6 +263,7 @@ class App {
     this.ready = true;
     if (boot.ffmpeg.found) void this.loadReport(false);
     if (boot.openedWith.length) void this.add(boot.openedWith);
+    if (boot.notice) void this.openNotice(boot.notice);
     if (boot.settings.checkUpdates) void this.checkUpdate(true);
     void this.#followWatch();
   }
@@ -342,8 +344,9 @@ class App {
   /** Follows the folder watch's jobs; true when the event was one of them. */
   #onWatched(event: JobEvent): boolean {
     if (event.type === "queued" && event.origin === "watch") {
-      const name = event.input.split(/[\\/]/).pop() ?? event.input;
-      const job: WatchedJob = { id: event.id, input: event.input, name, status: "queued", percent: 0, result: null, error: null, copied: false };
+      // A job the window already has from `bootstrap` isn't listed twice.
+      if (this.watched.some((j) => j.id === event.id)) return true;
+      const job = watchedJob({ id: event.id, input: event.input, status: "queued", percent: 0, result: null, error: null });
       this.watched = [job, ...this.watched].slice(0, 50);
       return true;
     }

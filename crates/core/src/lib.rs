@@ -30,6 +30,7 @@ pub mod probe;
 pub mod progress;
 pub mod settings;
 pub mod timecode;
+pub mod watched;
 
 // The engine: runs FFmpeg and touches the system (the default `engine`
 // feature).

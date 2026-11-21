@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use sub20_core::job::{JobEvent, Origin};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 /// The key under which a notice carries the results it names.
@@ -110,9 +110,9 @@ impl Notices {
 }
 
 /// Makes a click on a notice open what it names: the window comes forward
-/// and hears `notice` with the paths of the results (none for a notice
-/// about failures), then opens one result on the bench or several in
-/// History. Call before the first notice: one shown with no handler reports
+/// (built again if it was closed) and hears `notice` with the paths of the
+/// results (none for a notice about failures), or finds them in
+/// `bootstrap`, then opens one result on the bench or several in History. Call before the first notice: one shown with no handler reports
 /// nothing. On Windows a click is heard while the notice is on screen, not
 /// once it has gone to the notification centre.
 pub fn listen(app: &AppHandle) {
@@ -126,12 +126,7 @@ pub fn listen(app: &AppHandle) {
             .and_then(|n| n.extra().get(RESULTS))
             .and_then(|v| serde_json::from_value(v.clone()).ok())
             .unwrap_or_default();
-        if let Some(window) = handle.get_webview_window("main") {
-            let _ = window.unminimize();
-            let _ = window.show();
-            let _ = window.set_focus();
-        }
-        let _ = handle.emit("notice", results);
+        crate::notice_clicked(&handle, results);
     });
 }
 

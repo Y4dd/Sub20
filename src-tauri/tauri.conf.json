@@ -13,6 +13,7 @@
     "windows": [
       {
         "label": "main",
+        "create": false,
         "title": "Sub20",
         "width": 1180,
         "height": 780,
