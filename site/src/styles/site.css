@@ -190,11 +190,19 @@
 /* A guide's way back to the guides, above its heading. */
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 
-/* A phone: the questions take two screens (--hm: 2), and the room the second screen has to spare is
-   shared out between the questions, not left in one gap or under the last answer. */
+/* A phone: the questions take two screens (--hm: 2) but fill about 1.75 (1,336px at 390x844). The
+   questions keep their own 16px rows, and the room to spare (about 200px) goes half above them, so the
+   guides and the questions read as two groups, and half under the last answer. Shared out between the
+   questions it opened 80px gaps inside one list. The guide links that wrap keep their arrow after
+   their last word (a block, not the kit's flex row, which pushed it to the right edge). */
 @media (max-width: 639px) {
   #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
-  #faq .faq { display: flex; flex-direction: column; justify-content: space-between; }
+  #faq .faq { display: flex; flex-direction: column; justify-content: center; }
+  .faq__guides { gap: 0; }
+  .faq__guides > li { display: flex; align-items: center; min-height: 44px; }
+  html .faq__guides .link { display: block; min-height: 0; padding-block: var(--s-2); text-wrap: balance; }
+  html .faq__guides .link::after { margin-left: var(--s-2); }
+  html:not([data-motion="off"]) .faq__guides .link { background: none; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 }
 
 /* Where the desktop app doesn't run (a phone, a tablet, a Mac: data-lite, set by Base's head script),
