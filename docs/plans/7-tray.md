@@ -97,7 +97,10 @@ until after the owner's Arch sitting.
       the setting on: closing the window left one process at 8–9 MB with
       no WebView2 processes, a clip dropped in the watched folder was
       compressed with no window, and a plain second launch built the
-      window again (one process). `Engine::active_manual` is tested in
+      window again (one process). Six launches at once with six new clips,
+      as Explorer starts them, made one process and one window and added
+      all six, both cold and from the tray (the window is built on a
+      thread of its own, one build at a time). `Engine::active_manual` is tested in
       `cancel_stops_the_encode_and_cleans_up`. Decided while building:
       the tray needs the watch on as well as `keep_watching` (the setting
       outlives switching the watch off), and is there while both are on,

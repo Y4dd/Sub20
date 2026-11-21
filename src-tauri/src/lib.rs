@@ -605,16 +605,26 @@ pub(crate) fn show_window(app: &AppHandle) {
         let _ = window.set_focus();
         return;
     }
+    // One build at a time: Explorer starts Sub20 once per selected file, so
+    // several launches can ask for the window within milliseconds.
+    if BUILDING.swap(true, Ordering::SeqCst) {
+        return;
+    }
     // Built on a thread of its own: on Windows, building a window inside an
     // event handler (a tray click, a second launch) can deadlock WebView2.
     let app = app.clone();
     std::thread::spawn(move || {
-        let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else { return };
-        if let Err(e) = tauri::WebviewWindowBuilder::from_config(&app, config).and_then(|b| b.build()) {
-            log::warn!("could not open the window: {e}");
+        if let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") {
+            if let Err(e) = tauri::WebviewWindowBuilder::from_config(&app, config).and_then(|b| b.build()) {
+                log::warn!("could not open the window: {e}");
+            }
         }
+        BUILDING.store(false, Ordering::SeqCst);
     });
 }
+
+/// The main window is being built (`show_window`).
+static BUILDING: AtomicBool = AtomicBool::new(false);
 
 /// Whether the watch is to keep going from the tray once the window closes:
 /// a watch on, `keep_watching` on, and the tray icon really there, so the
