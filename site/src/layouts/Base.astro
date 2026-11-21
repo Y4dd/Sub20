@@ -86,8 +86,9 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
       }
     </style>
     <script is:inline>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
-    <!-- The visitor's system, for marking its rows in the download lists. Phones and tablets get none. -->
-    <script is:inline>(()=>{const n=navigator,p=(n.userAgentData&&n.userAgentData.platform)||n.platform||"";if(/Android|iPhone|iPad|iPod/.test(n.userAgent)||(/Mac/.test(p)&&n.maxTouchPoints>1))return;const os=/Win/.test(p)?"windows":/Mac/.test(p)?"mac":/Linux|X11/.test(p)?"linux":"";if(os)document.documentElement.dataset.os=os})()</script>
+    <!-- The visitor's system, for marking its rows in the download lists. Phones and tablets get none.
+         data-lite: a device the desktop app doesn't run on (a phone, a tablet, a Mac), where Sub20 Lite is the way in. -->
+    <script is:inline>(()=>{const n=navigator,d=document.documentElement,p=(n.userAgentData&&n.userAgentData.platform)||n.platform||"";if(/Android|iPhone|iPad|iPod/.test(n.userAgent)||(/Mac/.test(p)&&n.maxTouchPoints>1)){d.dataset.lite="";return}const os=/Win/.test(p)?"windows":/Mac/.test(p)?"mac":/Linux|X11/.test(p)?"linux":"";if(os)d.dataset.os=os;if(os==="mac")d.dataset.lite=""})()</script>
     <slot name="head" />
     {moments && (
       <>

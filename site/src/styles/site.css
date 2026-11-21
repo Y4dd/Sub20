@@ -128,3 +128,17 @@
   #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
   #faq .faq { display: flex; flex-direction: column; justify-content: space-between; }
 }
+
+/* Where the desktop app doesn't run (a phone, a tablet, a Mac: data-lite, set by Base's head script),
+   .if-lite shows and .if-app hides. Without JavaScript the computer's parts show. */
+:root:not([data-lite]) .if-lite, :root[data-lite] .if-app { display: none !important; }
+
+/* The download block. */
+
+/* The hero, and Lite. */
+
+/* The feature shots, and the room between sections. */
+
+/* The trim bracket, the site's own device. */
+
+/* Words and links: the nav, the footer, the document pages. */
