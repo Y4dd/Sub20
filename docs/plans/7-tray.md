@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window).
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -92,8 +92,13 @@ until after the owner's Arch sitting.
       says the tray exists (Windows).
       *Done when:* old settings files load, and the option is hidden in
       Lite and on Linux.
-- [ ] **7.4 Close to the tray.** Built 20 November 2026, waiting on the
-      owner's look at the icon, Open and Quit. In a debug test copy with
+- [x] **7.4 Close to the tray.** Done 20 November 2026. The owner tried
+      it in the debug test copy the same day: the icon comes and goes with
+      the setting, closing asks nothing and leaves the icon, a left click
+      and Open bring the window back with its own title bar, and Quit
+      during a watched encode (the long clip, with "Compress new videos
+      straight away" on) asked; "Keep compressing" kept Sub20 running and
+      "Stop and quit" quit. Checked by script before that, in a debug test copy with
       the setting on: closing the window left one process at 8–9 MB with
       no WebView2 processes, a clip dropped in the watched folder was
       compressed with no window, and a plain second launch built the
@@ -110,8 +115,7 @@ until after the owner's Arch sitting.
       asking, most likely because the clip had not been picked up yet
       (nothing in `watch.json`, no partial file; Tauri does let `exit(0)`
       be prevented, though a job canceled by the quit would leave the same
-      traces), so it is to try again once FFmpeg is running under Sub20,
-      now with "Compress new videos straight away" on.
+      traces); tried again once the clip was being compressed, it asked.
       Tauri's `tray-icon` feature, for the
       Windows target only. The tray menu has Open (also a left click),
       Pause watching and Quit. With the setting on, closing the window
@@ -128,8 +132,10 @@ until after the owner's Arch sitting.
       show only with "Compress new videos straight away" on, and a clip the
       watch finds joins the bench without moving the selection. In a debug
       test copy a clip dropped in the folder joined the bench with the
-      window open and with only the tray. Settings' look is the owner's to
-      judge. (owner, 20 November 2026,
+      window open and with only the tray. The owner tried both by hand the
+      same day, with the Settings section, a clip benched while closed,
+      and the bench kept across closing (trim, name, leave out).
+      (owner, 20 November 2026,
       after trying 7.4: people want to trim before compressing). Taken
       after 7.4, before 7.5. Settings' toggle becomes "Watch a folder", and
       under it "Compress new videos straight away"
