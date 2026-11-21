@@ -19,7 +19,7 @@ const release = await latestRelease();
   <h2 id="downloads">Two downloads per system</h2>
   <p><b>Sub20</b> comes with FFmpeg, the free tool that does the compressing. Most people want this one.</p>
   <p><b>Sub20 without FFmpeg</b> is the same app as a much smaller download, for people who already have FFmpeg installed. If your computer has none, its first screen offers to fetch it once, the same FFmpeg the other download carries.</p>
-  <p>Both update themselves and stay the download you picked. Every update is signed.</p>
+  <p>Both update themselves and stay the download you picked.</p>
 
   <div class="table-scroll">
     <table>
@@ -45,7 +45,7 @@ const release = await latestRelease();
   <p>There is no Mac version. On a Mac, <a href={u("app/")}>Sub20 Lite</a> runs in the browser.</p>
 
   <h2>The first time you open it</h2>
-  <p>The Windows build isn't code-signed yet, so Windows warns the first time you open it. Signing is being set up: see the <a href={u("code-signing/")}>code signing policy</a>. Updates are signed either way.</p>
+  <p>The Windows installer isn't code-signed yet, so Windows warns the first time you open it; the <a href={u("code-signing/")}>code signing policy</a> says more. Updates are a separate matter: Sub20 checks each one against its own update key before installing it.</p>
   <h3>Windows: "Windows protected your PC"</h3>
   <ol>
     <li>Open the installer.</li>

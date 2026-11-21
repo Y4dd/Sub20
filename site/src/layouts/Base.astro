@@ -12,6 +12,8 @@ import "../styles/site.css";
 import displayFont from "../assets/fonts/bricolage-grotesque-display-latin.woff2?url";
 import textFont from "@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url";
 import { u, GITHUB } from "../lib/site";
+import GetSub20 from "../components/GetSub20.astro";
+import SmartScreenNote from "../components/SmartScreenNote.astro";
 
 interface Props {
   title: string;
@@ -130,7 +132,8 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
             <h2 id="close-h">Fit your next clip under <span class="trim">20&nbsp;MB</span></h2>
             <p class="t-small muted"><span class="if-app">Free for Windows and Linux. No account, MIT licence.</span><span class="if-lite">Free in your browser, with nothing to install. No account, MIT licence.</span></p>
           </div>
-          <a class="btn btn--primary btn--xl btn--wide if-app" href={current === "download" ? "#downloads" : u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
+          <GetSub20 class="btn btn--primary btn--xl btn--wide if-app" jump={current === "download" ? "#downloads" : u("#download")} arrow /><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
+          <SmartScreenNote class="t-small muted close__note" />
         </div>
         <div class="closing__links">
           <div class="grid">
