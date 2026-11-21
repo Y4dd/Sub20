@@ -95,8 +95,8 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <div class="grid">
           <article class="card card--row card--open span-6">
             <h3>Picks up new clips from your folders</h3>
-            <p>Point Sub20 at the NVIDIA app's or Xbox Game Bar's folder and it picks up each new clip as it lands.</p>
-            <div class="panel shot shot--low"><Shot name="watch" alt="History: the watched NVIDIA folder, 1 clip done, harbour-drone-take3-20mb.mp4, 612 MB to 19.4 MB, with Open and Copy" sizes="(min-width: 1280px) 480px, (min-width: 1024px) calc(50vw - 150px), 480px" phone={{ name: "watch-narrow", sizes: "calc(100vw - 72px)" }} /></div>
+            <p>In the desktop app, point Sub20 at the NVIDIA app's or Xbox Game Bar's folder and it picks up each new clip as it lands.</p>
+            <div class="panel shot shot--low"><Shot name="watch" alt="History: the watched folder C:\Users\demo\Videos\NVIDIA, 1 clip done, clutch-1v4-ranked-20mb.mp4, 248 MB to 19.4 MB, with Open and Copy" sizes="(min-width: 1280px) 480px, (min-width: 1024px) calc(50vw - 150px), 480px" phone={{ name: "watch-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
           <article class="card card--row card--open span-6">
             <h3>Keeps the microphone in every clip</h3>
@@ -146,20 +146,27 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             <p>It runs on Windows 10 and 11 and {keep("64-bit")} Linux. To install it, open this page on that computer, or take its file below.</p>
           </div>
         </div>
-        {/* What the download is for, before and after: the plan row's size and verdict (from the hero's window, or its
-            narrow layout on a phone), then the finished file, 612 MB down to 19.4 MB. Cropped (site.css) so no button shows. */}
+        {/* What the download is for, one game clip from plan to Discord: the plan row's size and verdict, the finished
+            file, 248 MB down to 19.4 MB, then Copy. Pictures, not controls: cropped (site.css) and never clickable;
+            the sizes are said in words at body size, since the crops draw them small. */}
         <div class="frame span-6 start-7 downloads__frame">
           <ol class="downloads__story" role="list">
             <li>
               <p>Before it starts, Sub20 says how it will look</p>
               <div class="downloads__crop downloads__crop--plan">
-                <Shot name="window" alt="Sub20's plan for a 1 min 12 s clip: 1080p, H.264 at 2.1 Mbps, Should look good" sizes="(min-width: 1024px) and (max-width: 1279px) 1800px, 1920px" phone={{ name: "window-narrow", sizes: "640px" }} />
+                <Shot name="plan" alt="Sub20's plan for a 41 s game clip: 1440p, H.264 at 3.9 Mbps, Should look good" sizes="800px" />
               </div>
             </li>
             <li>
-              <p>When it's done, the file fits under 20 MB</p>
+              <p>When it's done, the clip is <strong>19.4&nbsp;MB</strong>, down from 248&nbsp;MB</p>
               <div class="downloads__crop downloads__crop--done">
-                <Shot name="done" alt="The finished file: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB" sizes="720px" />
+                <Shot name="done" alt="The finished file: clutch-1v4-ranked-20mb.mp4, 19.4 MB, down from 248 MB" sizes="720px" />
+              </div>
+            </li>
+            <li>
+              <p>Copy it, then paste it in Discord</p>
+              <div class="downloads__crop downloads__crop--copy">
+                <Shot name="done" alt="Sub20's Copy button beside the finished file, with its shortcut, Ctrl+C" sizes="720px" />
               </div>
             </li>
           </ol>

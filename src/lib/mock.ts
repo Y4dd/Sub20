@@ -38,6 +38,12 @@ let settings: Settings = {
   },
 };
 
+// The demo files live where Windows keeps videos: the site's screenshots show
+// these paths, and the folder watch is Windows's.
+const VIDEOS = String.raw`C:\Users\demo\Videos`;
+/** A path in `folder`, the way Windows writes it. */
+const inFolder = (folder: string, name: string) => `${folder}\\${name}`;
+
 // `?watch` sets up a watch on a demo clip folder that finds a clip now and
 // then and puts it on the bench; `?watch=compress` compresses it straight
 // away instead, `?watch=pile` adds a pile that arrived while the app was
@@ -52,7 +58,7 @@ let noticeClicked = false;
 const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" ? 12 : 0 };
 if (WATCH !== null) {
   const compress = WATCH === "compress" || WATCH === "pile" || WATCH === "notice";
-  settings.watch = { ...settings.watch, enabled: true, folder: "/Users/demo/Videos/NVIDIA", recursive: true, compress };
+  settings.watch = { ...settings.watch, enabled: true, folder: inFolder(VIDEOS, "NVIDIA"), recursive: true, compress };
 }
 
 interface Demo {
@@ -254,7 +260,7 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
       const replace = settings.outputMode === "replace";
       const name = job.outputName?.trim() || (replace ? stem : `${stem}-${job.options.targetMb}mb`);
       const result: JobResult = {
-        output: `/Users/demo/Videos/${name}.${job.options.container}`,
+        output: inFolder(VIDEOS, `${name}.${job.options.container}`),
         sizeBytes: Math.round(plan.expectedBytes * 0.972), originalBytes: demo.info.sizeBytes, duration: plan.duration,
         width: plan.width, height: plan.height, videoKbps: plan.videoKbps, audioKbps: plan.audioKbps, encoder,
         hardware: encoder.endsWith("nvenc"), fellBackFrom: null, attempts: 1, elapsedSeconds: seconds,
@@ -281,13 +287,14 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
   timers.set(id, timer);
 }
 
-/** The demo watch finds a clip a few seconds in, then one every 20 seconds. */
+/** The demo watch finds a clip a few seconds in, then one every 20 seconds,
+ * the game clip first, as an NVIDIA folder would. */
 function findClips() {
-  let next = 0;
+  let next = DEMOS.findIndex((demo) => demo.name.startsWith("clutch"));
   const find = () => {
     if (settings.watch.enabled && settings.watch.folder && !watching.waiting) {
       const demo = DEMOS[next++ % DEMOS.length];
-      const path = `${settings.watch.folder}/${demo.name}`;
+      const path = inFolder(settings.watch.folder, demo.name);
       added.set(path, demo);
       if (!settings.watch.compress) {
         watching.benched++;
@@ -305,7 +312,7 @@ function findClips() {
 }
 if (WATCH !== null) findClips();
 
-const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: "/usr/local/bin", problem: null };
+const DEMO_FFMPEG: FfmpegStatus = { found: true, version: "ffmpeg version 7.1 (demo)", folder: String.raw`C:\Users\demo\scoop\shims`, problem: null };
 let noFfmpeg = new URLSearchParams(location.search).has("noffmpeg");
 // `?noffmpeg=broken`: an FFmpeg is there but won't start.
 const NO_FFMPEG: FfmpegStatus =
@@ -353,7 +360,7 @@ export const mockBackend: Backend = {
     // `?clips` opens the demo clips at startup, so a headless screenshot can
     // show the bench without clicking.
     openedWith: new URLSearchParams(location.search).has("clips")
-      ? DEMOS.slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`)
+      ? DEMOS.slice(0, 3).map((demo) => inFolder(VIDEOS, demo.name))
       : [],
   }),
   ffmpegStatus: async () => (noFfmpeg ? NO_FFMPEG : DEMO_FFMPEG),
@@ -372,18 +379,18 @@ export const mockBackend: Backend = {
     onProgress({ stage: "installing", fraction: null, received: size });
     await new Promise((resolve) => setTimeout(resolve, 600));
     noFfmpeg = false;
-    return { ffmpeg: DEMO_FFMPEG, notice: "/Users/demo/Library/Application Support/io.github.y4dd.sub20/ffmpeg/FFMPEG.txt" };
+    return { ffmpeg: DEMO_FFMPEG, notice: String.raw`C:\Users\demo\AppData\Local\io.github.y4dd.sub20\ffmpeg\FFMPEG.txt` };
   },
   // A folder (a path with no extension) holds the demo clips.
   findVideos: async (paths) => ({
-    files: paths.flatMap((path) => (/\.[a-z0-9]+$/i.test(path) ? [path] : DEMOS.map((demo) => `${path}/${demo.name}`))),
+    files: paths.flatMap((path) => (/\.[a-z0-9]+$/i.test(path) ? [path] : DEMOS.map((demo) => inFolder(path, demo.name)))),
     capped: false,
   }),
   addVideos: async (paths): Promise<Added[]> => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return paths.map((path) => {
       const demo = DEMOS.find((d) => path.endsWith(d.name));
-      if (!demo) return { path, name: path.split("/").pop()!, info: null, playUrl: null, error: "This file has no video track." };
+      if (!demo) return { path, name: path.split(/[\\/]/).pop()!, info: null, playUrl: null, error: "This file has no video track." };
       added.set(path, demo);
       return { path, name: demo.name, info: demo.info, playUrl: null, error: null };
     });
@@ -452,7 +459,7 @@ export const mockBackend: Backend = {
     if (compress) {
       for (let i = 0; i < Math.min(pile, 3); i++) {
         const demo = DEMOS[i % DEMOS.length];
-        const path = `${settings.watch.folder}/${demo.name}`;
+        const path = inFolder(settings.watch.folder!, demo.name);
         added.set(path, demo);
         const id = `demo-${nextId++}`;
         window.setTimeout(() => simulate(id, { path, trim: null, options: settings.lastOptions ?? DEFAULT_OPTIONS, outputName: null }, "watch"), i * 900);
@@ -461,8 +468,8 @@ export const mockBackend: Backend = {
     return mockBackend.watchStatus();
   },
   clipFolders: async () => [
-    { app: "NVIDIA app", path: "/Users/demo/Videos/NVIDIA", recursive: true },
-    { app: "Xbox Game Bar", path: "/Users/demo/Videos/Captures", recursive: false },
+    { app: "NVIDIA app", path: inFolder(VIDEOS, "NVIDIA"), recursive: true },
+    { app: "Xbox Game Bar", path: inFolder(VIDEOS, "Captures"), recursive: false },
   ],
   reveal: async () => {},
   openFile: async () => {},
@@ -490,7 +497,7 @@ export const mockBackend: Backend = {
     let clean = name.trim().replace(/[<>:"/\\|?*]/g, "");
     if (clean.toLowerCase().endsWith(extension.toLowerCase())) clean = clean.slice(0, -extension.length);
     if (!clean) throw "That name has no letters a file name can use.";
-    const renamed = path.slice(0, path.lastIndexOf("/") + 1) + clean + extension;
+    const renamed = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1) + clean + extension;
     const facts = made.get(path);
     if (facts) {
       made.delete(path);
@@ -506,7 +513,7 @@ export const mockBackend: Backend = {
     const text = [
       "**Sub20** 0.1.0 (demo)",
       "**System** a browser",
-      "**FFmpeg** ffmpeg version 7.1 (demo), in /usr/local/bin",
+      `**FFmpeg** ffmpeg version 7.1 (demo), in ${DEMO_FFMPEG.folder}`,
       ...(log.length ? ["", "**FFmpeg log of the last job**", "```", ...log, "```"] : []),
     ].join("\n");
     // A browser refuses the clipboard without focus; the demo shows the text instead.
@@ -515,9 +522,9 @@ export const mockBackend: Backend = {
   dragOut: async () => {},
   pickVideos: async () => {
     const fresh = DEMOS.filter((demo) => ![...added.values()].includes(demo));
-    return (fresh.length ? fresh : DEMOS).slice(0, 3).map((demo) => `/Users/demo/Videos/${demo.name}`);
+    return (fresh.length ? fresh : DEMOS).slice(0, 3).map((demo) => inFolder(VIDEOS, demo.name));
   },
-  pickFolder: async () => "/Users/demo/Videos/Compressed",
+  pickFolder: async () => inFolder(VIDEOS, "Compressed"),
   onJob: async (handler) => {
     listeners.add(handler);
     return () => listeners.delete(handler);
