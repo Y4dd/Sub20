@@ -59,7 +59,7 @@ const mark = '<svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path 
   <p><code>chmod +x Sub20*.AppImage</code></p>
 
   <h2>Checksums</h2>
-  <p>Each release lists the SHA-256 of every file in <a href={sums(release)}>SHA256SUMS.txt</a>. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on Linux, <code>sha256sum</code> with the file's name. The result should match the file's line.</p>
+  <p>Each release lists the SHA-256 of every file in {sums(release) === RELEASES ? <a href={RELEASES}>SHA256SUMS.txt</a> : <a class="dl" href={sums(release)}><span class="dl__end">SHA256SUMS.txt<Fragment set:html={mark} /></span></a>}. To check a download on Windows, run <code>certutil -hashfile</code> with the file's name and <code>SHA256</code>; on Linux, <code>sha256sum</code> with the file's name. The result should match the file's line.</p>
 
   <h2>What it needs</h2>
   <ul>
