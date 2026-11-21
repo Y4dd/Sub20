@@ -66,8 +66,8 @@
 
 /* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
    other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
-   tell, every file in a list. Where the desktop app doesn't run (data-lite), a line for that device and
-   every file in the list, for the computer the visitor came to download for. */
+   tell, every file in a list. Where the desktop app doesn't run (data-lite), Sub20 Lite first, the way
+   in on that device, and the files for a computer behind the same "Other systems and downloads". */
 .downloads { display: grid; gap: var(--s-6); align-content: start; }
 .downloads > h2 { max-width: 10em; }
 /* Only where no button below fits the visitor (no JavaScript, or a system the page can't tell). */
@@ -77,6 +77,10 @@
 .downloads__pick { display: none; }
 :root[data-os="windows"]:not([data-lite]) .downloads__pick[data-for="windows"],
 :root[data-os="linux"]:not([data-lite]) .downloads__pick[data-for="linux"] { display: grid; }
+/* Windows's warning: under the Windows button (as close as the pick's own lines), and without JavaScript
+   under the line above; not on Linux, nor where the desktop app doesn't run. */
+:root:is([data-lite], [data-os="linux"]) .downloads__warn { display: none; }
+.downloads__warn { margin-top: calc(var(--s-3) - var(--s-6)); }
 /* The kit's one button size; on a phone it runs the column's width, and its label may wrap on the narrowest. */
 .downloads__pick > .btn { margin-bottom: var(--s-2); }
 @media (max-width: 639px) {
@@ -97,11 +101,11 @@
 .downloads__more > summary::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor; transition: rotate var(--dur) var(--ease);
   -webkit-mask: var(--dl-chevron) center / contain no-repeat; mask: var(--dl-chevron) center / contain no-repeat; }
 .downloads__more[open] > summary::after { rotate: 90deg; }
-/* With no button above it (no JavaScript, a system the page can't tell, or data-lite), the list stands open without its summary. */
-:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__more > summary { display: none; }
+/* Without JavaScript, or on a system the page can't tell, the list stands open without its summary. */
+:root:not([data-lite], [data-os="windows"], [data-os="linux"]) .downloads__more > summary { display: none; }
 .downloads__all { display: grid; gap: var(--s-5); padding-top: var(--s-3); }
 .downloads__all > p:first-child { max-width: 72ch; }
-:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__all { padding-top: 0; }
+:root:not([data-lite], [data-os="windows"], [data-os="linux"]) .downloads__all { padding-top: 0; }
 .downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-5) var(--gutter); }
 /* A column a system: four side by side on a computer, two on a tablet. */
 @media (min-width: 640px) { .downloads__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -117,11 +121,19 @@
 .downloads__links { display: grid; justify-items: start; }
 .downloads__after { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
 .downloads__after a:not(.link) { color: var(--p-ink); }
-/* Beside it, the finished clip (what the download is for): the result's file and Copy, cropped out of the
-   app's result row (src/assets/img/done.webp, 970 × 180) at --cx, --cy, --cw × --ch, in the source's pixels. */
-.downloads__frame { background: #15171c; --ratio: 48%; padding: var(--s-6); }
-.downloads__crop { --cx: 16; --cy: 8; --cw: 936; --ch: 118; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; }
-.downloads__crop > img { position: absolute; max-width: none; height: auto; width: calc(970 / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
+/* Beside it, what the download is for, before and after: the plan row's size and verdict, then the finished
+   file, as tall as they are (no --ratio). Each is a crop of a screenshot (--sw wide) at --cx, --cy, --cw × --ch,
+   in the source's pixels: the plan from window.webp (2880 × 1080), the file chip alone from done.webp
+   (970 × 180), so no Copy, Ctrl+C or Leave out shows. The chip is drawn narrower, so its words come out
+   at about the plan's size, as they are in the app. */
+.frame.downloads__frame { background: #15171c; --ratio: 0px; padding: var(--s-6); }
+.downloads__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
+.downloads__story > li { display: grid; gap: var(--s-3); }
+.downloads__story p { margin: 0; font-size: var(--t-small); color: var(--p-muted); text-wrap: balance; }
+.downloads__crop { position: relative; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; pointer-events: none; user-select: none; }
+.downloads__crop--plan { --sw: 2880; --cx: 1322; --cy: 800; --cw: 806; --ch: 72; }
+.downloads__crop--done { --sw: 970; --cx: 20; --cy: 12; --cw: 626; --ch: 110; width: 82%; }
+.downloads__crop img { position: absolute; max-width: none; height: auto; width: calc(var(--sw) / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
 /* The five questions fit one screen at 1440x900 (723px of the 708 the kit's screen holds at the kit's 24px
    rows, so the section ran 15px long and the close started off its screen): 16px rows, as on a phone. */
@@ -152,15 +164,21 @@
   #lite .frame--split { --ratio: 120%; }
 }
 @media (max-width: 639px) {
-  /* the result's name and size alone, from inside its file chip and on the chip's own ground, so they stay readable on a phone */
-  .downloads__frame { --ratio: 0px; padding: var(--s-4) var(--s-5); background: #1c2028; }
-  .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
+  /* a phone: no frame, so the two sit in the section's own column at its full width (the app's ground is
+     the page's), and the words stay readable: the plan from the narrow window (window-narrow.webp,
+     1120 × 1200) from 1080p on, and the file's name and size alone, on the chip's own ground and corners */
+  .frame.downloads__frame { padding: 0; border: 0; border-radius: 0; background: none; }
+  .downloads__crop--plan { --sw: 1120; --cx: 326; --cy: 850; --cw: 640; --ch: 64; }
+  .downloads__crop--done { --cx: 154; --cy: 25; --cw: 432; --ch: 86; width: 88%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
 }
-/* The same from 1024 to 1279px, where the frame beside the words is too narrow for the whole row
-   (its text came out about 10px at 1024): the name and size, on the chip's ground, in the frame's middle. */
+/* Stacked (below 1024px), the before and after comes last, so the way in (the button, or Lite) runs
+   straight on to the other files. */
+@media (max-width: 1023px) { .downloads__frame { order: 1; } }
+/* From 1024 to 1279px the frame beside the words is narrow: the plan from 1080p on, and the chip wider,
+   so both stay at about the app's own size. */
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .downloads__frame { background: #1c2028; }
-  .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
+  .downloads__crop--plan { --cx: 1492; --cw: 636; }
+  .downloads__crop--done { width: 94%; }
 }
 
 /* Document pages (guides, download, compare, privacy, changelog): sections
@@ -329,6 +347,11 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 .doc thead .dl-note { font-weight: 400; }
 
 /* The download section, sized to what it holds. */
+/* Where the script has closed the list (a Windows or Linux computer, or data-lite), the section is as tall
+   as what it holds, not a screen with a void under the summary, and grows when the list is opened.
+   Without JavaScript, or on a system the page can't tell, the whole list is open and the shared rule
+   (at least a screen, growing with it) stands. */
+:root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download { min-height: 0; }
 
 /* Lite and the questions. */
 
