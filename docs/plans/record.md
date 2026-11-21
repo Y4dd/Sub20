@@ -98,6 +98,32 @@ Sub20's own process against WebView2's, in a release test copy:
   393, 381 MB. No growth.
 - A network share was not measured.
 
+### Closing the window (Windows 11, release test copy, 20 November 2026)
+
+Plan 7's 7.1. A temporary change kept the process when the last window
+closed and built the window again from its config on a second launch; it
+was removed afterwards. Private bytes summed over the process and every
+process under it, sampled every 3 s (30 s unless noted). The window was
+closed with `WM_CLOSE`, as the close button or Alt+F4 sends.
+
+| State | Processes | Private |
+| --- | --- | --- |
+| Open, 20 clips loaded (filmstrips made) | 8 | 261 MB |
+| Closed, after the 20 clips | 1 | 8 MB |
+| Reopened, empty bench, cycles 1 to 5 (6 s each) | 7 | 213–243 MB |
+| Closed after each cycle (6 s each) | 1 | 8–9 MB |
+| Closed after five cycles | 1 | 8 MB |
+| An empty Tauri window (same Tauri, same machine) | 7 | 156 MB |
+
+- **WebView2 exits with the window:** all its processes are gone within
+  15 seconds of closing, and five cycles leave nothing behind.
+- **Sub20's own process is 8 MB private.** The "about 40 MB" above was
+  not private bytes; with no window the whole of Sub20 is that one
+  process, far under plan 7's 100 MB.
+- **WebView2's own floor is about 156 MB**, so Sub20's window adds about
+  60–90 MB to it on an empty bench and about 105 MB with 20 clips.
+- Not measured here: CPU, and a watch running (both 7.10).
+
 ## Releases and CI
 
 - **CI** runs fmt, clippy with warnings as errors, the tests with FFmpeg

@@ -17,7 +17,7 @@ finished. What was built and measured before the split is in
 | 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | Finished 15 November 2026 |
 | 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems, a small beta (three to five people), its fixes | 2 | Started: Windows passed, 0.9.1 to 0.9.3 fixed the first reports; waits on the owner's Windows sitting and the testers |
 | 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean; not tested outside this machine. Doesn't hold up the launch |
-| 7 | [The watch without a window](7-tray.md) | Windows: keep watching from the tray after the window closes, and start there at sign-in, off by default | nothing | Not started. Moved up from plan 6's 6.3 (owner, 20 November 2026); goes back there if its memory budget fails, and 1.0 doesn't wait on it |
+| 7 | [The watch without a window](7-tray.md) | Windows: keep watching from the tray after the window closes, and start there at sign-in, off by default | nothing | Started: 7.1 passed, 8 MB with no window (20 November 2026). Moved up from plan 6's 6.3 (owner, 20 November 2026); goes back there if its memory budget fails, and 1.0 doesn't wait on it |
 | 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3 (the drafts may start now) | Not started; the beta post is first |
 | 6 | [After 1.0](6-after-1.0.md) | Package managers, the watch without a window, new features | 5 | Parked |
 

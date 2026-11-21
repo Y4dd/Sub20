@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Not started.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window).
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -31,7 +31,12 @@ until after the owner's Arch sitting.
 
 ## Tasks
 
-- [ ] **7.1 Destroy and measure, first.** Today's numbers
+- [x] **7.1 Destroy and measure, first.** Done 20 November 2026, in a
+      release test copy (numbers in [record.md](record.md), "Closing the
+      window"): WebView2's processes exit with the window, and what stays
+      is Sub20's own process at 8 MB private, also after five
+      open-and-close cycles. An empty Tauri window is 156 MB. The plan
+      goes on. Today's numbers
       ([record.md](record.md)) were taken with a window alive, and "about
       40 MB" for Sub20's own process doesn't say whether it is working set
       or private bytes. In a release-style test copy with its own
