@@ -37,14 +37,13 @@ const faqPage = {
   "@type": "FAQPage",
   mainEntity: FAQ.map((q) => ({ "@type": "Question", name: q.q, acceptedAnswer: { "@type": "Answer", text: q.html.replace(/<[^>]+>/g, "") } })),
 };
-// The formats Sub20 opens (crates/core/src/watch.rs VIDEO_EXTENSIONS), for the marquee.
+// Formats Sub20 opens, from crates/core/src/watch.rs VIDEO_EXTENSIONS (not all: MPG, 3G2, MTS and OGV are left out), in a trim bracket.
 const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG", "TS", "M2TS", "3GP", "MXF", "VOB"];
 ---
 
 <Base
   title="Compress video for Discord: Sub20, free for Windows and Linux"
   description="Video too big for Discord? Trim it, pick a size, and Sub20 compresses it on your graphics card until it fits the 20 MB upload limit. Free and open source."
-  moments
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(software)} />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqPage)} />
@@ -52,7 +51,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     <div class="wrap"><div class="hero-text">
       <div class="hero__c">
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
-        <h1 id="hero-h">Video compressor for Discord clips</h1>
+        <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
         <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
         <div class="btn-row"><a class="btn btn--primary" href="#download">Download Sub20</a><a class="btn btn--secondary" href="#features">See the features</a></div>
       </div>
@@ -66,7 +65,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     <div class="wrap">
       <div class="group">
         <div class="section-head">
-          <h2 id="features-h">Made for clips on their way to Discord. <span class="muted">Each file is measured before it is saved.</span></h2>
+          <h2 id="features-h">Made for clips on their way to Discord. <span class="muted">Keep the part worth sending, and Sub20 makes it fit.</span></h2>
         </div>
         <div class="grid">
           <article class="card card--row card--open span-6">
@@ -82,9 +81,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         </div>
       </div>
       <div class="group">
-        <div class="formats" data-moment="marquee-row" data-moment-opts='{"speed": 36}' aria-label="Formats Sub20 opens">
-          <ul class="mo-mq__track">{formats.map((f) => <li>{f}</li>)}</ul>
-        </div>
+        <figure class="kinds">
+          <figcaption>Opens {formats.slice(0, 3).join(", ")} and {formats.length - 3} more</figcaption>
+          <ul class="kinds__rail" role="list">{formats.map((f) => <li>{f}</li>)}</ul>
+        </figure>
         <div class="grid">
           <article class="card card--row card--open span-6">
             <h3>Picks up new clips from your folders</h3>

@@ -140,6 +140,55 @@
 /* The feature shots, and the room between sections. */
 
 /* The trim bracket, the site's own device. */
+/* The app's bracket (src/lib/components/Timeline.svelte and DropStage.svelte, public/icon.svg): two
+   yellow handles with a dark grip each, joined by a bar above and a bar below what they keep. Round a
+   few words (.trim) it is sized in em from the timeline's ratios: a handle about a fifth of the
+   bracket's height, rounded on its outer side, the grip a third of it. The handles sit inside the
+   phrase's own padding, so nothing reaches past the screen, and they are drawn (pseudo-elements and
+   backgrounds), so the heading reads as its words alone. The app's dark yellow; on a light ground
+   (the footer before system.js marks the page dark, or without script) the app's light rule: a deep
+   amber edge on the handles and amber bars. */
+@property --trim-bar { syntax: "<color>"; inherits: false; initial-value: #ffd02b; }
+.trim, .kinds__rail { --trim: #ffd02b; --trim-ink: #1c1600; --trim-edge: transparent; --trim-bar: var(--trim);
+  --grip: color-mix(in srgb, var(--trim-ink) 75%, var(--trim)); }
+:root:not([data-tone="dark"]) .ground-inverse .trim { --trim: #ffc61a; --trim-edge: #9a7000; --trim-bar: #9a7000; }
+.trim { --tw: max(.22em, 9px); --tb: clamp(3px, .05em, 4px);
+  position: relative; display: inline-block; white-space: nowrap; margin-inline: .02em;
+  padding: calc(var(--tb) + .05em) calc(var(--tw) + .14em) calc(var(--tb) + .12em);
+  background: linear-gradient(var(--trim-bar) 0 0) 50% 0 / calc(100% - 2 * var(--tw)) var(--tb) no-repeat,
+    linear-gradient(var(--trim-bar) 0 0) 50% 100% / calc(100% - 2 * var(--tw)) var(--tb) no-repeat; }
+.trim::before, .trim::after { content: ""; position: absolute; top: 0; bottom: 0; width: var(--tw);
+  background: linear-gradient(var(--grip) 0 0) 50% 50% / max(2px, .045em) .34em no-repeat, var(--trim);
+  box-shadow: inset 0 0 0 1px var(--trim-edge); }
+.trim::before { left: 0; border-radius: .1em 0 0 .1em; }
+.trim::after { right: 0; border-radius: 0 .1em .1em 0; }
+/* Once, as the hero's words rise (motion.js puts .is-entering on the hero for that time only): the
+   handles close in on the phrase from either side and the bars join them. The rest state is the
+   bracket as drawn, so no script, a late script and reduced motion all show it still. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .hero.is-entering h1 .trim { animation: trim-join 420ms 380ms cubic-bezier(.22, 1, .36, 1) both; }
+  .hero.is-entering h1 .trim::before { animation: trim-close-l 700ms 120ms cubic-bezier(.22, 1, .36, 1) both; }
+  .hero.is-entering h1 .trim::after { animation: trim-close-r 700ms 120ms cubic-bezier(.22, 1, .36, 1) both; }
+}
+@keyframes trim-close-l { from { transform: translateX(-.6em); opacity: 0; } 40% { opacity: 1; } }
+@keyframes trim-close-r { from { transform: translateX(.6em); opacity: 0; } 40% { opacity: 1; } }
+@keyframes trim-join { from { --trim-bar: transparent; } }
+
+/* The formats Sub20 opens, as the app's timeline: each one a frame of the strip, all of them inside the
+   bracket (what the handles leave out is what the app throws away), with the summary above it. */
+.kinds { margin: 0 0 var(--s-7); display: grid; gap: var(--s-3); min-width: 0; }
+.kinds figcaption { font-size: var(--t-small); color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+.kinds__rail { --hw: 16px; --tb: 3px; position: relative; margin: 0; padding: var(--tb) var(--hw); list-style: none;
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px;
+  background: linear-gradient(var(--trim-bar) 0 0) 50% 0 / calc(100% - 2 * var(--hw)) var(--tb) no-repeat,
+    linear-gradient(var(--trim-bar) 0 0) 50% 100% / calc(100% - 2 * var(--hw)) var(--tb) no-repeat; }
+.kinds__rail::before, .kinds__rail::after { content: ""; position: absolute; top: 0; bottom: 0; width: var(--hw);
+  background: linear-gradient(var(--grip) 0 0) 50% 50% / 3px 22px no-repeat, var(--trim); }
+.kinds__rail::before { left: 0; border-radius: 7px 0 0 7px; }
+.kinds__rail::after { right: 0; border-radius: 0 7px 7px 0; }
+.kinds__rail li { display: grid; place-items: center; height: 40px; min-width: 0; background: #0b0c0f;
+  font-size: 12px; font-weight: 500; color: var(--p-muted); }
+@media (min-width: 900px) { .kinds__rail { grid-template-columns: repeat(14, minmax(0, 1fr)); } .kinds__rail li { height: 56px; font-size: var(--t-small); letter-spacing: .02em; } }
 
 /* Words and links: the nav, the footer, the document pages. */
 /* A heading a button jumps to (the nav's Download Sub20 on /download/) clears the fixed bar. */

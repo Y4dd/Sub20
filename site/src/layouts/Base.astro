@@ -18,12 +18,10 @@ interface Props {
   description: string;
   /** The nav word of the page you are on. */
   current?: "lite" | "guides" | "compare" | "download";
-  /** The home page loads the dealt moment. */
-  moments?: boolean;
   /** A document page (guides, privacy): the sections grow with their text. */
   doc?: boolean;
 }
-const { title, description, current, moments = false, doc = false } = Astro.props;
+const { title, description, current, doc = false } = Astro.props;
 const share = new URL(u("share.jpg"), Astro.site).href;
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
 const here = (word: string) => (current === word ? { "aria-current": "page" } : {});
@@ -90,14 +88,6 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
          data-lite: a device the desktop app doesn't run on (a phone, a tablet, a Mac), where Sub20 Lite is the way in. -->
     <script is:inline>(()=>{const n=navigator,d=document.documentElement,p=(n.userAgentData&&n.userAgentData.platform)||n.platform||"";if(/Android|iPhone|iPad|iPod/.test(n.userAgent)||(/Mac/i.test(p)&&n.maxTouchPoints>1)){d.dataset.lite="";return}const os=/Win/.test(p)?"windows":/Mac/i.test(p)?"mac":/Linux|X11/.test(p)?"linux":"";if(os)d.dataset.os=os;if(os==="mac")d.dataset.lite=""})()</script>
     <slot name="head" />
-    {moments && (
-      <>
-        <script is:inline>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
-        <link rel="modulepreload" href={u("assets/moments/moments.js")} />
-        <link rel="modulepreload" href={u("assets/moments/lib.js")} />
-        <link rel="modulepreload" href={u("assets/moments/marquee-row/moment.js")} />
-      </>
-    )}
   </head>
   <body>
     <!-- type: software
@@ -105,7 +95,9 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
          buttons tonal, mark: the client's own logo (public/icon.svg); palette and type: the app's own
          (start.mjs brand with src/app.css's colours; Bricolage Grotesque, the wordmark's face, and Hanken
          Grotesk, the app's interface face); effect: none, the app's own window leads.
-         moments: marquee-row, the formats Sub20 opens, as the last row of #features. -->
+         moments: none (the formats marquee went). The page's own device is the app's trim bracket
+         (site.css, .trim): round the hero's "Discord clips" and the close's "20 MB", and holding the
+         formats Sub20 opens, drawn as the app's timeline, in #features. -->
     <header class="nav">
       <div class="wrap nav__bar">
         <a class="skip-link" href="#top">Skip to content</a>
@@ -135,7 +127,7 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
       <div class="wrap">
         <div class="closing__cta close--type">
           <div class="section-head">
-            <h2 id="close-h">Fit your next clip under 20 MB</h2>
+            <h2 id="close-h">Fit your next clip under <span class="trim">20&nbsp;MB</span></h2>
             <p class="t-small muted">Free for Windows and Linux. No account, MIT licence.</p>
           </div>
           <a class="btn btn--primary btn--xl btn--wide if-app" href={current === "download" ? "#downloads" : u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
