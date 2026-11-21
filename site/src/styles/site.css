@@ -175,8 +175,9 @@
 .lite__text { display: grid; gap: var(--s-5); align-content: start; }
 .lite__facts { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); text-wrap: pretty; }
 .lite__frame { background: #101216; }
-/* The phone rises out of the frame's foot: its top part, fading where the frame cuts it. Out of the
-   flow, so its own height never stretches the row. */
+/* The phone rises out of the frame's foot, drawn whole, its own foot on the frame's edge (no fade there:
+   the screenshot ends just under Compress 3 videos, which a fade turned to a ghost). Out of the flow, so
+   its own height never stretches the row. */
 .frame.lite__frame > .lite__phone { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: auto; height: calc(100% - var(--s-7)); max-height: 736px; aspect-ratio: 340 / 736; max-width: 62%; object-fit: cover; object-position: 50% 0; border-radius: 22px 22px 0 0; border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); border-bottom: 0;
   -webkit-mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); }
 /* Stacked under the words (below 1024px): the before and after stands apart from the words above it, and
@@ -415,12 +416,15 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* The hero's window and the feature cards. */
 /* A feature card from 640px: its title and its two lines side by side over the shot, so the words span
    the card as the shot does (stacked, the lines ran half the card's width and left its right half
-   empty). The lines keep a readable measure in their wider column, on the title's first baseline, and
-   the words of the cards in a row share one height (a subgrid of the row), so their shots line up. The
-   lines stop 32px short of the card's edge, so a card's title sits nearer its own lines (24px) than
-   the card before it's (56px). */
+   empty). The lines on the title's first baseline take 296px, enough to stay three lines deep (two
+   fifths for the title, as before, where the card has less), and the title the rest, up to half the
+   card: with two fifths every title broke into two short lines beside wider lines (they are 284 to
+   330px long on one line); now three of the four are one line at 1440, and at 1280 their two lines are
+   228px wide, not 210. The words of the cards in a row share one height (a subgrid of the row), so
+   their shots line up. The lines stop 32px short of the card's edge, so a card's title sits nearer its
+   own lines (24px) than the card before it's (56px). */
 @media (min-width: 640px) {
-  #features .card--row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); grid-row: span 2;
+  #features .card--row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(min(296px, (100% - var(--s-5)) * 0.6), 1fr); grid-row: span 2;
     grid-template-rows: subgrid; gap: 0 var(--s-5); align-items: baseline; }
   #features .card--row > p { margin: 0; max-width: 60ch; min-height: 0; padding-inline-end: var(--s-6); }
   #features .card--row > .panel { grid-column: 1 / -1; align-self: stretch; }
@@ -433,3 +437,43 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* Round 3: Windows's warning. */
 
 /* Round 3: the room between sections, and the small fixes. */
+/* The features end where their last cards end, so the download section's heading sits 120px under them:
+   the drop every heading has under its own section's top, where 72px of the features' foot and 120px of
+   the download's top left 192px of empty ground with no change of ground to say a section had begun.
+   Only where #download comes next: where the desktop app doesn't run (data-lite) Lite may come first on
+   its own ground, and the cards keep their 72px above that edge. */
+:root:not([data-lite]) #features { padding-bottom: 0; }
+
+/* Lite's "Open Sub20 Lite" is as wide as its words; across the column its underline read as a rule. */
+.lite__text > .link { justify-self: start; }
+/* The phone: no fade at its foot (the comment over .lite__phone above). */
+.frame.lite__frame > .lite__phone { -webkit-mask: none; mask: none; }
+
+/* The size picker is 310px wide (the app's own size, its file 620px), so it filled half its panel and
+   its sheet read as a small box in a big one. The panel takes the sheet's ground (#1c2028, the
+   picker's own), so the picker is the panel's own, centred in it, at the size the app draws it. */
+@media (min-width: 640px) { #features .panel.shot:has(img[src*="/size."]) { background: #1c2028; } }
+
+/* The hero pill's "Read the changelog" is a link and looks like one: the page's link colour and
+   underline, which firms up on hover and focus, and the pill's edge with it. */
+.hero .pill > .muted { color: var(--p-ink); font-weight: 500; text-decoration: underline; text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px; transition: text-decoration-color var(--dur) var(--ease); }
+.hero .pill:is(:hover, :focus-visible) > .muted { text-decoration-color: currentColor; }
+.hero .pill:hover { border-color: var(--line-strong); }
+
+/* A phone's hero window (window-narrow.webp): where the frame cuts the window inside its clip strip
+   (390x844: 43px down, the strip's top 55px), the fade hid the strip's words and left its yellow
+   underline (rows 192-197 of 1200) as a stray sliver at the frame's top. Wherever the window is cut at
+   all (more than 8px), a second mask hides the strip down to its underline and fades in just above the
+   file's name (row 227); a window drawn whole keeps its strip. */
+@media (max-width: 639px) {
+  @container hero-window (min-width: 0px) {
+    .hero--centred .hero__window .ly-piece img, .hero--centred .hero__window .ly-piece::after {
+      --strip: calc((var(--cut) - 8px) * 1000);
+      -webkit-mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + min(var(--s-6), var(--cut) * 4))),
+        linear-gradient(to bottom, transparent min(16.6%, var(--strip)), #000 min(18.75%, var(--strip)));
+      mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + min(var(--s-6), var(--cut) * 4))),
+        linear-gradient(to bottom, transparent min(16.6%, var(--strip)), #000 min(18.75%, var(--strip)));
+      -webkit-mask-composite: source-in; mask-composite: intersect; }
+  }
+}
