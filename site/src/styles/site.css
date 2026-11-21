@@ -126,8 +126,8 @@
    in the source's pixels: the plan from window.webp (2880 × 1080), the file chip alone from done.webp
    (970 × 180), so no Copy, Ctrl+C or Leave out shows. The chip is drawn narrower, so its words come out
    at about the plan's size, as they are in the app. */
-.frame.downloads__frame { background: #15171c; --ratio: 0px; padding: var(--s-6); }
-.downloads__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
+.frame.downloads__frame { background: #15171c; --ratio: 0px; padding: var(--s-6); justify-content: flex-start; }
+.frame.downloads__frame > .downloads__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
 .downloads__story > li { display: grid; gap: var(--s-3); }
 .downloads__story p { margin: 0; font-size: var(--t-small); color: var(--p-muted); text-wrap: balance; }
 .downloads__crop { position: relative; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; pointer-events: none; user-select: none; }
