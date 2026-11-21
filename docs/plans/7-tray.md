@@ -54,8 +54,10 @@ until after the owner's Arch sitting.
       launch and that launch quit, a second launch with two clips added
       them, and closing still quits (until 7.4). The watch-job list is
       `sub20_core::watched` with three tests; fmt, clippy, the tests and
-      svelte-check are clean. Not looked at: the rebuilt window's own
-      frame, which 7.4 checks. The main window is no longer
+      svelte-check are clean. The owner looked at the window the shell
+      now builds at startup the same day: its own title bar, dragging,
+      snapping, maximise and close behave as before. A window built again
+      after closing is 7.4's to look at. The main window is no longer
       made at startup (`create: false`, in `tauri.conf.json` and
       `tauri.windows.conf.json`, since each declares the whole window). One
       shell function shows it, building it if it is gone, and everything
