@@ -276,11 +276,16 @@ invented.
       and `one-section` (the rail reads as a band; it is the app's
       filmstrip). The main checkout's git-ignored copy still holds the
       three marquee waivers until it is replaced.
-      Checks on 21 November 2026 (skill 2.5.1, which has no `check.mjs`;
-      Edge's launcher exits at once under `consistency.mjs`, so Chrome
-      from Playwright): copy-lint 0 FAIL, 0 WARN on the home page,
-      download and the first guide; `perf.mjs` 0 FAIL (3 WARN, as before).
-      `consistency.mjs --quick` 16 FAIL against 1 before the fixes. Open,
+      Checks on 21 November 2026 (skill 2.5.1, where `check.mjs` is
+      `assets/layout/check.mjs`; Edge's launcher exits at once under
+      `consistency.mjs`, so Chrome from Playwright): copy-lint 0 FAIL,
+      0 WARN on the home page, download and the first guide; `perf.mjs`
+      0 FAIL (3 WARN, as before); `check.mjs` at five sizes finds only
+      `#features` (1.5 screens at 1440, 2.16 at 768x1024, 2.08 on a phone)
+      and the neighbour it lets show. `consistency.mjs --quick` 16 FAIL
+      (22 after the five fixes, 1 before them); with `--rhythm-widths 390`
+      the questions are exactly two phone screens, and Lite and the close
+      run 1.2 (as on 16 November). Open,
       for the owner: `#features` is 1.5 screens at 1440x900 by the
       features fix, which fails the kit's one-or-two-screens rhythm there
       and moves every later section off the screen grid (`section-height`
