@@ -16,15 +16,17 @@
 
 .nav__logo .logo { width: 28px; height: 28px; border-radius: 7px; }
 
-/* Screenshots in card panels: the app's own ground behind them, the whole
-   shot inside the panel's padding. */
-#features .panel { --p-h: 260px; }
-/* a phone: four cards and the marquee in two screens; the shots keep their size with a smaller inset */
-@media (max-width: 639px) { #features .panel { --p-h: 140px; } #features .panel.shot > img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } .formats { margin-bottom: var(--s-5); } }
-.panel.shot { background: #15171c; overflow: hidden; }
+/* Screenshots in card panels: the app's own ground behind them, each a tight crop of what the card
+   says, drawn at about the app's own size inside the panel's padding. The second row's crops are
+   shorter (.shot--low). */
+#features .panel { --p-h: 340px; }
+#features .panel.shot--low { --p-h: 264px; }
+/* a phone: each shot is its own narrow crop (Shot's phone), as wide as the panel, with a smaller inset */
+@media (max-width: 639px) { #features .panel, #features .panel.shot--low { --p-h: 184px; } #features .panel.shot img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } .formats { margin-bottom: var(--s-5); } }
+/* With the id it outweighs the kit's mesh for tech pages (cards.css), which drew an olive haze here. */
+#features .panel.shot { background: #15171c; overflow: hidden; }
 /* Out of the flow, so the panel keeps its own height and the shot is never drawn larger than its file. */
-.panel.shot > img { position: absolute; inset: var(--s-5); width: calc(100% - 2 * var(--s-5)); height: calc(100% - 2 * var(--s-5)); max-width: none; object-fit: scale-down; }
-.shot--top img { object-position: 50% 0; }
+.panel.shot img { position: absolute; inset: var(--s-5); width: calc(100% - 2 * var(--s-5)); height: calc(100% - 2 * var(--s-5)); max-width: none; object-fit: scale-down; }
 /* The marquee's rail is as wide as its two tracks; one column the width of the wrap keeps it from widening both groups. */
 #features > .wrap { grid-template-columns: minmax(0, 1fr); }
 .formats { margin-bottom: var(--s-7); min-width: 0; }
@@ -138,6 +140,14 @@
 /* The hero, and Lite. */
 
 /* The feature shots, and the room between sections. */
+/* The features are as tall as their cards, not two whole screens, so the heading follows the hero
+   closely and the second row of cards follows the first. A link to #features still stops with the
+   heading clear of the fixed header. */
+#features { height: auto; min-height: 0; padding-top: var(--s-7); scroll-margin-top: calc(var(--nav) + var(--s-6) - var(--s-7)); }
+#features > .wrap { height: auto; grid-template-rows: auto auto; }
+@media (min-width: 640px) { #features > .wrap { row-gap: var(--s-8); } }
+/* a tablet: one card a row, so the shots stay big enough to read, with room between the cards */
+@media (min-width: 640px) and (max-width: 1023px) { #features .grid { row-gap: var(--s-7); } #features .grid > .card { grid-column: 1 / -1; } }
 
 /* The trim bracket, the site's own device. */
 
