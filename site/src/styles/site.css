@@ -155,6 +155,12 @@
   .downloads__frame { --ratio: 0px; padding: var(--s-4) var(--s-5); background: #1c2028; }
   .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
 }
+/* The same from 1024 to 1279px, where the frame beside the words is too narrow for the whole row
+   (its text came out about 10px at 1024): the name and size, on the chip's ground, in the frame's middle. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .downloads__frame { background: #1c2028; }
+  .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
+}
 
 /* Document pages (guides, download, compare, privacy, changelog): sections
    that grow with their text instead of filling a screen. */

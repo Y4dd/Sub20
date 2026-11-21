@@ -54,7 +54,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
         <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
-        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for your computer</a></div>
+        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
       </div>
       <div class="hero__window" role="img" aria-label="Sub20's window: a drone clip with the yellow trim bar over its frames, planned at 1080p and marked Should look good, and at the foot the size, 20 MB, and Compress 3 videos">
         <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1280px) and (min-height: 1000px) 1120px, (min-width: 960px) 960px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
@@ -134,14 +134,14 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           })()}
           {/* Where the desktop app doesn't run (data-lite): the files stay open below for the computer the visitor came to download for, and Lite is named for this device. */}
           <div class="downloads__lite if-lite">
-            <p>Sub20 is a desktop app for Windows and Linux: open this page on your computer to download it, or pick its file below. On this device, Sub20 Lite runs in your browser.</p>
+            <p>Sub20 is a desktop app for Windows and Linux: open this page on a Windows or Linux computer to download it, or pick its file below. On this device, Sub20 Lite runs in your browser.</p>
             <a class="link" href={u("app/")}>Open Sub20 Lite</a>
           </div>
         </div>
         {/* The finished clip, what the download is for: its file and Copy, cropped from the app's result row. */}
         <div class="frame span-6 start-7 downloads__frame">
           <div class="downloads__crop">
-            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1023px) 900px, 700px" />
+            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1279px) 900px, 700px" />
           </div>
         </div>
         {/* Every file. Open as written, so it is the whole list without JavaScript or on a system the page
