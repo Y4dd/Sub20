@@ -1,12 +1,24 @@
 ---
-// What Windows will say, under a GetSub20 that downloads the installer straight away: shown only
-// where that button is (Windows, with a release to read), since the visitor skips the download
-// section's own note.
+// What Windows will say about the installer, in one wording wherever a button downloads it (the FAQ's
+// answer repeats it in its own words). Under the hero's and the close's GetSub20 it is drawn only where
+// that button is the installer (Windows, with a release to read). In the download section (`steps`) it
+// is always drawn, also without JavaScript and without a release, since the whole list (or the releases
+// page) offers the installer there; it adds the link to the install steps.
+import { u } from "../lib/site";
 import { latestRelease, ROWS, cell } from "../lib/release";
 
-interface Props { class?: string }
+interface Props {
+  class?: string;
+  /** The download section's copy: shown wherever the section offers Windows's installer, with the steps' link. */
+  steps?: boolean;
+}
+const { class: classes, steps = false } = Astro.props;
 const release = await latestRelease();
 const installer = cell(release, ROWS[0], false);
 ---
 
-{installer.size && <p class:list={[Astro.props.class, "get-note"]} data-for="windows">Windows will warn you because Sub20 isn't code-signed yet: click <b>More info</b>, then <b>Run anyway</b>.</p>}
+{steps ? (
+  <p class={classes}>Windows will warn you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>Read the install steps</a></p>
+) : installer.size && (
+  <p class:list={[classes, "get-note"]} data-for="windows">Windows will warn you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>.</p>
+)}

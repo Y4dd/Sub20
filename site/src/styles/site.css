@@ -177,13 +177,13 @@
    flow, so its own height never stretches the row. */
 .frame.lite__frame > .lite__phone { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: auto; height: calc(100% - var(--s-7)); max-height: 736px; aspect-ratio: 340 / 736; max-width: 62%; object-fit: cover; object-position: 50% 0; border-radius: 22px 22px 0 0; border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); border-bottom: 0;
   -webkit-mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); }
-/* Stacked under the words (below 1024px), the two split frames keep their own ratio and the section
-   grows to hold them, instead of sharing what the screen leaves. */
+/* Stacked under the words (below 1024px): the before and after stands apart from the words above it, and
+   Lite's split frame keeps its own ratio, the section growing to hold it instead of sharing what the
+   screen leaves. */
 @media (max-width: 1023px) {
-  #download > .wrap > .grid { row-gap: var(--s-7); } /* stacked, the finished clip stands apart from the words above it */
-  .downloads__frame { --ratio: 24%; } /* and, the page's width, it needs no height to stand beside them */
-  :is(#download, #lite) > .wrap > .grid.fill { flex: 0 0 auto; }
-  :is(#download, #lite) .grid.fill > .frame--fill { flex: none; }
+  #download > .wrap > .grid { row-gap: var(--s-7); }
+  #lite > .wrap > .grid.fill { flex: 0 0 auto; }
+  #lite .grid.fill > .frame--fill { flex: none; }
   #lite .frame--split { --ratio: 120%; }
 }
 @media (max-width: 639px) {
@@ -301,13 +301,11 @@
    few words (.trim) it is sized in em from the timeline's ratios: a handle about a fifth of the
    bracket's height, rounded on its outer side, the grip a third of it. The handles sit inside the
    phrase's own padding, so nothing reaches past the screen, and they are drawn (pseudo-elements and
-   backgrounds), so the heading reads as its words alone. The app's dark yellow; on a light ground
-   (the footer before system.js marks the page dark, or without script) the app's light rule: a deep
-   amber edge on the handles and amber bars. */
+   backgrounds), so the heading reads as its words alone. The app's dark yellow: every ground is dark
+   (Base.astro writes data-tone="dark", so the footer stays dark without script too). */
 @property --trim-bar { syntax: "<color>"; inherits: false; initial-value: #ffd02b; }
 .trim, .kinds__rail { --trim: #ffd02b; --trim-ink: #1c1600; --trim-edge: transparent; --trim-bar: var(--trim);
   --grip: color-mix(in srgb, var(--trim-ink) 75%, var(--trim)); }
-:root:not([data-tone="dark"]) .ground-inverse .trim { --trim: #ffc61a; --trim-edge: #9a7000; --trim-bar: #9a7000; }
 .trim { --tw: max(.22em, 9px); --tb: clamp(3px, .05em, 4px);
   position: relative; display: inline-block; white-space: nowrap; margin-inline: .02em;
   padding: calc(var(--tb) + .05em) calc(var(--tw) + .14em) calc(var(--tb) + .12em);
@@ -396,9 +394,14 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 .btn--xl > .dl-mark { width: 0.62em; height: 0.62em; stroke-width: 1.4; }
 /* On a phone its words are longer than the jump's, so it keeps less padding round them. */
 @media (max-width: 639px) { .btn--xl.btn--wide.get { padding-inline: var(--s-5); } }
+/* Under 360px "Download for Windows, 31 MB" doesn't fit on one line (at 320 it ran 21px past the screen):
+   the words wrap, the mark stays at the end. */
+@media (max-width: 359px) { .btn--xl.get.dl { height: auto; min-height: 64px; padding-block: var(--s-3); white-space: normal; line-height: 1.15; } }
 /* What Windows will say, under the button that downloads the installer: one quiet line. */
 .hero__note { margin: calc(-1 * var(--s-2)) 0 0; font-size: var(--t-small); line-height: 1.4; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
 .hero__note b, .close__note b { color: var(--p-ink); font-weight: 500; }
+/* SmartScreen's two buttons (SmartScreenNote.astro, the one wording everywhere) each stay on one line. */
+:is(.get-note, .downloads__warn) b { white-space: nowrap; }
 .closing__cta > .close__note { margin: calc(var(--s-3) - var(--s-6)) 0 0; }
 
 /* The formats rail, quieter. */

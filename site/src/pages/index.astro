@@ -33,7 +33,7 @@ const FAQ = [
   { q: "What is Discord's file size limit?", html: "20 MB on a free account, 50 MB with Nitro Basic, 500 MB in a boosted server and 1 GB with Nitro. Sub20's size picker names each one." },
   { q: "Are my videos uploaded anywhere?", html: "No, and there is no account. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself." },
   { q: "Will my clip play for everyone on Discord?", html: "Yes, unless you choose otherwise. Sub20 saves H.264 video, the kind that plays in Discord on every computer and phone. Options also offers HEVC and AV1, which keep more detail at the same size but may not play everywhere: HEVC on some computers, AV1 on phones." },
-  { q: "Why does Windows warn me about the installer?", html: `Sub20 isn't code-signed yet. Click More info, then Run anyway; <a href="${u("download/")}">the install steps</a> show where.` },
+  { q: "Why does Windows warn me about the installer?", html: `Because Sub20 is not code-signed yet. Click More info, then Run anyway; <a href="${u("download/")}">the install steps</a> show where.` },
 ];
 const faqPage = {
   "@context": "https://schema.org",
@@ -59,8 +59,11 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <div class="btn-row"><GetSub20 class="btn btn--primary if-app" jump="#download" /><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
         <SmartScreenNote class="hero__note" />
       </div>
+      {/* The window's width as site.css draws it (measured from 640 to 2560px wide, 700 to 1440px tall): the column,
+          100vw - 160px, up to 1120px; only where the frame is 280 to 420px tall (a screen about 840 to 990px tall)
+          is it the whole window at 880 to 1120px, said as 960px for the screens up to 930px tall. A phone has its own. */}
       <div class="hero__window" role="img" aria-label="Sub20's window: a drone clip with the yellow trim bar over its frames, planned at 1080p and marked Should look good, and at the foot the size, 20 MB, and Compress 3 videos">
-        <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1280px) and (min-height: 1000px) 1120px, (min-width: 960px) 960px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
+        <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1024px) and (min-height: 840px) and (max-height: 930px) 960px, (min-width: 1280px) 1120px, calc(100vw - 160px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
       </div>
     </div></div>
   </section>
@@ -134,9 +137,9 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
               </>
             );
           })()}
-          {/* Windows's warning, said once: under the Windows button, and without JavaScript (or on a system the page
-              can't tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
-          <p class="downloads__note downloads__warn">On Windows, the installer warns you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>See the install steps</a></p>
+          {/* Windows's warning, in the hero's and the close's words: under the Windows button, and without JavaScript
+              (or on a system the page can't tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
+          <SmartScreenNote class="downloads__note downloads__warn" steps />
           {/* Where the desktop app doesn't run (data-lite): Lite first, the way in on this device, then the files for a computer, behind "Other systems and downloads". */}
           <div class="downloads__lite if-lite">
             <p>On this device, use Sub20 Lite: the same window in your browser, with nothing to install.</p>
