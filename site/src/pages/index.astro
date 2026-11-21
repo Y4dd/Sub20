@@ -103,33 +103,73 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
 
   <section class="section" id="download" aria-labelledby="download-h">
     <div class="wrap">
-      <div class="grid fill">
+      <div class="grid">
         <div class="span-5 downloads">
-          <h2 id="download-h">Download Sub20 for Windows and Linux</h2>
-          <p>Sub20 has FFmpeg built in. Sub20 without FFmpeg is a smaller download that uses the FFmpeg on your computer, or fetches it once.</p>
-          <ul class="downloads__list" role="list">
-            {ROWS.map((row) => {
-              const full = cell(release, row, false);
-              const lean = cell(release, row, true);
-              return (
-                <li data-os={row.os}>
-                  <span><b>{row.system}</b> <span class="muted">{keep(row.detail)}, {kindInText(row.kind)}</span></span>
-                  <span class="downloads__links">
-                    <a class="link" href={full.href}>Sub20{full.size && `, ${keep(full.size)}`}</a>
-                    <a class="link" href={lean.href}>Without FFmpeg{lean.size && `, ${keep(lean.size)}`}</a>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <p class="downloads__after">
-            {release ? <span class="muted">Version {release.version}.</span> : <span class="muted">Every version is on the <a href={RELEASES}>releases page</a>.</span>}
-            <a class="link" href={u("download/")}>Read the install steps</a>
-          </p>
+          <h2 id="download-h"><span class="if-app">Download Sub20 for Windows and Linux</span><span class="if-lite">Use Sub20 Lite on this device</span></h2>
+          <p class="downloads__fallback">Free and open source, for Windows 10 and 11 and {keep("64-bit")} Linux. Pick your system below.</p>
+          {/* One button for the visitor's system (data-os, set by Base's head script); none without JavaScript.
+              A button or link that starts a download carries .dl (a drawn arrow into a tray, never the page arrow);
+              without a release to read, they go to the releases page and stay page links. */}
+          {(() => {
+            const win = cell(release, ROWS[0], false);
+            const deb = cell(release, ROWS[1], false);
+            const rpm = cell(release, ROWS[2], false);
+            const app = cell(release, ROWS[3], false);
+            const version = release ? `, version ${release.version}` : "";
+            return (
+              <>
+                <div class="downloads__pick" data-for="windows">
+                  <a class:list={["btn btn--primary downloads__btn", { dl: win.size }]} href={win.href}><span>Download for Windows{win.size && <span class="downloads__size">, {keep(win.size)}</span>}</span></a>
+                  <p class="downloads__note">Windows 10 and 11, {keep("64-bit")} installer{version}.</p>
+                  <p class="downloads__note">Windows will warn you because Sub20 isn't code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>See the install steps</a></p>
+                </div>
+                <div class="downloads__pick" data-for="linux">
+                  <a class:list={["btn btn--primary downloads__btn", { dl: deb.size }]} href={deb.href}><span>Download for Linux (.deb){deb.size && <span class="downloads__size">, {keep(deb.size)}</span>}</span></a>
+                  <p class="downloads__note">The {keep("64-bit")} package for Ubuntu, Debian and Mint{version}.</p>
+                  <p class="downloads__note">Fedora or openSUSE: <a class:list={["link", { dl: rpm.size }]} href={rpm.href}>the .rpm{rpm.size && `, ${keep(rpm.size)}`}</a>. Any other Linux: <a class:list={["link", { dl: app.size }]} href={app.href}>the AppImage{app.size && `, ${keep(app.size)}`}</a>.</p>
+                </div>
+              </>
+            );
+          })()}
+          <div class="downloads__lite if-lite">
+            <p>The desktop app is for Windows and Linux. Sub20 Lite is the same window in your browser, with nothing to install and nothing uploaded.</p>
+            <a class="btn btn--primary downloads__btn" href={u("app/")}>Open Sub20 Lite</a>
+          </div>
         </div>
-        <div class="frame frame--split frame--fill span-6 start-7 downloads__frame">
-          <Shot class="frame__img" name="empty" alt="Sub20's first screen: the yellow trim bracket and Drop videos here" sizes="(min-width: 1280px) 523px, (min-width: 1024px) 315px, (min-width: 640px) 550px, 370px" />
+        {/* The finished clip, what the download is for: its file and Copy, cropped from the app's result row. */}
+        <div class="frame span-7 start-6 downloads__frame">
+          <div class="downloads__crop">
+            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1023px) 900px, 700px" />
+          </div>
         </div>
+        {/* Every file. Open as written, so it is the whole list without JavaScript or on a system the page
+            can't tell; the script under it closes it where a button above already offers the right file. */}
+        <details class="downloads__more" open>
+          <summary><span class="if-app">Other systems and downloads</span><span class="if-lite">Downloads for Windows and Linux</span></summary>
+          <div class="downloads__all">
+            <p>Each system has two downloads. <b>Sub20</b> has FFmpeg, the part that does the compressing, built in: take this one. <b>Without FFmpeg</b> is smaller because it leaves FFmpeg out: it uses the one already on your computer, or offers to download it the first time it opens.</p>
+            <ul class="downloads__list" role="list">
+              {ROWS.map((row) => {
+                const full = cell(release, row, false);
+                const lean = cell(release, row, true);
+                return (
+                  <li>
+                    <span><b>{row.system}</b> <span class="muted">{keep(row.detail)}, {kindInText(row.kind)}</span></span>
+                    <span class="downloads__links">
+                      <a class:list={["link", { dl: full.size }]} href={full.href}><span>Sub20{full.size && <span class="downloads__size">, {keep(full.size)}</span>}</span></a>
+                      <a class:list={["link", { dl: lean.size }]} href={lean.href}><span>Without FFmpeg{lean.size && <span class="downloads__size">, {keep(lean.size)}</span>}</span></a>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p class="downloads__after">
+              {release ? <span class="muted">Version {release.version}.</span> : <span class="muted">Every version is on the <a href={RELEASES}>releases page</a>.</span>}
+              <a class="link" href={u("download/")}>Read the install steps</a>
+            </p>
+          </div>
+        </details>
+        <script is:inline>(()=>{const d=document.documentElement.dataset;if("lite"in d||d.os==="windows"||d.os==="linux")document.currentScript.previousElementSibling.open=false})()</script>
       </div>
     </div>
   </section>
@@ -164,7 +204,6 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             {GUIDES.map((g) => <li><a class="link" href={u(`guides/${g.slug}/`)}>{g.title}</a></li>)}
             <li><a class="link" href={`${GITHUB}/issues/new/choose`}>Open an issue</a></li>
           </ul>
-          <Shot class="faq__shot" name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) 485px, calc(100vw - 32px)" />
         </div>
         <div class="faq span-6 start-7">
           {FAQ.map((q) => <div class="faq__item"><h3>{q.q}</h3><p set:html={q.html} /></div>)}
