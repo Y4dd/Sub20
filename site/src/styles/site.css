@@ -403,10 +403,16 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
   .get.dl { height: auto; min-height: var(--btn-h); padding-block: var(--s-3); white-space: normal; line-height: 1.25; }
   .btn--xl.get.dl { min-height: 64px; line-height: 1.15; }
 }
-/* What Windows will say, under the button that downloads the installer: one quiet line. */
-.hero__note { margin: calc(-1 * var(--s-2)) 0 0; font-size: var(--t-small); line-height: 1.4; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+/* What Windows will say, under the button that downloads the installer (SmartScreenNote's short form): the
+   next step, at the label size. In the hero it sits 6px under the button and reaches 8px into the window
+   frame's top padding (the frame's mask is transparent there), so it costs the window 15px of height, not
+   28 (z-index: the masked frame is a layer over it, and would take the link's clicks). */
+.get-note { font-size: var(--t-label); line-height: 1.35; }
+.hero__note { position: relative; z-index: 1; margin: -10px 0 -8px; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
 .hero__note b, .close__note b { color: var(--p-ink); font-weight: 500; }
-/* SmartScreen's two buttons (SmartScreenNote.astro, the one wording everywhere) each stay on one line. */
+.get-note .link { display: inline; white-space: nowrap; }
+.get-note .link::after { margin-left: 0.3em; }
+/* SmartScreen's two buttons (SmartScreenNote.astro, in both its forms) each stay on one line. */
 :is(.get-note, .downloads__warn) b { white-space: nowrap; }
 .closing__cta > .close__note { margin: calc(var(--s-3) - var(--s-6)) 0 0; }
 

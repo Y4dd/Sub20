@@ -1,9 +1,13 @@
 ---
-// What Windows will say about the installer, in one wording wherever a button downloads it (the FAQ's
-// answer says the same, as an answer to "Why does Windows warn me about the installer?"). Under the hero's and the close's GetSub20 it is drawn only where
-// that button is the installer (Windows, with a release to read). In the download section (`steps`) it
+// What Windows will say about the installer, in two forms. The download section's (`steps`) is the whole
+// reason with the steps: "Windows will warn you because Sub20 is not code-signed yet: …", the same as the
+// FAQ's answer to "Why does Windows warn me about the installer?", plus the link to the install steps. It
 // is always drawn, also without JavaScript and without a release, since the whole list (or the releases
-// page) offers the installer there; it adds the link to the install steps.
+// page) offers the installer there. Under the hero's and the close's GetSub20 it is the next step only,
+// in a smaller line, and the reason is one tap away on the install steps page (critique round 3: the full
+// sentence right after "Download", read four times on one page, read as a red flag). It is drawn only
+// where that button is the installer (Windows, with a release to read). On /download/ itself the close
+// leaves the link out (`link={false}`): the steps are on that page.
 import { u } from "../lib/site";
 import { latestRelease, ROWS, cell } from "../lib/release";
 
@@ -11,8 +15,10 @@ interface Props {
   class?: string;
   /** The download section's copy: shown wherever the section offers Windows's installer, with the steps' link. */
   steps?: boolean;
+  /** The short form ends in a link to the install steps (not on the page that holds them). */
+  link?: boolean;
 }
-const { class: classes, steps = false } = Astro.props;
+const { class: classes, steps = false, link = true } = Astro.props;
 const release = await latestRelease();
 const installer = cell(release, ROWS[0], false);
 ---
@@ -20,5 +26,5 @@ const installer = cell(release, ROWS[0], false);
 {steps ? (
   <p class={classes}>Windows will warn you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>Read the install steps</a></p>
 ) : installer.size && (
-  <p class:list={[classes, "get-note"]} data-for="windows">Windows will warn you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>.</p>
+  <p class:list={[classes, "get-note"]} data-for="windows">If Windows stops the installer, click <b>More info</b>, then <b>Run anyway</b>.{link && <> <a class="link" href={u("download/")}>Install steps</a></>}</p>
 )}
