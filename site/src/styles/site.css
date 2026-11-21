@@ -49,14 +49,11 @@
 #features .panel { --p-h: 340px; }
 #features .panel.shot--low { --p-h: 264px; }
 /* a phone: each shot is its own narrow crop (Shot's phone), as wide as the panel, with a smaller inset */
-@media (max-width: 639px) { #features .panel, #features .panel.shot--low { --p-h: 184px; } #features .panel.shot img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } .formats { margin-bottom: var(--s-5); } }
+@media (max-width: 639px) { #features .panel, #features .panel.shot--low { --p-h: 184px; } #features .panel.shot img { inset: var(--s-3); width: calc(100% - 2 * var(--s-3)); height: calc(100% - 2 * var(--s-3)); } }
 /* With the id it outweighs the kit's mesh for tech pages (cards.css), which drew an olive haze here. */
 #features .panel.shot { background: #15171c; overflow: hidden; }
 /* Out of the flow, so the panel keeps its own height and the shot is never drawn larger than its file. */
 .panel.shot img { position: absolute; inset: var(--s-5); width: calc(100% - 2 * var(--s-5)); height: calc(100% - 2 * var(--s-5)); max-width: none; object-fit: scale-down; }
-/* The marquee's rail is as wide as its two tracks; one column the width of the wrap keeps it from widening both groups. */
-#features > .wrap { grid-template-columns: minmax(0, 1fr); }
-.formats { margin-bottom: var(--s-7); min-width: 0; }
 
 /* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
    other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
@@ -207,8 +204,6 @@
 /* From 1280px a section is exactly a screen tall; the opened list (or the whole list without JavaScript)
    can be taller on a short screen, so this one grows with it instead of running into Lite. */
 @media (min-width: 1280px) { #download { height: auto; min-height: 100vh; min-height: 100svh; } }
-
-/* The hero, and Lite. */
 
 /* The feature shots, and the room between sections. */
 /* The features are as tall as their cards, not two whole screens, so the heading follows the hero
