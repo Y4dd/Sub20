@@ -53,10 +53,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
         <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
-        <div class="btn-row"><a class="btn btn--primary" href="#download">Download Sub20</a><a class="btn btn--secondary" href="#features">See the features</a></div>
+        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for your computer</a></div>
       </div>
-      <div class="hero__window" role="img" aria-label="Sub20's window: three clips on the left, a drone video on the stage with its yellow trim bar, 1080p planned, and Compress 3 videos at 20 MB">
-        <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 960px) 880px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
+      <div class="hero__window" role="img" aria-label="Sub20's window: a drone clip with the yellow trim bar over its frames, planned at 1080p and marked Should look good, and at the foot the size, 20 MB, and Compress 3 videos">
+        <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1280px) and (min-height: 1000px) 1120px, (min-width: 960px) 960px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>
       </div>
     </div></div>
   </section>
@@ -139,10 +139,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
       <div class="grid fill">
         <div class="span-5 lite__text">
           <h2 id="lite-h">Sub20 Lite runs in your browser</h2>
-          <p class="t-lead">The same window on a phone or a computer, encoding with the browser's own video encoder. Nothing is uploaded, and on a phone Share hands the result to the Discord app.</p>
+          <p class="t-lead">The same window in any browser, and the way in on a phone or a Mac, where the desktop app doesn't run. It encodes on your device, uploads nothing, and on a phone Share hands the result to Discord.</p>
           <ul class="lite__facts" role="list">
             <li>H.264 at the size you pick, measured and redone if it's over</li>
-            <li>Installs as an app and opens without a connection</li>
+            <li>Installs as an app and works offline</li>
             <li>Android: share a video from the gallery straight into it</li>
           </ul>
           <a class="link" href={u("app/")}>Open Sub20 Lite</a>
