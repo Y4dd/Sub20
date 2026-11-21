@@ -326,23 +326,29 @@ invented.
      everywhere ("Windows will warn you because Sub20 is not code-signed
      yet: click More info, then Run anyway.") under each button that
      downloads the installer, in the download section also without
-     JavaScript or a release, and the FAQ's answer in the same words;
+     JavaScript or a release (where the warning shows, its link to the
+     install steps stands in for the list's own), and the FAQ's answer
+     gives the same cause and steps;
      `data-tone="dark"` written on `<html>`, so the close and the footer
      stay dark without JavaScript (they turned light); the hero window's
      `sizes` as the CSS draws it (at 1280x720 and 1366x700 it loaded the
      1000w file for 1120px; now 1280w, and 1000w at 1440x900, where the
-     window is 880px); the close's file button wraps under 360px (at 320
-     it ran 21px past the screen); the download section's dead `--ratio`
-     rule gone. Looked at 1440x900, 1280x720, 1366x700, 390x844, 360 and
-     320 (Windows, Mac and Android), with and without JavaScript, `/download/`
+     window is 880px); the hero's and the close's file buttons wrap under
+     360px (at 320 the close's Windows button ran 21px past the screen,
+     the hero's Linux one 9px); the download section's dead `--ratio`
+     rule gone. Looked at 1440x900, 1280x720, 1366x700, 820x1180,
+     390x844, 360 and 320 (Windows, Linux, Mac and Android), with and without JavaScript, `/download/`
      at 1440, and a build with no release.
       Checks on 21 November 2026 (`BASE=/` build): copy-lint 0 FAIL, 0 WARN
       on the home page, download, the guides and the first guide (the
       merge had one WARN, three "isn't"); `perf.mjs` 0 FAIL, 3 WARN (icon.svg
-      not lazy, the size shot drawn larger than its file), LCP the hero
+      not lazy at both widths, and the size shot's 580px box holding its
+      310px file, which `scale-down` draws at its own size), LCP the hero
       image; `check.mjs` at five sizes finds `#features` (1.46 screens at
       1440, 2.06 at 768x1024 and on a phone), `#download` shorter than a
-      screen and the neighbours they let show; `consistency.mjs --quick`
+      screen and the neighbours they let show, and the hero window's frame
+      reaching 32px into the gutters (`spill`, at 1440x900 and 1024x768),
+      by design, so its light isn't clipped; `consistency.mjs --quick`
       14 FAIL (17 after the merge): at 1440 `section-height` 5 and
       `one-section` 2 from `#features` and `#download`'s heights,
       `one-heading` on Lite's heading, `container-edges` on the hero's

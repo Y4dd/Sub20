@@ -100,6 +100,8 @@
    under the line above; not on Linux, nor where the desktop app doesn't run. */
 :root:is([data-lite], [data-os="linux"]) .downloads__warn { display: none; }
 .downloads__warn { margin-top: calc(var(--s-3) - var(--s-6)); }
+/* Where the warning shows, its link is the section's way to the install steps; the list's own goes. */
+:root:not([data-lite], [data-os="linux"]) .downloads__after > .link { display: none; }
 /* The kit's one button size; on a phone it runs the column's width, and its label may wrap on the narrowest. */
 .downloads__pick > .btn { margin-bottom: var(--s-2); }
 @media (max-width: 639px) {
@@ -394,9 +396,13 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 .btn--xl > .dl-mark { width: 0.62em; height: 0.62em; stroke-width: 1.4; }
 /* On a phone its words are longer than the jump's, so it keeps less padding round them. */
 @media (max-width: 639px) { .btn--xl.btn--wide.get { padding-inline: var(--s-5); } }
-/* Under 360px "Download for Windows, 31 MB" doesn't fit on one line (at 320 it ran 21px past the screen):
-   the words wrap, the mark stays at the end. */
-@media (max-width: 359px) { .btn--xl.get.dl { height: auto; min-height: 64px; padding-block: var(--s-3); white-space: normal; line-height: 1.15; } }
+/* Under 360px a file's name and size don't fit on one line (at 320 the close's "Download for Windows,
+   31 MB" ran 21px past the screen, the hero's "Download for Linux (.deb), 39 MB" 9px): the words wrap,
+   the mark stays at the end. */
+@media (max-width: 359px) {
+  .get.dl { height: auto; min-height: var(--btn-h); padding-block: var(--s-3); white-space: normal; line-height: 1.25; }
+  .btn--xl.get.dl { min-height: 64px; line-height: 1.15; }
+}
 /* What Windows will say, under the button that downloads the installer: one quiet line. */
 .hero__note { margin: calc(-1 * var(--s-2)) 0 0; font-size: var(--t-small); line-height: 1.4; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
 .hero__note b, .close__note b { color: var(--p-ink); font-weight: 500; }
