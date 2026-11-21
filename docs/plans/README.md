@@ -5,7 +5,8 @@ browser version for people who can't or won't install anything, a website
 that ranks for "video too big for Discord", and a launch that gets it in
 front of the people who send clips every day.
 
-The road is split into six plans that run in order. Each plan is the source
+The road is split into seven plans that run in order (plan 7 sits between
+4 and 5: it was added later and kept its number so task names stay put). Each plan is the source
 of truth for its own work: what to build, in which order, and when it is
 finished. What was built and measured before the split is in
 [record.md](record.md).
@@ -16,6 +17,7 @@ finished. What was built and measured before the split is in
 | 2 | [First release](2-first-release.md) | v0.9.0 on GitHub: every download, signed updates, the site's links following it | nothing (better after 1) | Finished 15 November 2026 |
 | 3 | [Desktop beta](3-desktop-beta.md) | The desktop app tried by hand on three systems, a small beta (three to five people), its fixes | 2 | Started: Windows passed, 0.9.1 to 0.9.3 fixed the first reports; waits on the owner's Windows sitting and the testers |
 | 4 | [Sub20 Lite](4-lite.md) | Lite past its size test on real clips, browsers and phones, and its gaps closed or labelled | 1 (phones need it hosted) | Built, Lighthouse and axe clean; not tested outside this machine. Doesn't hold up the launch |
+| 7 | [The watch without a window](7-tray.md) | Windows: keep watching from the tray after the window closes, and start there at sign-in, off by default | nothing | Not started. Moved up from plan 6's 6.3 (owner, 20 November 2026); goes back there if its memory budget fails, and 1.0 doesn't wait on it |
 | 5 | [1.0 and launch](5-launch.md) | The demo video, 1.0.0, the launch posts, the routine afterwards | 3 (the drafts may start now) | Not started; the beta post is first |
 | 6 | [After 1.0](6-after-1.0.md) | Package managers, the watch without a window, new features | 5 | Parked |
 
@@ -34,6 +36,10 @@ finished. What was built and measured before the split is in
   the owner or testers, work on the other, or on plan 5's drafts.
 - **A small beta, not a big one** (owner, 15 November 2026): why is in
   plan 3's goal.
+- **The watch without a window beside the beta** (owner, 20 November 2026):
+  it was after 1.0, but the watch is what gamers use and it stops with the
+  window. It ships off by default in 0.9.x so testers try it; if its
+  memory budget fails it goes back to plan 6, and the launch doesn't wait.
 - **Launch last,** once the beta has no open crash or data-loss bug. Lite
   doesn't hold it up (plan 4, "Lite doesn't hold up the launch").
 - **Plan 6 holds everything that isn't needed for 1.0,** so the plans
@@ -44,8 +50,9 @@ finished. What was built and measured before the split is in
 For the AI doing the work:
 
 1. Work on the lowest-numbered plan that isn't finished, unless the owner
-   names another. Plans 3 and 4 may be worked side by side, and plan 5's
-   drafts (5.3, 5.7 to 5.10) beside them.
+   names another. Plans 3, 4 and 7 may be worked side by side, and plan
+   5's drafts (5.3, 5.7 to 5.10) beside them. While plan 3 waits on
+   people, plan 7 comes first.
 2. Inside a plan, take the tasks in order. A task's number (`1.4`, `3.2`)
    is its name: use it in commits and when reporting.
 3. Tick a task only when its "Done when" holds, and write beside the tick

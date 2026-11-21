@@ -88,7 +88,7 @@ Sub20's own process against WebView2's, in a release test copy:
 
 - Sub20's own process is about 40 MB; the rest is WebView2. Minimising
   frees none of it, so running without a window means destroying the
-  window (plan 6).
+  window (plan 7).
 - The watch used to open every file on every poll. It now trusts the
   directory listing for files it has already handled.
 - During a compress (a 20-minute 720p clip to 20 MB, 25 s on NVENC): Sub20

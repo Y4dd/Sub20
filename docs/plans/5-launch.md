@@ -7,7 +7,8 @@ see it.
 **Status.** Not started. The drafts (5.3, 5.7 to 5.10) may start now.
 
 **Needs first:** for 5.1, 5.2, 5.5, 5.6 and the posts going out, plan 3
-finished. 5.4 (the address) needs only the owner's CNAME record and is
+finished. Plan 7 (the watch without a window) is in 1.0 if it is finished
+by then, and otherwise goes back to plan 6: it never holds this plan up. 5.4 (the address) needs only the owner's CNAME record and is
 best done soon: before the beta post, so testers get the final address,
 and before more people install Lite on the old one. Lite doesn't hold this plan up: if plan 4's gate is still open,
 everything below leaves Lite out (plan 4, "Lite doesn't hold up the
