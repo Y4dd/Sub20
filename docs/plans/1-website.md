@@ -305,7 +305,8 @@ invented.
   1. The download section is as tall as it holds where its list starts
      closed, and its frame is a before and after: the plan row cropped
      from `window.webp` ("Should look good"), then the file chip from
-     `done.webp` (612 MB to 19.4 MB). Where the desktop app doesn't run
+     `done.webp` (612 MB to 19.4 MB); three steps for one game clip since
+     1.16. Where the desktop app doesn't run
      (`data-lite`), Sub20 Lite comes first and the files are folded; a
      link to `#download` opens them.
   2. Lite's facts say what it saves and how to install it, and each guide
@@ -363,6 +364,82 @@ invented.
       no longer fires, so its waiver went.
       *Done when:* the owner has decided `#features`' rhythm (as in 1.14)
       and a picture for `#download` and `#faq`, and the gate passes.
+- [ ] **1.16 The home page after the third critique** (21 November 2026,
+      27/36; `.impeccable/critique/2026-11-21T20-30-46Z__site-src-pages-index-astro.md`).
+      Four branches of their own, merged at `bb8dd66`, then a polish pass:
+  1. Phones, tablets and Macs (`data-lite`, `site-r3-lite`): an inline
+     script at the end of `#lite` moves that section before `#download`
+     in the DOM (not CSS `order`, so focus follows what is seen; without
+     JavaScript and on Windows or Linux the page stays as written).
+     `#download` is headed "The desktop app" there, and
+     `.downloads__lite` is one line on getting it onto a computer. The
+     hero's lead says Share hands the clip to Discord on a phone, and the
+     FAQ says "Add it to Sub20".
+  2. The payoff (`site-r3-proof`): the download section's frame is three
+     steps for one game clip, `clutch-1v4-ranked`, 248 MB to 19.4 MB: the
+     plan row from a new `plan.webp`, the file chip from `done.webp`, then
+     "Copy it, then paste it in Discord" with Copy and Ctrl+C cropped from
+     `done.webp`. New `watch.webp` and `watch-narrow.webp` show a Windows
+     path, the watch card says "In the desktop app", and the mock's demo
+     paths are Windows ones (`VIDEOS`, `inFolder` in `src/lib/mock.ts`).
+  3. Windows's warning (`site-r3-warn`): under the hero's and the close's
+     Windows button the short form, "If Windows stops the installer, click
+     More info, then Run anyway." and "Install steps"; the full sentence
+     stays in the download section and the FAQ.
+  4. Spacing and small fixes (`site-r3-layout`): `#features` and
+     `#download` end at their own words where the next section shares
+     their ground (the 192px void before `#download` at 1440 is 117px);
+     Lite's link as wide as its words; the feature cards' title and lines
+     columns rebalanced; the pill's changelog link reads as a link; the
+     phone's hero window hides its clip strip when cut; Lite's phone shot
+     has no fade at its foot.
+  5. The polish pass (`site-r3-polish`): the size picker drawn 372px wide
+     (as tall as its panel's inside; it was 310px, half its panel) from
+     its 620px file, the scale of History and Options (832px files at
+     479px), and back on the cards' one ground (round 3's own ground for
+     it was a stand-in), so all four panels match and a sheet shows as a
+     box in each. At a 2x display it is 1.2 times its file, as History and
+     Options are 1.15. Share is said once a page: `#lite`'s lead leaves it
+     out on `data-lite`, where the hero says it. The download steps' words
+     at 7:1 (they were 6.9, `--p-muted` on the frame). Stale comments
+     fixed. "Open Sub20 Lite" stays five times on a phone: the nav, the
+     hero and the close are the kit's main action in its three places,
+     `#lite` has its own link, and the footer is the same site map on
+     every page and system.
+      Looked at 1440x900, 1280x720, 1366x700 (Windows and Mac), 820x1180
+      (iPad), 390x844 (Android, and Windows), 1440 and 390 without
+      JavaScript, `/download/` at 1440, and a build with no release. The
+      hero's foot is above the fold at 1280x720 and 1366x700 on Windows
+      and Mac (680 of 720, 660 of 700); at 1440x900 the window is 901px
+      wide under Windows's note and 943px elsewhere. On `data-lite` focus
+      runs through `#lite` and then `#download`, and `/#download` or the
+      hero's "Download for Windows or Linux" opens the file list. No
+      horizontal scroll at any size; measured text is 6.35:1 or more (the
+      rail's 12px labels the lowest).
+      Checks on 21 November 2026 (`BASE=/` build): copy-lint 0 FAIL,
+      0 WARN on the home page, download, the guides and the first guide;
+      `perf.mjs` 0 FAIL, 3 WARN (icon.svg not lazy at both widths, the
+      size shot's 580px box holding its 372px slot); `check.mjs` at five
+      sizes finds what 1.15 found: `#features` (1.40 screens at 1440, 2.04
+      at 768x1024), `#download` shorter than a screen, the neighbours they
+      let show, and the hero window's `spill`; `consistency.mjs --quick`
+      15 FAIL (17 before the polish pass: the download steps' contrast at
+      both widths): at 1440 `section-height` 6 and `one-section` 3 from
+      `#features` and `#download`'s heights (one of them `#features`'
+      cards ending under its bottom padding, which round 3 set to 0),
+      `container-edges` on the hero's window, the rail's `row-lines`,
+      `no-visual` on `#download` (its three steps cover 9%) and
+      `text-only` on `#faq`, the last two at 390 too. WARNs worth knowing:
+      the hero note's words sit 8px left of the middle (its link's arrow
+      makes up the rest) and, in a Windows window 390px wide, its second
+      line sits over the window frame's faded top. `one-heading` on Lite's
+      heading no longer fires. `npx svelte-check`: 0 errors, 0 warnings
+      after the mock's change. `.taste-skill/waivers.json` waives the same
+      three, the hero window's reason updated (901 and 943px at
+      1440x900) and the download section's naming Lite's place.
+      *Done when:* the owner has decided `#features`' rhythm and a
+      picture for `#download` and `#faq` (as in 1.14 and 1.15), and the
+      gate passes.
 
 ## Needs the owner
 
