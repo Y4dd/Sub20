@@ -114,6 +114,11 @@
 .downloads__crop { --cx: 16; --cy: 8; --cw: 936; --ch: 118; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; }
 .downloads__crop > img { position: absolute; max-width: none; height: auto; width: calc(970 / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
+/* The five questions fit one screen at 1440x900 (723px of the 708 the kit's screen holds at the kit's 24px
+   rows, so the section ran 15px long and the close started off its screen): 16px rows, as on a phone. */
+#faq .faq > .faq__item:not(:first-child) { padding-top: var(--s-4); }
+#faq .faq > .faq__item { padding-bottom: var(--s-4); }
+
 /* The questions' guide links, one under the other. */
 .faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-1); justify-items: start; text-wrap: pretty; }
 
@@ -196,10 +201,17 @@
    .if-lite shows and .if-app hides. Without JavaScript the computer's parts show. */
 :root:not([data-lite]) .if-lite, :root[data-lite] .if-app { display: none !important; }
 
-/* The download block. */
-/* From 1280px a section is exactly a screen tall; the opened list (or the whole list without JavaScript)
-   can be taller on a short screen, so this one grows with it instead of running into Lite. */
-@media (min-width: 1280px) { #download { height: auto; min-height: 100vh; min-height: 100svh; } }
+/* From 1280px the kit makes every section exactly a screen tall. On a short screen (1366x700, 1280x720)
+   the questions, the opened download list, or the whole list without JavaScript are taller than that,
+   and ran under the next section (the last question under the close, the close's button crushed). So
+   from 1280px too a section is at least a screen and grows with what it holds: the kit's own rule for
+   640-1279px. Where the content fits (1440x900) nothing moves. */
+@media (min-width: 1280px) {
+  main > :is(section, .section):not(.hero, .section--hero), footer.closing { height: auto; min-height: 100vh; min-height: 100svh; }
+  :where(main > :is(section, .section):not(.hero, .section--hero), footer.closing) { display: flex; flex-direction: column; }
+  main > :is(section, .section):not(.hero, .section--hero) > :is(.wrap, .container), footer.closing > .wrap { flex: 1 0 auto; height: auto; min-height: 0; }
+}
+.closing__cta > .btn--xl { flex: none; }
 
 /* The feature shots, and the room between sections. */
 /* The features are as tall as their cards, not two whole screens, so the heading follows the hero
