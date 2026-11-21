@@ -3,6 +3,8 @@
 // screen (the close and the footer). The kit in public/assets is the design
 // system (tasteskill, MIT, its licence beside it); the palette and fonts are
 // the app's own (src/app.css), so the site and the app read as one thing.
+// data-tone="dark" is written on <html> because the palette is always dark: the kit's system.js sets the
+// same, but without JavaScript the close and the footer (.ground-inverse) turned light.
 import "../styles/fonts.css";
 import "@fontsource-variable/hanken-grotesk/wght.css";
 import "../styles/site.css";
@@ -30,7 +32,7 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
 ---
 
 <!doctype html>
-<html lang="en" data-type="software" data-radius="soft" data-buttons="tonal" data-motion class:list={[{ "is-doc": doc }]}>
+<html lang="en" data-type="software" data-radius="soft" data-buttons="tonal" data-motion data-tone="dark" class:list={[{ "is-doc": doc }]}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
