@@ -183,9 +183,9 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           <h2 id="lite-h">Sub20 Lite runs in your browser</h2>
           <p class="t-lead">The same window in any browser, and the way in on a phone or a Mac, where the desktop app doesn't run. It encodes on your device, uploads nothing, and on a phone Share hands the result to Discord.</p>
           <ul class="lite__facts" role="list">
-            <li>H.264 at the size you pick, measured and redone if it's over</li>
-            <li>Installs as an app and works offline</li>
-            <li>Android: share a video from the gallery straight into it</li>
+            <li>Saves an MP4 at the size you pick, measured and redone if it's over</li>
+            <li>Install it from Chrome or Edge, or on an iPhone with {"Add to Home Screen".replace(/ /g, " ")}, and it works offline</li>
+            <li>Installed on Android, it takes videos shared from the gallery</li>
           </ul>
           <a class="link" href={u("app/")}>Open Sub20 Lite</a>
         </div>
@@ -201,10 +201,11 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
       <div class="grid">
         <div class="span-5 stack-4">
           <h2 id="faq-h">Questions about Discord clips</h2>
-          <p class="muted">The guides go further, step by step. Something else, or something broken? Open an issue on GitHub.</p>
+          <p class="muted">The guides go further, step by step.</p>
+          {/* Each guide with its one-line summary (GUIDES), so the column beside the five answers says what each holds. */}
           <ul class="faq__guides" role="list">
-            {GUIDES.map((g) => <li><a class="link" href={u(`guides/${g.slug}/`)}>{g.title}</a></li>)}
-            <li><a class="link" href={`${GITHUB}/issues/new/choose`}>Open an issue</a></li>
+            {GUIDES.map((g) => <li><a class="link" href={u(`guides/${g.slug}/`)}>{g.title}</a><span>{g.summary}</span></li>)}
+            <li><a class="link" href={`${GITHUB}/issues/new/choose`}>Open an issue</a><span>Something else, or something broken? Ask on GitHub.</span></li>
           </ul>
         </div>
         <div class="faq span-6 start-7">
