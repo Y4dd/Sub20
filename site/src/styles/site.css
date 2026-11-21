@@ -142,18 +142,20 @@
 .downloads__links { display: grid; justify-items: start; }
 .downloads__after { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
 .downloads__after a:not(.link) { color: var(--p-ink); }
-/* Beside it, what the download is for, before and after: the plan row's size and verdict, then the finished
-   file, as tall as they are (no --ratio). Each is a crop of a screenshot (--sw wide) at --cx, --cy, --cw × --ch,
-   in the source's pixels: the plan from window.webp (2880 × 1080), the file chip alone from done.webp
-   (970 × 180), so no Copy, Ctrl+C or Leave out shows. The chip is drawn narrower, so its words come out
-   at about the plan's size, as they are in the app. */
+/* Beside it, what the download is for, one game clip from plan to Discord: the plan row's size and verdict,
+   the finished file, then Copy, as tall as they are (no --ratio). Each is a crop of a screenshot (--sw wide)
+   at --cx, --cy, --cw × --ch, in the source's pixels: the plan row from plan.webp (800 × 72), then from
+   done.webp (970 × 180) the file chip alone and Copy with the chip's end fading in beside it, so it reads
+   as a piece of the window, not a button on the page. The two from done.webp are drawn at one scale (their
+   widths are 82% × cw / 626), so their words come out at about the plan's size, as they are in the app.
+   The steps' words are body size, and the finished size in them is ink. */
 .frame.downloads__frame { background: #15171c; --ratio: 0px; padding: var(--s-6); justify-content: flex-start; }
 .frame.downloads__frame > .downloads__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
 .downloads__story > li { display: grid; gap: var(--s-3); }
-.downloads__story p { margin: 0; font-size: var(--t-small); color: var(--p-muted); text-wrap: balance; }
+.downloads__story p { margin: 0; font-size: var(--t-body); color: var(--p-muted); text-wrap: balance; }
 .downloads__crop { position: relative; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; pointer-events: none; user-select: none; }
-.downloads__crop--plan { --sw: 2880; --cx: 1322; --cy: 800; --cw: 806; --ch: 72; }
-.downloads__crop--done { --sw: 970; --cx: 20; --cy: 12; --cw: 626; --ch: 110; width: 82%; }
+.downloads__crop--plan { --sw: 800; --cx: 0; --cy: 0; --cw: 800; --ch: 72; }
+.downloads__crop--done { --sw: 970; --cx: 20; --cy: 12; --cw: 598; --ch: 110; width: 78%; }
 .downloads__crop img { position: absolute; max-width: none; height: auto; width: calc(var(--sw) / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
 /* The five questions fit one screen at 1440x900 (723px of the 708 the kit's screen holds at the kit's 24px
@@ -190,20 +192,20 @@
 }
 @media (max-width: 639px) {
   /* a phone: no frame, so the two sit in the section's own column at its full width (the app's ground is
-     the page's), and the words stay readable: the plan from the narrow window (window-narrow.webp,
-     1120 × 1200) from 1080p on, and the file's name and size alone, on the chip's own ground and corners */
+     the page's), and the words stay readable: the plan from 1440p on, the file's name and size alone, on
+     the chip's own ground and corners, and Copy at the same scale as the name */
   .frame.downloads__frame { padding: 0; border: 0; border-radius: 0; background: none; }
-  .downloads__crop--plan { --sw: 1120; --cx: 326; --cy: 850; --cw: 640; --ch: 64; }
-  .downloads__crop--done { --cx: 154; --cy: 25; --cw: 432; --ch: 86; width: 88%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
+  .downloads__crop--plan { --cx: 124; --cw: 676; }
+  .downloads__crop--done { --cx: 154; --cy: 25; --cw: 406; --ch: 86; width: 83%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
 }
 /* Stacked (below 1024px), the before and after comes last, so the way in (the button, or Lite) runs
    straight on to the other files. */
 @media (max-width: 1023px) { .downloads__frame { order: 1; } }
-/* From 1024 to 1279px the frame beside the words is narrow: the plan from 1080p on, and the chip wider,
-   so both stay at about the app's own size. */
+/* From 1024 to 1279px the frame beside the words is narrow: the plan from 1440p on, and the chip and Copy
+   wider, so all three stay at about the app's own size. */
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .downloads__crop--plan { --cx: 1492; --cw: 636; }
-  .downloads__crop--done { width: 94%; }
+  .downloads__crop--plan { --cx: 124; --cw: 676; }
+  .downloads__crop--done { width: 90%; }
 }
 
 /* Document pages (guides, download, compare, privacy, changelog): sections
@@ -429,6 +431,14 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* Round 3: phones, tablets and Macs. */
 
 /* Round 3: the payoff, before and after. */
+/* The third step, Copy: a picture of the app's button, never a control on the page (no pointer, no hover,
+   nothing to tab to), its left edge fading through the end of the file chip. The finished size is said
+   in the step's words, in ink, since the chip draws it small. */
+.downloads__crop--copy { --sw: 970; --cx: 420; --cy: 12; --cw: 505; --ch: 110; width: 66%; cursor: default;
+  -webkit-mask: linear-gradient(to right, transparent 4%, #000 42%); mask: linear-gradient(to right, transparent 4%, #000 42%); }
+.downloads__story strong { color: var(--p-ink); font-weight: 600; }
+@media (min-width: 1024px) and (max-width: 1279px) { .downloads__crop--copy { width: 76%; } }
+@media (max-width: 639px) { .downloads__crop--copy { width: 100%; } }
 
 /* Round 3: Windows's warning. */
 
