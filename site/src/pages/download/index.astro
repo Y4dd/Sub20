@@ -4,6 +4,9 @@ import { u, RELEASES } from "../../lib/site";
 import { latestRelease, ROWS, cell, sums } from "../../lib/release";
 
 const release = await latestRelease();
+// A link that starts a download carries a drawn down-arrow (.dl-mark), never the page-link arrow;
+// the releases page, where a file is missing, is a page and gets neither.
+const mark = '<svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v6.5M3 5.5 6 8.5l3-3M2 10.5h8"></path></svg>';
 ---
 
 <Doc
@@ -15,15 +18,15 @@ const release = await latestRelease();
     ? `Version ${release.version}, free, for Windows and Linux. Pick your system, then one of the two downloads.`
     : "Free, for Windows and Linux. Pick your system, then one of the two downloads."}
 >
-  <h2>Two downloads per system</h2>
-  <p><b>Sub20</b> has FFmpeg, which does the compressing, built in. Most people want this one.</p>
-  <p><b>Sub20 without FFmpeg</b> is a much smaller download that uses the FFmpeg already on your computer. If there is none, its first screen offers to download the same FFmpeg the other download carries, checked against a pinned SHA-256.</p>
-  <p>Both update themselves, each to its own kind, and every update is signed.</p>
+  <h2 id="downloads">Two downloads per system</h2>
+  <p><b>Sub20</b> comes with FFmpeg, the free tool that does the compressing. Most people want this one.</p>
+  <p><b>Sub20 without FFmpeg</b> is the same app as a much smaller download, for people who already have FFmpeg installed. If your computer has none, its first screen offers to fetch it once, the same FFmpeg the other download carries.</p>
+  <p>Both update themselves and stay the download you picked. Every update is signed.</p>
 
   <div class="table-scroll">
     <table>
       <thead>
-        <tr><th scope="col">Your system</th><th scope="col">Sub20</th><th scope="col">Sub20 without FFmpeg</th></tr>
+        <tr><th scope="col">Your system</th><th scope="col">Sub20<br /><span class="dl-note">FFmpeg built in</span></th><th scope="col">Sub20 without FFmpeg<br /><span class="dl-note">uses the FFmpeg you have</span></th></tr>
       </thead>
       <tbody>
         {ROWS.map((row) => {
@@ -32,8 +35,8 @@ const release = await latestRelease();
           return (
             <tr data-os={row.os}>
               <th scope="row">{row.system}<br /><span class="muted">{row.detail}, {row.kind}</span></th>
-              <td><a href={full.href}>{full.size ? `Download, ${full.size}` : "Releases page"}</a></td>
-              <td><a href={lean.href}>{lean.size ? `Download, ${lean.size}` : "Releases page"}</a></td>
+              <td>{full.size ? <a class="dl" href={full.href}>Download, <span class="dl__end">{full.size}<Fragment set:html={mark} /></span></a> : <a href={full.href}>Releases page</a>}</td>
+              <td>{lean.size ? <a class="dl" href={lean.href}>Download, <span class="dl__end">{lean.size}<Fragment set:html={mark} /></span></a> : <a href={lean.href}>Releases page</a>}</td>
             </tr>
           );
         })}

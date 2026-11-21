@@ -112,12 +112,14 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
         <a class="nav__logo" href={u()}><img class="logo" src={u("icon.svg")} alt="" width="28" height="28" />Sub20</a>
         <nav class="nav__links" aria-label="Main">
           <div class="nav__item"><a class="nav__link" href={u("#features")}>Features</a></div>
-          <div class="nav__item"><a class="nav__link" href={u("#lite")} {...here("lite")}>Lite</a></div>
+          <div class="nav__item"><a class="nav__link" href={u("#lite")} {...here("lite")}>In your browser</a></div>
           <div class="nav__item"><a class="nav__link" href={u("guides/")} {...here("guides")}>Guides</a></div>
-          <div class="nav__item"><a class="nav__link" href={u("compare/")} {...here("compare")}>Compare</a></div>
+          <div class="nav__item"><a class="nav__link" href={u("compare/")} {...here("compare")}>Other tools</a></div>
         </nav>
         <div class="nav__actions">
-          <a class="btn btn--primary" href={u("#download")}>Download Sub20</a>
+          {/* On /download/ the button stays on the page, at its own table; where the desktop app doesn't run (data-lite), Lite is the way in. */}
+          <a class="btn btn--primary if-app" href={current === "download" ? "#downloads" : u("#download")}>Download Sub20</a>
+          <a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a>
         </div>
         <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
@@ -136,7 +138,7 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
             <h2 id="close-h">Fit your next clip under 20 MB</h2>
             <p class="t-small muted">Free for Windows and Linux. No account, MIT licence.</p>
           </div>
-          <a class="btn btn--primary btn--xl btn--wide" href={u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
+          <a class="btn btn--primary btn--xl btn--wide if-app" href={current === "download" ? "#downloads" : u("#download")}>Download Sub20<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
         </div>
         <div class="closing__links">
           <div class="grid">
@@ -146,11 +148,11 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
             </div>
             <div class="span-2 footer__col"><h3>Sub20</h3><ul><li><a href={u("#features")}>Features</a></li><li><a href={u("download/")}>Download</a></li><li><a href={u("changelog/")}>Changelog</a></li></ul></div>
             <div class="span-2 footer__col"><h3>Lite</h3><ul><li><a href={u("#lite")}>In your browser</a></li><li><a href={u("app/")}>Open Sub20 Lite</a></li></ul></div>
-            <div class="span-2 footer__col"><h3>Guides</h3><ul><li><a href={u("guides/")}>All guides</a></li><li><a href={u("compare/")}>Compare</a></li><li><a href={u("#faq")}>Questions</a></li></ul></div>
+            <div class="span-2 footer__col"><h3>Guides</h3><ul><li><a href={u("guides/")}>All guides</a></li><li><a href={u("compare/")}>Other tools</a></li><li><a href={u("#faq")}>Questions</a></li></ul></div>
             <div class="span-2 footer__col"><h3>Project</h3><ul><li><a href={GITHUB}>Source code</a></li><li><a href={`${GITHUB}/issues`}>Report a problem</a></li><li><a href={u("privacy/")}>Privacy</a></li><li><a href={u("code-signing/")}>Code signing policy</a></li></ul></div>
           </div>
           <div class="footer__legal">
-            <span>&copy; 2026 Sub20 &nbsp; <a href={u("privacy/")}>Privacy</a> &nbsp; Not affiliated with Discord.</span>
+            <span>&copy; 2026 Sub20 &nbsp; Not affiliated with Discord.</span>
             <div class="socials"></div>
           </div>
         </div>

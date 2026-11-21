@@ -52,7 +52,8 @@ const article = guide && {
   {article && <script type="application/ld+json" slot="head" set:html={JSON.stringify(article)} />}
   <article class="doc" aria-labelledby="doc-h">
     <div class="wrap">
-      {guide && <nav class="doc__crumbs" aria-label="Breadcrumb"><a class="link" href={u("guides/")}>All guides</a></nav>}
+      {/* The way back: the drawn arrow, turned to point back, before the words. */}
+      {guide && <nav class="doc__crumbs" aria-label="Breadcrumb"><a class="link doc__back" href={u("guides/")}><svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg>All guides</a></nav>}
       <h1 id="doc-h">{heading}</h1>
       {lead && <p class="doc__lead">{lead}</p>}
       {guide && <p class="doc__checked">Checked against Sub20 on <time datetime={guide.checked}>{checked}</time></p>}
