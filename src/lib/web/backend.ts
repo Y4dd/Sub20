@@ -18,7 +18,7 @@ import { clearResults } from "./store";
 
 const LITE: Capabilities = {
   watch: false, replace: false, files: false, encoders: false, ffmpeg: false, copyFile: false, dragOut: false,
-  updates: false, download: true, history: false, cut: false, mixAudio: true,
+  updates: false, download: true, history: false, cut: false, mixAudio: true, tray: false,
   // Phones and tablets hand a file straight to the Discord app. A computer
   // downloads it instead, and the file drags into Discord from there.
   share: matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function" && navigator.canShare({ files: [new File([], "x.mp4", { type: "video/mp4" })] }),
@@ -45,7 +45,7 @@ const SETTINGS: Settings = {
   lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
-    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: false,
+    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: false, keepWatching: false,
   },
 };
 

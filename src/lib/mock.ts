@@ -33,7 +33,7 @@ let settings: Settings = {
   lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
-    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true,
+    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true, keepWatching: false,
   },
 };
 
@@ -314,11 +314,13 @@ const DEMO_OFFER: FfmpegOffer = {
   ],
 };
 
+// Windows by default; `?frame=native` shows Linux's frame, without the tray.
+const linux = new URLSearchParams(location.search).get("frame") === "native";
+
 export const mockBackend: Backend = {
-  can: DESKTOP,
+  can: { ...DESKTOP, tray: !linux },
   demo: true,
-  // The Windows frame by default; `?frame=native` shows Linux's.
-  frame: ((): Frame => (new URLSearchParams(location.search).get("frame") === "native" ? "native" : "custom"))(),
+  frame: ((): Frame => (linux ? "native" : "custom"))(),
   minimize: async () => {},
   toggleMaximize: async () => {},
   closeWindow: async () => {},

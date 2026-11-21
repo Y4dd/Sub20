@@ -74,7 +74,18 @@ until after the owner's Arch sitting.
       *Done when:* a second launch brings the window forward, the
       watch-job list has a test, and fmt, clippy, the tests and
       svelte-check are clean. This ships on its own, before the tray.
-- [ ] **7.3 The setting.** `WatchSettings::keep_watching`, false by
+- [x] **7.3 The setting.** Done 20 November 2026:
+      `keep_watching_is_off_in_old_files_and_kept_once_on` loads a file
+      from before it (off) and keeps it once on; `Capabilities::tray` is
+      true in the desktop app on Windows only (`tauri.ts`, from the user
+      agent like the frame), false in Lite, and on the mock false under
+      `?frame=native`. Tried on the mock in both schemes: the toggle sits
+      under the watch's other toggles, the watch's note changes to "Keeps
+      running from the tray when the window is closed.", and it is absent
+      with Linux's frame. fmt, clippy (with and without the engine), the
+      settings tests and svelte-check are clean. It does nothing until
+      7.4, so don't release it without 7.4.
+      `WatchSettings::keep_watching`, false by
       default, through `tidy()`, with a test and its mirror in `types.ts`.
       Settings offers "Keep watching when the window is closed" under the
       watch, only when a watch is set up, and only where a capability flag

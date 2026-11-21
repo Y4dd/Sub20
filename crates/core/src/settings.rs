@@ -70,6 +70,9 @@ pub struct WatchSettings {
     /// Say so with a system notification when a watched clip is ready
     /// (held while a game or other full-screen app has the focus).
     pub notify: bool,
+    /// Closing the window leaves the watch running from the tray (Windows;
+    /// plan 7). Off by default, so closing quits as it always did.
+    pub keep_watching: bool,
 }
 
 impl Default for WatchSettings {
@@ -86,6 +89,7 @@ impl Default for WatchSettings {
             stable_seconds: 5,
             poll_seconds: 5,
             notify: true,
+            keep_watching: false,
         }
     }
 }
@@ -393,6 +397,22 @@ mod tests {
         assert_eq!(store.get().sizes, vec![8.0]);
         assert!(!store.get().check_updates);
         assert!(path.exists() && !dir.path().join("settings.broken.json").exists());
+    }
+
+    #[test]
+    fn keep_watching_is_off_in_old_files_and_kept_once_on() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        // A file from before the setting, with a watch set up.
+        std::fs::write(&path, r#"{"watch":{"enabled":true,"folder":"C:\\Clips","notify":false}}"#).unwrap();
+        let store = SettingsStore::open(path.clone());
+        assert!(store.get().watch.enabled && !store.get().watch.notify);
+        assert!(!store.get().watch.keep_watching, "closing still quits until the user says otherwise");
+
+        store.update(|s| s.watch.keep_watching = true).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(text.contains("\"keepWatching\": true"), "{text}");
+        assert!(SettingsStore::open(path).get().watch.keep_watching);
     }
 
     #[test]

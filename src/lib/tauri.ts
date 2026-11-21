@@ -21,10 +21,12 @@ const playUrls = new Map<string, string>();
 const thumbFiles = new Map<string, string>();
 
 const agent = navigator.userAgent;
-const frame: Frame = agent.includes("Windows") ? "custom" : "native";
+const windows = agent.includes("Windows");
+const frame: Frame = windows ? "custom" : "native";
 
 export const tauriBackend: Backend = {
-  can: DESKTOP,
+  // The tray is Windows only for now (plan 7).
+  can: { ...DESKTOP, tray: windows },
   demo: false,
   frame,
   minimize: () => getCurrentWindow().minimize(),

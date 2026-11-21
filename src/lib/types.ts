@@ -132,6 +132,8 @@ export interface WatchSettings {
   pollSeconds: number;
   /** A system notification when a watched clip is ready (held during games). */
   notify: boolean;
+  /** Closing the window leaves the watch running from the tray (`can.tray`). */
+  keepWatching: boolean;
 }
 
 export interface Settings {
@@ -333,11 +335,14 @@ export interface Capabilities {
   cut: boolean;
   /** Mix every sound track into one. */
   mixAudio: boolean;
+  /** Keep watching from the tray after the window closes (Windows only;
+   *  Linux keeps today's behaviour, plan 7). */
+  tray: boolean;
 }
 
 export const DESKTOP: Capabilities = {
   watch: true, replace: true, files: true, encoders: true, ffmpeg: true, copyFile: true, dragOut: true, updates: true,
-  download: false, share: false, history: true, cut: true, mixAudio: true,
+  download: false, share: false, history: true, cut: true, mixAudio: true, tray: true,
 };
 
 /** A finished cut (`sub20_core::cut::Cut`). */
