@@ -146,6 +146,7 @@
    grows to hold them, instead of sharing what the screen leaves. */
 @media (max-width: 1023px) {
   #download > .wrap > .grid { row-gap: var(--s-7); } /* stacked, the finished clip stands apart from the words above it */
+  .downloads__frame { --ratio: 24%; } /* and, the page's width, it needs no height to stand beside them */
   :is(#download, #lite) > .wrap > .grid.fill { flex: 0 0 auto; }
   :is(#download, #lite) .grid.fill > .frame--fill { flex: none; }
   #lite .frame--split { --ratio: 120%; }
