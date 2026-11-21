@@ -72,8 +72,11 @@
 .nav__logo .logo { width: 28px; height: 28px; border-radius: 7px; }
 
 /* Screenshots in card panels: the app's own ground behind them, each a tight crop of what the card
-   says, drawn at about the app's own size inside the panel's padding. The second row's crops are
-   shorter (.shot--low). */
+   says, drawn at about the app's own size inside the panel's padding, a sheet (the size picker, History,
+   Options) a little larger and showing as a box on that ground. The size picker (620 × 487, the app's
+   310px at 2x) is 372px wide, as tall as its panel's inside, at the scale of the History and Options
+   crops (832px files at 479px); at 310px it filled half its panel. The second row's crops are shorter
+   (.shot--low). */
 #features .panel { --p-h: 340px; }
 #features .panel.shot--low { --p-h: 264px; }
 /* a phone: each shot is its own narrow crop (Shot's phone), as wide as the panel, with a smaller inset */
@@ -85,8 +88,9 @@
 
 /* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
    other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
-   tell, every file in a list. Where the desktop app doesn't run (data-lite), Sub20 Lite first, the way
-   in on that device, and the files for a computer behind the same "Other systems and downloads". */
+   tell, every file in a list. Where the desktop app doesn't run (data-lite), Lite's own section comes
+   before this one (moved by the script at the end of #lite), and this one is "The desktop app": a line
+   on how to get it onto a computer, the files behind the same "Other systems and downloads". */
 .downloads { display: grid; gap: var(--s-6); align-content: start; }
 .downloads > h2 { max-width: 10em; }
 /* Only where no button below fits the visitor (no JavaScript, or a system the page can't tell). */
@@ -180,9 +184,8 @@
 /* The phone rises out of the frame's foot, drawn whole, its own foot on the frame's edge (no fade there:
    the screenshot ends just under Compress 3 videos, which a fade turned to a ghost). Out of the flow, so
    its own height never stretches the row. */
-.frame.lite__frame > .lite__phone { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: auto; height: calc(100% - var(--s-7)); max-height: 736px; aspect-ratio: 340 / 736; max-width: 62%; object-fit: cover; object-position: 50% 0; border-radius: 22px 22px 0 0; border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); border-bottom: 0;
-  -webkit-mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); mask: linear-gradient(to bottom, #000 calc(100% - 96px), transparent); }
-/* Stacked under the words (below 1024px): the before and after stands apart from the words above it, and
+.frame.lite__frame > .lite__phone { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: auto; height: calc(100% - var(--s-7)); max-height: 736px; aspect-ratio: 340 / 736; max-width: 62%; object-fit: cover; object-position: 50% 0; border-radius: 22px 22px 0 0; border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); border-bottom: 0; }
+/* Stacked under the words (below 1024px): the three steps stand apart from the words above it, and
    Lite's split frame keeps its own ratio, the section growing to hold it instead of sharing what the
    screen leaves. */
 @media (max-width: 1023px) {
@@ -192,15 +195,15 @@
   #lite .frame--split { --ratio: 120%; }
 }
 @media (max-width: 639px) {
-  /* a phone: no frame, so the two sit in the section's own column at its full width (the app's ground is
+  /* a phone: no frame, so the three steps sit in the section's own column at its full width (the app's ground is
      the page's), and the words stay readable: the plan from 1440p on, the file's name and size alone, on
      the chip's own ground and corners, and Copy at the same scale as the name */
   .frame.downloads__frame { padding: 0; border: 0; border-radius: 0; background: none; }
   .downloads__crop--plan { --cx: 124; --cw: 676; }
   .downloads__crop--done { --cx: 154; --cy: 25; --cw: 406; --ch: 86; width: 83%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
 }
-/* Stacked (below 1024px), the before and after comes last, so the way in (the button, or Lite) runs
-   straight on to the other files. */
+/* Stacked (below 1024px), the three steps come last, so the way in (the button, or where the desktop app
+   doesn't run, the line on getting it onto a computer) runs straight on to the other files. */
 @media (max-width: 1023px) { .downloads__frame { order: 1; } }
 /* From 1024 to 1279px the frame beside the words is narrow: the plan from 1440p on, and the chip and Copy
    wider, so all three stay at about the app's own size. */
@@ -464,13 +467,6 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 
 /* Lite's "Open Sub20 Lite" is as wide as its words; across the column its underline read as a rule. */
 .lite__text > .link { justify-self: start; }
-/* The phone: no fade at its foot (the comment over .lite__phone above). */
-.frame.lite__frame > .lite__phone { -webkit-mask: none; mask: none; }
-
-/* The size picker is 310px wide (the app's own size, its file 620px), so it filled half its panel and
-   its sheet read as a small box in a big one. The panel takes the sheet's ground (#1c2028, the
-   picker's own), so the picker is the panel's own, centred in it, at the size the app draws it. */
-@media (min-width: 640px) { #features .panel.shot:has(img[src*="/size."]) { background: #1c2028; } }
 
 /* The hero pill's "Read the changelog" is a link and looks like one: the page's link colour and
    underline, which firms up on hover and focus, and the pill's edge with it. */

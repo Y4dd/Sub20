@@ -78,7 +78,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           <article class="card card--row card--open span-6">
             <h3>Measures every clip against the limit</h3>
             <p>A result one byte over is encoded again at a lower bitrate. A file over the limit is never saved.</p>
-            <div class="panel shot"><Shot name="size" alt="The size picker: 20 MB Free, 50 MB Nitro Basic, 500 MB Server boost, 1 GB Nitro" sizes="310px" phone={{ name: "size-narrow", sizes: "calc(100vw - 72px)" }} /></div>
+            <div class="panel shot"><Shot name="size" alt="The size picker: 20 MB Free, 50 MB Nitro Basic, 500 MB Server boost, 1 GB Nitro" sizes="(min-width: 1280px) 372px, (min-width: 1024px) min(372px, calc(50vw - 150px)), 372px" phone={{ name: "size-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
           <article class="card card--row card--open span-6">
             <h3>Encodes the video on your graphics card</h3>
@@ -137,8 +137,9 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
               </>
             );
           })()}
-          {/* Windows's warning, in the hero's and the close's words: under the Windows button, and without JavaScript
-              (or on a system the page can't tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
+          {/* Windows's warning in full, with its reason and the install steps (the FAQ's words; the hero and the close
+              say only the next step): under the Windows button, and without JavaScript (or on a system the page can't
+              tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
           <SmartScreenNote class="downloads__note downloads__warn" steps />
           {/* Where the desktop app doesn't run (data-lite), #lite comes before this section and is the way in on this
               device, so here only how to get the desktop app onto a computer; its files are behind "Other systems and downloads". */}
