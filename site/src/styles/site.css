@@ -4,14 +4,15 @@
 /* The hero's window: the app's own screenshot on the page's dark, lit from under its foot by the trim
    yellow, so the dark window stands off the dark page. Its answer is the dock at its foot (the size and
    Compress), so the frame always shows the foot: the window grows with the frame's height (880 to
-   1120px wide; its text is the app's at 0.6 to 0.8), and where even 880px won't fit (a short screen) its
-   top goes under the frame's edge instead (flex-end, in flow), never its foot. */
+   1120px wide; its text is the app's at 0.6 to 0.8), centred in a frame taller than it, and where even
+   880px won't fit (a short screen) its top goes under the frame's edge instead (flex-end, in flow), never
+   its foot. The yellow is the window's own light, so it stays under the window wherever that sits. */
 .hero--centred .hero__window { container: hero-window / size; display: flex; flex-direction: column; justify-content: flex-end;
   margin-top: var(--s-5); padding: var(--s-4) var(--s-6) var(--s-5);
-  background: radial-gradient(48% 22% at 50% 100%, rgb(255 208 43 / 0.2), transparent 80%), color-mix(in srgb, var(--p-surface) 55%, var(--p-bg));
+  background: color-mix(in srgb, var(--p-surface) 55%, var(--p-bg));
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--s-4), #000 calc(100% - var(--s-5)), transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 var(--s-4), #000 calc(100% - var(--s-5)), transparent); }
-.hero--centred .hero__window > .ly-piece { position: relative; left: auto; top: auto; transform: none; flex: none; margin: 0 auto auto;
+.hero--centred .hero__window > .ly-piece { position: relative; left: auto; top: auto; transform: none; flex: none; margin: auto;
   width: clamp(min(880px, 100%), 100cqh * 2.6667, min(1120px, 100%)); }
 .hero__window .ly-piece { overflow: hidden; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--p-ink) 16%, transparent);
   box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 26px 64px -26px rgb(255 208 43 / 0.34); background: #15171c; }
