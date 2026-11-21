@@ -128,15 +128,19 @@
 #faq .faq > .faq__item:not(:first-child) { padding-top: var(--s-4); }
 #faq .faq > .faq__item { padding-bottom: var(--s-4); }
 
-/* The questions' guide links, one under the other. */
-.faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-1); justify-items: start; text-wrap: pretty; }
+/* The questions' guides, one under the other, each with its summary in small grey under its link: beside
+   the five answers the column holds about as much as they do (at 1440x900 it ended 290px above them with
+   the titles alone), and the links still read as a list of their own. */
+.faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-4); justify-items: start; text-wrap: pretty; }
+.faq__guides > li { display: grid; gap: 2px; justify-items: start; }
+.faq__guides > li > span { max-width: 52ch; font-size: var(--t-small); line-height: 1.45; color: color-mix(in srgb, var(--p-ink) 72%, var(--p-bg)); }
 
 /* The footer's line about Sub20 runs to three lines at the lead size: the kit's 1.25 is a heading's leading. */
 .closing__links .footer__lede { line-height: 1.4; }
 
 /* Lite: the phone rising out of the frame's foot. */
 .lite__text { display: grid; gap: var(--s-5); align-content: start; }
-.lite__facts { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); text-wrap: balance; }
+.lite__facts { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); text-wrap: pretty; }
 .lite__frame { background: #101216; }
 /* The phone rises out of the frame's foot: its top part, fading where the frame cuts it. Out of the
    flow, so its own height never stretches the row. */
@@ -209,18 +213,21 @@
 /* A guide's way back to the guides, above its heading. */
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 
-/* A phone: the questions take two screens (--hm: 2) but fill about 1.75 (1,336px at 390x844). The
-   questions keep their own 16px rows, and the room to spare (about 200px) goes above them, so the
-   guides and the questions read as two groups. Shared out between the questions it opened 80px gaps
-   inside one list; under the last answer it made the gap to the close a third wider than the page's
-   others. The guide links that wrap keep their arrow after their last word (a block, not the kit's
-   flex row, which pushed it to the right edge), 44px tall on one line. */
+/* A phone: the questions take two screens (--hm: 2). With the guides' titles alone they filled about
+   1.75 and left a 200px hole between the guide links and the first question; with each guide's summary
+   under its link the guides fill that room themselves, and the two groups are 40px apart (more than the
+   questions' 32px rows), which keeps the section at two screens exactly. Any room left goes there too,
+   never between the questions or under the last answer, which made the gap to the close wider than the
+   page's others. The guide links that wrap keep their arrow after their last word (a block, not the
+   kit's flex row, which pushed it to the right edge), 44px tall on one line; the summary rides up into
+   the link's bottom padding, under the link, so the whole 44px still takes the tap. */
 @media (max-width: 639px) {
-  #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
+  #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; row-gap: calc(var(--s-6) + var(--s-2)); }
   #faq .faq { display: flex; flex-direction: column; justify-content: flex-end; }
-  .faq__guides { gap: 0; }
-  .faq__guides > li { display: flex; align-items: center; min-height: 44px; }
-  html .faq__guides .link { display: block; min-height: 0; padding-block: 10px; line-height: 1.5; text-wrap: balance; }
+  .faq__guides { margin-top: 0; gap: var(--s-1); }
+  .faq__guides > li { gap: 0; }
+  .faq__guides > li > span { margin-top: -6px; }
+  html .faq__guides .link { position: relative; z-index: 1; display: block; min-height: 0; padding-block: 10px; line-height: 1.5; text-wrap: balance; }
   html .faq__guides .link::after { margin-left: var(--s-2); }
   html:not([data-motion="off"]) .faq__guides .link { padding-block: 10px; background: none; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 }
