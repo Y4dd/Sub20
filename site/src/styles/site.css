@@ -8,7 +8,7 @@
    880px won't fit (a short screen) its top goes under the frame's edge instead (flex-end, in flow), never
    its foot. The yellow is the window's own light, so it stays under the window wherever that sits. */
 .hero--centred .hero__window { container: hero-window / size; display: flex; flex-direction: column; justify-content: flex-end;
-  margin-top: var(--s-5); padding: var(--s-4) var(--s-6) var(--s-5);
+  margin-top: var(--s-5); padding: var(--s-4) var(--s-6) calc(var(--s-5) + 20px);
   background: color-mix(in srgb, var(--p-surface) 55%, var(--p-bg));
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--s-4), #000 calc(100% - var(--s-5)), transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 var(--s-4), #000 calc(100% - var(--s-5)), transparent); }
@@ -18,17 +18,22 @@
   box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 26px 64px -26px rgb(255 208 43 / 0.34); background: #15171c; }
 .hero__window .ly-piece :is(picture, img) { display: block; width: 100%; height: auto; }
 /* Its top cut (880px wide, so 330px tall, in a frame less tall than that): the picture fades in over
-   64px from the frame's top edge, so the cut reads as the frame's, not a torn picture. */
+   48px from the frame's top edge, so the cut reads as the frame's, not a torn picture. */
 @container hero-window (max-height: 329px) and (min-width: 880px) {
   .ly-piece img { --cut: calc(330px - 100cqh);
-    -webkit-mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + var(--s-8)));
-    mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + var(--s-8))); }
+    -webkit-mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + var(--s-7)));
+    mask-image: linear-gradient(to bottom, transparent var(--cut), #000 calc(var(--cut) + var(--s-7))); }
 }
-/* The fade at the frame's foot is in its bottom padding, so the hero's own padding under it can be less. */
-@media (min-width: 640px) { main > .hero--centred { padding-bottom: calc(var(--s-6) + var(--bar, 0px)); } }
+/* The fade at the frame's foot is in its bottom padding (the last 24px of 44, so the dock clears it by
+   20px), so the hero's own padding under it can be less. A short screen (1280x720) gets a lower frame
+   than the kit's 32svh, so the frame's foot stays above the fold. */
+@media (min-width: 640px) {
+  main > .hero--centred { padding-bottom: calc(var(--s-6) + var(--bar, 0px)); }
+  .hero--centred .hero__window { min-height: clamp(200px, 28svh, 340px); }
+}
 /* A phone: the narrow screenshot (1120 x 1200), the frame's width. */
 @media (max-width: 639px) {
-  .hero--centred .hero__window { padding: var(--s-4) var(--s-4) var(--s-5); }
+  .hero--centred .hero__window { padding: var(--s-4) var(--s-4) calc(var(--s-5) + 20px); }
   .hero--centred .hero__window > .ly-piece { width: 100%; }
 }
 /* Running text in grey is kept at 7:1 (the checker's bar for body text); the secondary button gets an
