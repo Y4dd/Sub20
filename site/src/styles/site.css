@@ -333,6 +333,22 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* Lite and the questions. */
 
 /* The hero's words and buttons, and the close. */
+/* "Download Sub20" (GetSub20.astro): on Windows or Linux the button is that system's file, elsewhere and
+   without JavaScript the jump to #download. Only hide rules, so .btn keeps its own display at every
+   width. The jump steps aside only for a system whose file was drawn (data-has), so a build with no
+   release keeps the jump everywhere. */
+:root:not([data-os="windows"]:not([data-lite])) :is(.get, .get-note)[data-for="windows"],
+:root:not([data-os="linux"]:not([data-lite])) :is(.get, .get-note)[data-for="linux"],
+:root[data-os="windows"]:not([data-lite]) .get[data-has~="windows"],
+:root[data-os="linux"]:not([data-lite]) .get[data-has~="linux"] { display: none; }
+/* The close's big button: the download mark at the size of the arrow it replaces. */
+.btn--xl > .dl-mark { width: 0.62em; height: 0.62em; stroke-width: 1.4; }
+/* On a phone its words are longer than the jump's, so it keeps less padding round them. */
+@media (max-width: 639px) { .btn--xl.btn--wide.get { padding-inline: var(--s-5); } }
+/* What Windows will say, under the button that downloads the installer: one quiet line. */
+.hero__note { margin: calc(-1 * var(--s-2)) 0 0; font-size: var(--t-small); line-height: 1.4; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+.hero__note b, .close__note b { color: var(--p-ink); font-weight: 500; }
+.closing__cta > .close__note { margin: calc(var(--s-3) - var(--s-6)) 0 0; }
 
 /* The formats rail, quieter. */
 

@@ -5,6 +5,8 @@ import DownloadMark from "../components/DownloadMark.astro";
 import { u, GITHUB, RELEASES } from "../lib/site";
 import { latestRelease, ROWS, cell, kindInText } from "../lib/release";
 import { GUIDES } from "../lib/guides";
+import GetSub20 from "../components/GetSub20.astro";
+import SmartScreenNote from "../components/SmartScreenNote.astro";
 
 const release = await latestRelease();
 // A size keeps its unit and "64-bit" its hyphen on one line.
@@ -53,8 +55,9 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
       <div class="hero__c">
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
-        <p class="hero__lead">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</p>
-        <div class="btn-row"><a class="btn btn--primary if-app" href="#download">Download Sub20</a><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
+        <p class="hero__lead"><span class="if-app">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</span><span class="if-lite">Trim a clip, pick a size, and Sub20 Lite encodes it in your browser until it fits: 20 MB unless you say otherwise.</span></p>
+        <div class="btn-row"><GetSub20 class="btn btn--primary if-app" jump="#download" /><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
+        <SmartScreenNote class="hero__note" />
       </div>
       <div class="hero__window" role="img" aria-label="Sub20's window: a drone clip with the yellow trim bar over its frames, planned at 1080p and marked Should look good, and at the foot the size, 20 MB, and Compress 3 videos">
         <div class="ly-piece"><Shot name="window" alt="" sizes="(min-width: 1280px) and (min-height: 1000px) 1120px, (min-width: 960px) 960px, calc(100vw - 80px)" phone={{ name: "window-narrow", sizes: "calc(100vw - 80px)" }} eager /></div>

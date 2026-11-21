@@ -1,0 +1,12 @@
+---
+// What Windows will say, under a GetSub20 that downloads the installer straight away: shown only
+// where that button is (Windows, with a release to read), since the visitor skips the download
+// section's own note.
+import { latestRelease, ROWS, cell } from "../lib/release";
+
+interface Props { class?: string }
+const release = await latestRelease();
+const installer = cell(release, ROWS[0], false);
+---
+
+{installer.size && <p class:list={[Astro.props.class, "get-note"]} data-for="windows">Windows will warn you because Sub20 isn't code-signed yet: click <b>More info</b>, then <b>Run anyway</b>.</p>}

@@ -1,0 +1,31 @@
+---
+// The hero's and the close's "Download Sub20": a jump to the download section, and beside it the
+// visitor's file itself (the full build's Windows installer or Linux .deb, the same files as the
+// download section's button), ending in DownloadMark. CSS picks one from data-os (site.css, "The
+// hero's words and buttons, and the close"): the file on Windows or Linux, the jump without
+// JavaScript, on any other system, or where the build has no release to read (then no file is drawn).
+// Siblings, no wrapper, so the kit's child rules (.btn-row > .btn, .closing__cta > .btn--xl) still hold.
+import DownloadMark from "./DownloadMark.astro";
+import { latestRelease, ROWS, cell } from "../lib/release";
+
+interface Props {
+  /** The button's classes, the same on every form. */
+  class: string;
+  /** Where the jump goes. */
+  jump: string;
+  /** The jump ends in the kit's drawn page arrow (the close's). */
+  arrow?: boolean;
+}
+const { class: classes, jump, arrow = false } = Astro.props;
+const release = await latestRelease();
+const files = [
+  { os: "windows", name: "Download for Windows", file: cell(release, ROWS[0], false) },
+  { os: "linux", name: "Download for Linux (.deb)", file: cell(release, ROWS[1], false) },
+].filter((f) => f.file.size);
+// A size keeps its unit on one line.
+const keep = (t: string) => t.replace(/(\d) (MB|GB|KB)/g, "$1 $2");
+---
+
+<a class:list={[classes, "get"]} href={jump} data-has={files.map((f) => f.os).join(" ") || undefined}>Download Sub20{arrow && <svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg>}</a>{files.map((f) => (
+  <a class:list={[classes, "get", "dl"]} href={f.file.href} data-for={f.os}><span>{f.name}<span class="downloads__size">, {keep(f.file.size!)}</span></span><DownloadMark /></a>
+))}
