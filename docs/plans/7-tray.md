@@ -107,10 +107,11 @@ until after the owner's Arch sitting.
       window or not; the process stays only while the icon is there.
       Pause watching joins the menu in 7.5, with the thing it calls.
       The owner's first try: Quit during a watched encode quit without
-      asking, but the clip had not been picked up yet (nothing in
-      `watch.json`, no partial file; Tauri does let `exit(0)` be
-      prevented), so it is to try again once the clip shows as being
-      compressed, now with "Compress new videos straight away" on.
+      asking, most likely because the clip had not been picked up yet
+      (nothing in `watch.json`, no partial file; Tauri does let `exit(0)`
+      be prevented, though a job canceled by the quit would leave the same
+      traces), so it is to try again once FFmpeg is running under Sub20,
+      now with "Compress new videos straight away" on.
       Tauri's `tray-icon` feature, for the
       Windows target only. The tray menu has Open (also a left click),
       Pause watching and Quit. With the setting on, closing the window
@@ -150,8 +151,14 @@ until after the owner's Arch sitting.
       launch, one dropped with the window open and one with only the tray
       were all in `bench.json`, and all four were there again, trim, name
       and "leave out" kept, after the window was built again and after the
-      process was stopped and started. A bench of more than 1,000 clips
-      comes back as its first 1,000 (`crawl::MOST`). The clips on the bench that aren't
+      process was stopped and started; a clip opened with Sub20 reached
+      the file, so the window's own save works. A clip whose read throws
+      at launch (FFmpeg missing) stays in every save, so a bad start
+      doesn't empty the file: built, not tried, since this machine's
+      FFmpeg can't be hidden from the lookup. Known limits: a bench of
+      more than 1,000 clips comes back as its first 1,000 (`crawl::MOST`),
+      and "Put those on the bench too" on a folder of more than 1,000 marks
+      them all benched while the window takes the first 1,000. The clips on the bench that aren't
       finished (ready, failed, canceled, left out, and running ones, which
       quitting stops) are saved with their trim, typed name and "leave
       out" to `bench.json` (`sub20_core::bench`), by the window a moment

@@ -237,6 +237,12 @@ class App {
   }
 
   async init() {
+    // Listening before the shell counts the window as ready, so a clip the
+    // watch benches in between isn't missed; they wait until the saved
+    // bench is back.
+    const early: string[][] = [];
+    let benched = (paths: string[]) => void early.push(paths);
+    await backend.onBenched((paths) => benched(paths));
     const boot = await backend.bootstrap();
     this.settings = boot.settings;
     this.ffmpeg = boot.ffmpeg;
@@ -252,8 +258,6 @@ class App {
     await backend.onJob((event) => this.#onJob(event));
     await backend.onOpened((paths) => void this.add(paths));
     await backend.onNotice((results) => void this.openNotice(results));
-    // Clips the watch puts on the bench join without taking the selection.
-    await backend.onBenched((paths) => void this.add(paths, { select: false }));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
         this.dragging = false;
@@ -272,6 +276,9 @@ class App {
     void restored.finally(() => {
       this.#benchRestored = true;
       if (boot.openedWith.length) void this.add(boot.openedWith);
+      // Clips the watch puts on the bench join without taking the selection.
+      benched = (paths) => void this.add(paths, { select: false });
+      early.forEach(benched);
     });
     if (boot.notice) void this.openNotice(boot.notice);
     if (boot.settings.checkUpdates) void this.checkUpdate(true);
@@ -456,10 +463,15 @@ class App {
 
   /** The clips not yet finished, as the bench keeps them. */
   get #benchNow(): BenchClip[] {
-    return this.clips
+    const now = this.clips
       .filter((clip) => clip.status !== "done")
       .map((clip) => ({ path: clip.path, trim: clip.trim, outputName: clip.outputName, leftOut: clip.leftOut }));
+    return [...now, ...this.#benchUnread.filter((kept) => !now.some((clip) => clip.path === kept.path))];
   }
+
+  /** Saved clips that couldn't be read this time (FFmpeg missing, say):
+   *  kept in every save, so a bad start doesn't empty the saved bench. */
+  #benchUnread: BenchClip[] = [];
 
   /** Keeps the unfinished clips for the next launch or the next window
    *  (plan 7's 7.13), a moment after the bench changes, one save at a time. */
@@ -542,15 +554,18 @@ class App {
   /** Adds what was dropped or chosen. Folders are searched first (with their
    *  subfolders); then the files are read six at a time, and each joins the
    *  list once it and every file before it are read, so the list fills in
-   *  name order while the rest are still being read. */
-  /** Puts videos on the bench. `select: false` leaves the selection alone
-   *  unless nothing is selected; `saved` puts back what a saved bench kept. */
+   *  name order while the rest are still being read. `select: false` leaves
+   *  the selection alone unless nothing is selected; `saved` puts back what
+   *  a saved bench kept. */
   async add(paths: string[], { select = true, saved }: { select?: boolean; saved?: Map<string, BenchClip> } = {}) {
     if (!paths.length) return;
     this.#adding++;
     const rejected: string[] = [];
     let failure: unknown = null;
     let first = true;
+    // Saved clips nobody could read yet; a file that was read and refused
+    // leaves this, a read that threw doesn't.
+    const unread = new Set(saved ? paths : []);
     try {
       const found = await backend.findVideos(paths);
       if (found.capped) this.notify(`Added the first ${found.files.length} videos. Drop a smaller folder for the rest.`);
@@ -588,6 +603,7 @@ class App {
           const index = next++;
           try {
             read[index] = await backend.addVideos([files[index]]);
+            unread.delete(files[index]);
           } catch (error) {
             failure ??= error;
             read[index] = [];
@@ -600,6 +616,11 @@ class App {
       failure ??= error;
     } finally {
       this.#adding--;
+    }
+    if (saved) {
+      this.#benchUnread = [...unread]
+        .filter((path) => !this.clips.some((clip) => clip.path === path))
+        .flatMap((path) => saved.get(path) ?? []);
     }
     if (failure) {
       this.notify(String(failure));
