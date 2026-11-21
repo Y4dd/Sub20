@@ -71,12 +71,12 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           <article class="card card--row card--open span-6">
             <h3>Measures every clip against the limit</h3>
             <p>A result one byte over is encoded again at a lower bitrate. A file over the limit is never saved.</p>
-            <div class="panel shot shot--contain"><Shot name="size" alt="The size picker: 20 MB Free, 50 MB Nitro Basic, 500 MB Server boost, 1 GB Nitro" sizes="(min-width: 1280px) 504px, (min-width: 1024px) 365px, (min-width: 640px) 269px, 146px" /></div>
+            <div class="panel shot"><Shot name="size" alt="The size picker: 20 MB Free, 50 MB Nitro Basic, 500 MB Server boost, 1 GB Nitro" sizes="310px" phone={{ name: "size-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
           <article class="card card--row card--open span-6">
             <h3>Encodes the video on your graphics card</h3>
             <p>NVIDIA, AMD and Intel cards do the work; the CPU takes over when a card can't.</p>
-            <div class="panel shot shot--wide"><Shot name="running" alt="The trim bar filling from the left, Compressing on the NVIDIA GPU, 42%, about 5 s left" sizes="(min-width: 1280px) 573px, (min-width: 1024px) 365px, (min-width: 640px) 269px, 303px" /></div>
+            <div class="panel shot"><Shot name="running" alt="Under the video, the trim bar filling from the left: Compressing on the NVIDIA GPU, 42%, about 5 s left" sizes="(min-width: 1280px) 570px, (min-width: 1024px) calc(50vw - 150px), 570px" phone={{ name: "running-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
         </div>
       </div>
@@ -88,13 +88,13 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <div class="grid">
           <article class="card card--row card--open span-6">
             <h3>Picks up new clips from your folders</h3>
-            <p>Point Sub20 at the NVIDIA app's or Xbox Game Bar's folder and new clips are compressed as they land.</p>
-            <div class="panel shot shot--top"><Shot name="watch" alt="History: a clip from the watched NVIDIA folder, 612 MB to 19.4 MB, with Open and Copy" sizes="(min-width: 1024px) 277px, (min-width: 640px) 130px, 71px" /></div>
+            <p>Point Sub20 at the NVIDIA app's or Xbox Game Bar's folder and it picks up each new clip as it lands.</p>
+            <div class="panel shot shot--low"><Shot name="watch" alt="History: the watched NVIDIA folder, 1 clip done, harbour-drone-take3-20mb.mp4, 612 MB to 19.4 MB, with Open and Copy" sizes="(min-width: 1280px) 480px, (min-width: 1024px) calc(50vw - 150px), 480px" phone={{ name: "watch-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
           <article class="card card--row card--open span-6">
             <h3>Keeps the microphone in every clip</h3>
             <p>OBS and the NVIDIA app can record the mic on a track of its own. Sub20 mixes every track into one.</p>
-            <div class="panel shot shot--contain"><Shot name="mix" alt="Options: Mix all sound tracks switched on" sizes="(min-width: 1280px) 573px, (min-width: 1024px) 365px, (min-width: 640px) 269px, 272px" /></div>
+            <div class="panel shot shot--low"><Shot name="mix" alt="Options: Mix all sound tracks switched on, which keeps a microphone that OBS or the NVIDIA app recorded on its own track" sizes="(min-width: 1280px) 480px, (min-width: 1024px) calc(50vw - 150px), 480px" phone={{ name: "mix-narrow", sizes: "calc(100vw - 72px)" }} /></div>
           </article>
         </div>
       </div>
