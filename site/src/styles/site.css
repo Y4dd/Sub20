@@ -57,14 +57,14 @@
 
 /* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
    other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
-   tell, every file in a list. Where the desktop app doesn't run (data-lite), Sub20 Lite leads. */
+   tell, every file in a list. Where the desktop app doesn't run (data-lite), a line for that device and
+   every file in the list, for the computer the visitor came to download for. */
 .downloads { display: grid; gap: var(--s-6); align-content: start; }
 .downloads > h2 { max-width: 10em; }
 /* Only where no button below fits the visitor (no JavaScript, or a system the page can't tell). */
 :root:is([data-lite], [data-os="windows"], [data-os="linux"]) .downloads__fallback { display: none; }
 #download { --dl-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .downloads__pick, .downloads__lite { display: grid; gap: var(--s-3); justify-items: start; }
-.downloads__lite { gap: var(--s-5); }
 .downloads__pick { display: none; }
 :root[data-os="windows"]:not([data-lite]) .downloads__pick[data-for="windows"],
 :root[data-os="linux"]:not([data-lite]) .downloads__pick[data-for="linux"] { display: grid; }
@@ -88,11 +88,11 @@
 .downloads__more > summary::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor; transition: rotate var(--dur) var(--ease);
   -webkit-mask: var(--dl-chevron) center / contain no-repeat; mask: var(--dl-chevron) center / contain no-repeat; }
 .downloads__more[open] > summary::after { rotate: 90deg; }
-/* With no button above it (no JavaScript, or a system the page can't tell), the list stands open without its summary. */
-:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__more > summary { display: none; }
+/* With no button above it (no JavaScript, a system the page can't tell, or data-lite), the list stands open without its summary. */
+:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__more > summary { display: none; }
 .downloads__all { display: grid; gap: var(--s-5); padding-top: var(--s-3); }
 .downloads__all > p:first-child { max-width: 72ch; }
-:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__all { padding-top: 0; }
+:root:not(:is([data-os="windows"], [data-os="linux"]):not([data-lite])) .downloads__all { padding-top: 0; }
 .downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-5) var(--gutter); }
 /* A column a system: four side by side on a computer, two on a tablet. */
 @media (min-width: 640px) { .downloads__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -128,6 +128,7 @@
 /* Stacked under the words (below 1024px), the two split frames keep their own ratio and the section
    grows to hold them, instead of sharing what the screen leaves. */
 @media (max-width: 1023px) {
+  #download > .wrap > .grid { row-gap: var(--s-7); } /* stacked, the finished clip stands apart from the words above it */
   :is(#download, #lite) > .wrap > .grid.fill { flex: 0 0 auto; }
   :is(#download, #lite) .grid.fill > .frame--fill { flex: none; }
   #lite .frame--split { --ratio: 120%; }
