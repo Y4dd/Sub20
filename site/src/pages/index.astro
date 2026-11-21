@@ -125,7 +125,6 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
                 <div class="downloads__pick" data-for="windows">
                   <a class:list={["btn btn--primary", { dl: win.size }]} href={win.href}><span>Download for Windows{win.size && <span class="downloads__size">, {keep(win.size)}</span>}</span>{win.size && <DownloadMark />}</a>
                   <p class="downloads__note">Windows 10 and 11, {keep("64-bit")} installer{version}.</p>
-                  <p class="downloads__note">Windows will warn you because Sub20 isn't code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>See the install steps</a></p>
                 </div>
                 <div class="downloads__pick" data-for="linux">
                   <a class:list={["btn btn--primary", { dl: deb.size }]} href={deb.href}><span>Download for Linux (.deb){deb.size && <span class="downloads__size">, {keep(deb.size)}</span>}</span>{deb.size && <DownloadMark />}</a>
@@ -135,20 +134,37 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
               </>
             );
           })()}
-          {/* Where the desktop app doesn't run (data-lite): the files stay open below for the computer the visitor came to download for, and Lite is named for this device. */}
+          {/* Windows's warning, said once: under the Windows button, and without JavaScript (or on a system the page
+              can't tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
+          <p class="downloads__note downloads__warn">On Windows, the installer warns you because Sub20 is not code-signed yet: click <b>More info</b>, then <b>Run anyway</b>. <a class="link" href={u("download/")}>See the install steps</a></p>
+          {/* Where the desktop app doesn't run (data-lite): Lite first, the way in on this device, then the files for a computer, behind "Other systems and downloads". */}
           <div class="downloads__lite if-lite">
-            <p>Sub20 is a desktop app for Windows and Linux: open this page on a Windows or Linux computer to download it, or pick its file below. On this device, Sub20 Lite runs in your browser.</p>
-            <a class="link" href={u("app/")}>Open Sub20 Lite</a>
+            <p>On this device, use Sub20 Lite: the same window in your browser, with nothing to install.</p>
+            <a class="btn btn--primary" href={u("app/")}>Open Sub20 Lite</a>
+            <p>The desktop app is for Windows and Linux. To put it on a computer, open this page there, or take its file below.</p>
           </div>
         </div>
-        {/* The finished clip, what the download is for: its file and Copy, cropped from the app's result row. */}
+        {/* What the download is for, before and after: the plan row's size and verdict (from the hero's window, or its
+            narrow layout on a phone), then the finished file, 612 MB down to 19.4 MB. Cropped (site.css) so no button shows. */}
         <div class="frame span-6 start-7 downloads__frame">
-          <div class="downloads__crop">
-            <Shot name="done" alt="A finished clip in Sub20: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB, with Copy and Ctrl+C" sizes="(min-width: 640px) and (max-width: 1279px) 900px, 700px" />
-          </div>
+          <ol class="downloads__story" role="list">
+            <li>
+              <p>Before it starts, Sub20 says how it will look</p>
+              <div class="downloads__crop downloads__crop--plan">
+                <Shot name="window" alt="Sub20's plan for a 1 min 12 s clip: 1080p, H.264 at 2.1 Mbps, Should look good" sizes="(min-width: 1024px) and (max-width: 1279px) 1800px, 1920px" phone={{ name: "window-narrow", sizes: "640px" }} />
+              </div>
+            </li>
+            <li>
+              <p>When it's done, the file fits under 20 MB</p>
+              <div class="downloads__crop downloads__crop--done">
+                <Shot name="done" alt="The finished file: harbour-drone-take3-20mb.mp4, 19.4 MB, down from 612 MB" sizes="720px" />
+              </div>
+            </li>
+          </ol>
         </div>
         {/* Every file. Open as written, so it is the whole list without JavaScript or on a system the page
-            can't tell, or where the desktop app doesn't run; the script under it closes it where a button above already offers the right file. */}
+            can't tell. The script under it closes it where a button above already offers the right file, and where
+            the desktop app doesn't run (data-lite), since Lite comes first there; a link to #download opens it again. */}
         <details class="downloads__more" open>
           <summary>Other systems and downloads</summary>
           <div class="downloads__all">
@@ -174,7 +190,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             </p>
           </div>
         </details>
-        <script is:inline>(()=>{const d=document.documentElement.dataset;if(!("lite"in d)&&(d.os==="windows"||d.os==="linux"))document.currentScript.previousElementSibling.open=false})()</script>
+        <script is:inline>(()=>{const t=document.currentScript.previousElementSibling,d=document.documentElement.dataset,l="lite"in d;if(!l&&d.os!=="windows"&&d.os!=="linux")return;t.open=false;if(!l)return;const o=()=>{if(location.hash==="#download")t.open=true};o();addEventListener("hashchange",o);document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest('a[href$="#download"]'))t.open=true})})()</script>
       </div>
     </div>
   </section>
