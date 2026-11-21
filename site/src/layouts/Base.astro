@@ -135,7 +135,7 @@ const here = (word: string) => (current === word ? { "aria-current": "page" } : 
             <p class="t-small muted"><span class="if-app">Free for Windows and Linux. No account, MIT licence.</span><span class="if-lite">Free in your browser, with nothing to install. No account, MIT licence.</span></p>
           </div>
           <GetSub20 class="btn btn--primary btn--xl btn--wide if-app" jump={current === "download" ? "#downloads" : u("#download")} arrow /><a class="btn btn--primary btn--xl btn--wide if-lite" href={u("app/")}>Open Sub20 Lite<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg></a>
-          <SmartScreenNote class="t-small muted close__note" />
+          <SmartScreenNote class="t-small muted close__note" link={current !== "download"} />
         </div>
         <div class="closing__links">
           <div class="grid">
