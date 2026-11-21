@@ -29,7 +29,7 @@ const software = {
 };
 // The questions, written once: the page shows them, and FAQPage tells search engines the same words.
 const FAQ = [
-  { q: "How do I make a video small enough for Discord?", html: "Drop it on Sub20, drag the yellow handles to keep the part worth sending, pick the size and press Compress. Sub20 works out the bitrate from the size and the length you kept, and encodes the clip again if it lands even a byte over." },
+  { q: "How do I make a video small enough for Discord?", html: "Add it to Sub20, drag the yellow handles to keep the part worth sending, pick the size and press Compress. Sub20 works out the bitrate from the size and the length you kept, and encodes the clip again if it lands even a byte over." },
   { q: "What is Discord's file size limit?", html: "20 MB on a free account, 50 MB with Nitro Basic, 500 MB in a boosted server and 1 GB with Nitro. Sub20's size picker names each one." },
   { q: "Are my videos uploaded anywhere?", html: "No, and there is no account. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself." },
   { q: "Will my clip play for everyone on Discord?", html: "Yes, unless you choose otherwise. Sub20 saves H.264 video, the kind that plays in Discord on every computer and phone. Options also offers HEVC and AV1, which keep more detail at the same size but may not play everywhere: HEVC on some computers, AV1 on phones." },
@@ -55,7 +55,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
       <div class="hero__c">
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
-        <p class="hero__lead"><span class="if-app">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</span><span class="if-lite">Trim a clip, pick a size, and Sub20 Lite encodes it in your browser until it fits: 20 MB unless you say otherwise.</span></p>
+        <p class="hero__lead"><span class="if-app">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</span><span class="if-lite">Trim a clip and Sub20 Lite fits it in your browser: 20 MB unless you pick another size. On a phone, Share hands it to Discord.</span></p>
         <div class="btn-row"><GetSub20 class="btn btn--primary if-app" jump="#download" /><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
         <SmartScreenNote class="hero__note" />
       </div>
@@ -112,7 +112,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     <div class="wrap">
       <div class="grid">
         <div class="span-5 downloads">
-          <h2 id="download-h">Download Sub20 for Windows and Linux</h2>
+          <h2 id="download-h"><span class="if-app">Download Sub20 for Windows and Linux</span><span class="if-lite">The desktop app</span></h2>
           <p class="downloads__fallback">Free and open source, for Windows 10 and 11 and {keep("64-bit")} Linux. Pick your system below.</p>
           {/* One button for the visitor's system (data-os, set by Base's head script); none without JavaScript.
               A button or link that starts a download carries .dl and ends in DownloadMark (never the page arrow);
@@ -140,11 +140,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           {/* Windows's warning, in the hero's and the close's words: under the Windows button, and without JavaScript
               (or on a system the page can't tell) under the line above; not on Linux, nor where the desktop app doesn't run. */}
           <SmartScreenNote class="downloads__note downloads__warn" steps />
-          {/* Where the desktop app doesn't run (data-lite): Lite first, the way in on this device, then the files for a computer, behind "Other systems and downloads". */}
+          {/* Where the desktop app doesn't run (data-lite), #lite comes before this section and is the way in on this
+              device, so here only how to get the desktop app onto a computer; its files are behind "Other systems and downloads". */}
           <div class="downloads__lite if-lite">
-            <p>On this device, use Sub20 Lite: the same window in your browser, with nothing to install.</p>
-            <a class="btn btn--primary" href={u("app/")}>Open Sub20 Lite</a>
-            <p>The desktop app is for Windows and Linux. To put it on a computer, open this page there, or take its file below.</p>
+            <p>It runs on Windows 10 and 11 and {keep("64-bit")} Linux. To install it, open this page on that computer, or take its file below.</p>
           </div>
         </div>
         {/* What the download is for, before and after: the plan row's size and verdict (from the hero's window, or its
@@ -216,6 +215,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         </div>
       </div>
     </div>
+    {/* Where the desktop app doesn't run (data-lite), Lite is the way in, so this section moves up before #download:
+        in the DOM, not with CSS order, so focus and a screen reader follow what is seen. Without JavaScript, and on
+        Windows or Linux, it stays where it is written. It runs before system.js, a module that waits for the parse. */}
+    <script is:inline>(()=>{const s=document.currentScript.parentElement,d=document.getElementById("download");if("lite"in document.documentElement.dataset&&d)d.before(s)})()</script>
   </section>
 
   <section class="section" id="faq" aria-labelledby="faq-h" style="--hm: 2">
