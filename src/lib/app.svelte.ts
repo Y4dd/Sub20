@@ -6,7 +6,7 @@ import { tauriBackend } from "./tauri";
 import { webBackend } from "./web/backend";
 import { baseName, plain } from "./format";
 import type {
-  Added, Backend, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
+  Added, Backend, BenchClip, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
   ShellWatchedJob, UpdateInfo, WatchStatus,
 } from "./types";
 
@@ -252,6 +252,8 @@ class App {
     await backend.onJob((event) => this.#onJob(event));
     await backend.onOpened((paths) => void this.add(paths));
     await backend.onNotice((results) => void this.openNotice(results));
+    // Clips the watch puts on the bench join without taking the selection.
+    await backend.onBenched((paths) => void this.add(paths, { select: false }));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
         this.dragging = false;
@@ -262,7 +264,15 @@ class App {
     });
     this.ready = true;
     if (boot.ffmpeg.found) void this.loadReport(false);
-    if (boot.openedWith.length) void this.add(boot.openedWith);
+    // The bench as it was left comes back first, then what Sub20 was opened
+    // with. Saving waits until it is back, or it would write over it.
+    const saved = new Map(boot.bench.map((clip) => [clip.path, clip]));
+    const restored = saved.size ? this.add([...saved.keys()], { saved }) : Promise.resolve();
+    this.#keepBench();
+    void restored.finally(() => {
+      this.#benchRestored = true;
+      if (boot.openedWith.length) void this.add(boot.openedWith);
+    });
     if (boot.notice) void this.openNotice(boot.notice);
     if (boot.settings.checkUpdates) void this.checkUpdate(true);
     void this.#followWatch();
@@ -439,6 +449,48 @@ class App {
     this.profile = this.settings?.profiles.find((p) => JSON.stringify({ ...FALLBACK_OPTIONS, ...p.options }) === same)?.name ?? null;
   }
 
+  /** The saved bench has been put back, so the bench may be saved. */
+  #benchRestored = $state(false);
+  #benchTimer = 0;
+  #benchSaving: Promise<void> = Promise.resolve();
+
+  /** The clips not yet finished, as the bench keeps them. */
+  get #benchNow(): BenchClip[] {
+    return this.clips
+      .filter((clip) => clip.status !== "done")
+      .map((clip) => ({ path: clip.path, trim: clip.trim, outputName: clip.outputName, leftOut: clip.leftOut }));
+  }
+
+  /** Keeps the unfinished clips for the next launch or the next window
+   *  (plan 7's 7.13), a moment after the bench changes, one save at a time. */
+  #keepBench() {
+    if (!backend.saveBench) return;
+    $effect.root(() => {
+      $effect(() => {
+        const clips = this.#benchNow;
+        if (!this.#benchRestored) return;
+        window.clearTimeout(this.#benchTimer);
+        this.#benchTimer = window.setTimeout(() => this.#saveBench(clips), 400);
+      });
+    });
+  }
+
+  #saveBench(clips: BenchClip[]) {
+    this.#benchSaving = this.#benchSaving
+      .then(() => backend.saveBench?.(clips))
+      .catch((error) => console.warn("could not keep the bench", error));
+    return this.#benchSaving;
+  }
+
+  /** The window's own close button: the bench is saved before it goes. */
+  async closeWindow() {
+    if (this.#benchRestored && backend.saveBench) {
+      window.clearTimeout(this.#benchTimer);
+      await this.#saveBench(this.#benchNow);
+    }
+    await backend.closeWindow();
+  }
+
   /** Saves the options a second after they stop changing, for the next launch. */
   #rememberOptions() {
     let timer = 0;
@@ -491,7 +543,9 @@ class App {
    *  subfolders); then the files are read six at a time, and each joins the
    *  list once it and every file before it are read, so the list fills in
    *  name order while the rest are still being read. */
-  async add(paths: string[]) {
+  /** Puts videos on the bench. `select: false` leaves the selection alone
+   *  unless nothing is selected; `saved` puts back what a saved bench kept. */
+  async add(paths: string[], { select = true, saved }: { select?: boolean; saved?: Map<string, BenchClip> } = {}) {
     if (!paths.length) return;
     this.#adding++;
     const rejected: string[] = [];
@@ -510,11 +564,21 @@ class App {
         }
         if (this.clips.some((clip) => clip.path === item.path)) return;
         const clip = new Clip(item.path, item.name, item.info);
-        this.clips.push(clip);
-        if (first) {
-          first = false;
-          this.selectedKey = clip.key;
+        const kept = saved?.get(item.path);
+        if (kept) {
+          // The file may have changed length since; a trim that no longer
+          // fits keeps all of it.
+          const trim = kept.trim;
+          if (trim && trim.start >= 0 && trim.end <= clip.duration + 0.05 && trim.end - trim.start >= MIN_KEEP) {
+            clip.start = trim.start;
+            clip.end = Math.min(trim.end, clip.duration);
+          }
+          clip.outputName = kept.outputName;
+          clip.leftOut = kept.leftOut;
         }
+        this.clips.push(clip);
+        if (first && (select || !this.selectedKey)) this.selectedKey = clip.key;
+        first = false;
         this.replan(clip, 0);
         this.#queueThumbs(clip);
       };

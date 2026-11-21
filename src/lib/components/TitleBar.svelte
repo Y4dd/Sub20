@@ -60,7 +60,7 @@
       <button type="button" onclick={() => backend.toggleMaximize()} aria-label={maximized ? "Restore" : "Maximize"} title={maximized ? "Restore" : "Maximize"}>
         <Icon name={maximized ? "restore" : "maximize"} size={16} />
       </button>
-      <button type="button" class="close" onclick={() => backend.closeWindow()} aria-label="Close" title="Close">
+      <button type="button" class="close" onclick={() => app.closeWindow()} aria-label="Close" title="Close">
         <Icon name="close" size={16} />
       </button>
     </div>

@@ -189,13 +189,13 @@
 
   {#if backend.can.watch}
   <section>
-    <h3>Watch a folder</h3>
+    <h3>Folder watch</h3>
     <Toggle checked={s.watch.enabled} onchange={(on) => {
       if (on && !s.watch.folder) void pick((folder) => app.saveSettings((n) => { n.watch.enabled = true; n.watch.folder = folder; }));
       else void app.saveSettings((n) => (n.watch.enabled = on));
     }}>
-      Compress videos that appear in a folder
-      <small class="muted">{backend.can.tray && s.watch.keepWatching ? "Keeps running from the tray when the window is closed." : "Runs while the app is open."}</small>
+      Watch a folder
+      <small class="muted">{s.watch.compress ? "New videos are compressed straight away" : "New videos go on the bench, ready to trim"}, {backend.can.tray && s.watch.keepWatching ? "also from the tray when the window is closed." : "while the app is open."}</small>
     </Toggle>
     {#if shortcuts.length}
       <p class="note">
@@ -214,46 +214,10 @@
           </p>
         </div>
         <div class="row">
-          <label for="watch-profile">Profile</label>
-          <select id="watch-profile" class="field" value={s.watch.profile ?? ""} onchange={(event) => app.saveSettings((n) => (n.watch.profile = event.currentTarget.value || null))}>
-            <option value="">The default profile</option>
-            {#each s.profiles as profile (profile.name)}
-              <option value={profile.name}>{profile.name}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="row">
-          <label for="watch-output">Results</label>
-          <div>
-            <select id="watch-output" class="field" value={s.watch.outputMode} onchange={(event) => {
-              const mode = event.currentTarget.value as "sameFolder" | "folder";
-              if (mode === "folder" && !s.watch.outputFolder) void pick((folder) => app.saveSettings((n) => { n.watch.outputMode = "folder"; n.watch.outputFolder = folder; }));
-              else void app.saveSettings((n) => (n.watch.outputMode = mode));
-            }}>
-              <option value="sameFolder">Next to the original</option>
-              <option value="folder">In another folder</option>
-            </select>
-            {#if s.watch.outputMode === "folder"}
-              <p class="path">
-                <span title={s.watch.outputFolder}>{s.watch.outputFolder ?? "None chosen"}</span>
-                <button type="button" class="link" onclick={() => pick((folder) => app.saveSettings((n) => (n.watch.outputFolder = folder)))}>Change</button>
-              </p>
-            {/if}
-          </div>
-        </div>
-        <div class="row">
-          <label for="watch-originals">Originals</label>
-          <select id="watch-originals" class="field" value={s.watch.originals} onchange={(event) => app.saveSettings((n) => (n.watch.originals = event.currentTarget.value as "keep" | "delete" | "move"))}>
-            <option value="keep">Leave them where they are</option>
-            <option value="move">Move them into a "processed" folder</option>
-            <option value="delete">Delete them once the result is saved</option>
-          </select>
-        </div>
-        <div class="row">
           <label for="watch-existing">Already there</label>
           <select id="watch-existing" class="field" value={s.watch.existing} onchange={(event) => app.saveSettings((n) => (n.watch.existing = event.currentTarget.value as "newOnly" | "processExisting"))}>
             <option value="newOnly">Skip videos already in the folder</option>
-            <option value="processExisting">Compress those too</option>
+            <option value="processExisting">{s.watch.compress ? "Compress those too" : "Put those on the bench too"}</option>
           </select>
         </div>
         <div class="row">
@@ -275,9 +239,53 @@
       <Toggle checked={s.watch.recursive} onchange={(on) => app.saveSettings((n) => (n.watch.recursive = on))}>
         Look inside subfolders too
       </Toggle>
-      <Toggle checked={s.watch.notify} onchange={(on) => app.saveSettings((n) => (n.watch.notify = on))}>
-        Tell me when a watched clip is ready, never during a game
+      <Toggle checked={s.watch.compress} onchange={(on) => app.saveSettings((n) => (n.watch.compress = on))}>
+        Compress new videos straight away
+        <small class="muted">Without trimming, with the profile below.</small>
       </Toggle>
+      {#if s.watch.compress}
+        <div class="rows">
+          <div class="row">
+            <label for="watch-profile">Profile</label>
+            <select id="watch-profile" class="field" value={s.watch.profile ?? ""} onchange={(event) => app.saveSettings((n) => (n.watch.profile = event.currentTarget.value || null))}>
+              <option value="">The default profile</option>
+              {#each s.profiles as profile (profile.name)}
+                <option value={profile.name}>{profile.name}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="row">
+            <label for="watch-output">Results</label>
+            <div>
+              <select id="watch-output" class="field" value={s.watch.outputMode} onchange={(event) => {
+                const mode = event.currentTarget.value as "sameFolder" | "folder";
+                if (mode === "folder" && !s.watch.outputFolder) void pick((folder) => app.saveSettings((n) => { n.watch.outputMode = "folder"; n.watch.outputFolder = folder; }));
+                else void app.saveSettings((n) => (n.watch.outputMode = mode));
+              }}>
+                <option value="sameFolder">Next to the original</option>
+                <option value="folder">In another folder</option>
+              </select>
+              {#if s.watch.outputMode === "folder"}
+                <p class="path">
+                  <span title={s.watch.outputFolder}>{s.watch.outputFolder ?? "None chosen"}</span>
+                  <button type="button" class="link" onclick={() => pick((folder) => app.saveSettings((n) => (n.watch.outputFolder = folder)))}>Change</button>
+                </p>
+              {/if}
+            </div>
+          </div>
+          <div class="row">
+            <label for="watch-originals">Originals</label>
+            <select id="watch-originals" class="field" value={s.watch.originals} onchange={(event) => app.saveSettings((n) => (n.watch.originals = event.currentTarget.value as "keep" | "delete" | "move"))}>
+              <option value="keep">Leave them where they are</option>
+              <option value="move">Move them into a "processed" folder</option>
+              <option value="delete">Delete them once the result is saved</option>
+            </select>
+          </div>
+        </div>
+        <Toggle checked={s.watch.notify} onchange={(on) => app.saveSettings((n) => (n.watch.notify = on))}>
+          Tell me when a watched clip is ready, never during a game
+        </Toggle>
+      {/if}
       {#if backend.can.tray}
         <Toggle checked={s.watch.keepWatching} onchange={(on) => app.saveSettings((n) => (n.watch.keepWatching = on))}>
           Keep watching when the window is closed
@@ -288,6 +296,8 @@
         <p class="note" class:bad={!!watch.problem}>
           {#if watch.problem}
             {watch.problem}
+          {:else if watch.running && !s.watch.compress}
+            Watching. {watch.benched} put on the bench since the app opened.
           {:else if watch.running}
             Watching. {watch.done} compressed{watch.failed ? `, ${watch.failed} failed` : ""}{watch.inProgress ? `, ${watch.inProgress} in progress` : ""} since the app opened.
           {:else}

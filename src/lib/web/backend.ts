@@ -45,7 +45,7 @@ const SETTINGS: Settings = {
   lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
-    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: false, keepWatching: false,
+    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: false, compress: false, keepWatching: false,
   },
 };
 
@@ -271,7 +271,9 @@ async function report(): Promise<Report> {
   };
 }
 
-const idle: WatchStatus = { running: false, folder: null, lastScan: 0, inProgress: 0, done: 0, failed: 0, problem: null, waiting: 0 };
+const idle: WatchStatus = {
+  running: false, folder: null, lastScan: 0, inProgress: 0, done: 0, failed: 0, benched: 0, problem: null, waiting: 0,
+};
 const desktopOnly = () => Promise.reject(new Error("That needs the Sub20 desktop app."));
 
 export const webBackend: Backend = {
@@ -303,6 +305,8 @@ export const webBackend: Backend = {
       ffmpegOffer: null,
       watched: [],
       notice: null,
+      // A browser can't open the same files again, so the bench isn't kept.
+      bench: [],
     };
   },
   ffmpegStatus: async () => {
@@ -467,6 +471,7 @@ export const webBackend: Backend = {
     opened.add(handler);
     return () => opened.delete(handler);
   },
-  // No folder watch, so no notices.
+  // No folder watch, so no notices and nothing benched.
   onNotice: async () => () => {},
+  onBenched: async () => () => {},
 };

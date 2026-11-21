@@ -132,6 +132,8 @@ export interface WatchSettings {
   pollSeconds: number;
   /** A system notification when a watched clip is ready (held during games). */
   notify: boolean;
+  /** Compress a new clip straight away; off puts it on the bench to trim first. */
+  compress: boolean;
   /** Closing the window leaves the watch running from the tray (`can.tray`). */
   keepWatching: boolean;
 }
@@ -190,6 +192,8 @@ export interface WatchStatus {
   inProgress: number;
   done: number;
   failed: number;
+  /** Clips put on the bench since the app opened. */
+  benched: number;
   problem: string | null;
   /** Clips that arrived while Sub20 was closed, held for a question; 0 when none. */
   waiting: number;
@@ -229,6 +233,16 @@ export interface Bootstrap {
   /** A watch notice clicked while there was no window: the results it
    *  names, to open as a click would. */
   notice: string[] | null;
+  /** The bench as it was left, with what the watch put on it meanwhile. */
+  bench: BenchClip[];
+}
+
+/** A clip waiting on the bench, as saved (`sub20_core::bench::BenchClip`). */
+export interface BenchClip {
+  path: string;
+  trim: Trim | null;
+  outputName: string | null;
+  leftOut: boolean;
 }
 
 /** Mirrors `sub20_core::watched::WatchedJob`. */
@@ -427,4 +441,8 @@ export interface Backend {
   onOpened(handler: (paths: string[]) => void): Promise<() => void>;
   /** A watch notice was clicked; it names the results it said were ready (none for failures). */
   onNotice(handler: (results: string[]) => void): Promise<() => void>;
+  /** The folder watch put new clips on the bench. */
+  onBenched(handler: (paths: string[]) => void): Promise<() => void>;
+  /** Keeps the bench's unfinished clips for the next launch (desktop only). */
+  saveBench?(clips: BenchClip[]): Promise<void>;
 }

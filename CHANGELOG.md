@@ -6,6 +6,18 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The folder watch puts new videos on the bench, ready to trim, instead
+  of compressing them straight away. This applies to watches you already
+  have too: to keep compressing new videos as soon as they arrive, switch
+  on "Compress new videos straight away" under Settings → Folder watch.
+
+### Added
+
+- The videos on the bench that aren't finished are kept, with their trim,
+  name and "leave out", and are there again the next time Sub20 opens.
+
 ## [0.9.4] - 2026-11-15
 
 ### Added

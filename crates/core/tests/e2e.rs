@@ -510,9 +510,14 @@ async fn folder_watch_compresses_new_files_and_moves_originals() {
             s.watch.existing = Existing::NewOnly;
             s.watch.stable_seconds = 2;
             s.watch.poll_seconds = 2;
+            s.watch.compress = true;
         })
         .unwrap();
-    let watcher = Watcher::new(b.engine.clone(), &b.root.join("data"));
+    let watcher = Watcher::new(
+        b.engine.clone(),
+        &b.root.join("data"),
+        Arc::new(|_| panic!("a compressing watch benched a clip")),
+    );
     watcher.reload();
     assert!(watcher.status().running, "{:?}", watcher.status().problem);
     tokio::time::sleep(Duration::from_millis(500)).await;

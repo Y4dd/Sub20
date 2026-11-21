@@ -106,6 +106,11 @@ until after the owner's Arch sitting.
       outlives switching the watch off), and is there while both are on,
       window or not; the process stays only while the icon is there.
       Pause watching joins the menu in 7.5, with the thing it calls.
+      The owner's first try: Quit during a watched encode quit without
+      asking, but the clip had not been picked up yet (nothing in
+      `watch.json`, no partial file; Tauri does let `exit(0)` be
+      prevented), so it is to try again once the clip shows as being
+      compressed, now with "Compress new videos straight away" on.
       Tauri's `tray-icon` feature, for the
       Windows target only. The tray menu has Open (also a left click),
       Pause watching and Quit. With the setting on, closing the window
@@ -114,6 +119,51 @@ until after the owner's Arch sitting.
       *Done when:* in `npx tauri build --debug --no-bundle`, closing leaves
       the tray icon, Open brings the window back with its own frame, and
       Quit during a watched encode asks.
+- [x] **7.12 The watch puts clips on the bench** Done 20 November 2026:
+      `new_clips_go_on_the_bench_once_and_are_not_compressed` (seven at
+      once, no pile question, not handed over again after a relaunch); the
+      pile tests and the e2e watch test now set `compress`. On the mock in
+      both schemes: the section reads "Folder watch", the compressing rows
+      show only with "Compress new videos straight away" on, and a clip the
+      watch finds joins the bench without moving the selection. In a debug
+      test copy a clip dropped in the folder joined the bench with the
+      window open and with only the tray. Settings' look is the owner's to
+      judge. (owner, 20 November 2026,
+      after trying 7.4: people want to trim before compressing). Taken
+      after 7.4, before 7.5. Settings' toggle becomes "Watch a folder", and
+      under it "Compress new videos straight away"
+      (`WatchSettings::compress`), off by default, also for watches set up
+      before (owner's choice; the changelog says so). Off, a clip that has
+      settled is handed to the shell instead of the engine, marked
+      `benched` in `watch.json`, and joins the bench like an opened video,
+      without taking the selection; the pile question is only for
+      compressing. On, the watch works as today. Profile, Results,
+      Originals and the notice toggle apply only to compressing, so they
+      show only when it is on.
+      *Done when:* a test in `watch.rs` shows benched clips handed over
+      once and never compressed, the mock shows the new settings in both
+      schemes, and in a test copy a clip dropped in the folder lands on the
+      bench.
+- [x] **7.13 The bench is kept.** Done 20 November 2026: three tests in
+      `bench.rs`; in a debug test copy a hand-written bench (a clip
+      trimmed to 1.5–6 s, named, left out), a clip the watch found at
+      launch, one dropped with the window open and one with only the tray
+      were all in `bench.json`, and all four were there again, trim, name
+      and "leave out" kept, after the window was built again and after the
+      process was stopped and started. A bench of more than 1,000 clips
+      comes back as its first 1,000 (`crawl::MOST`). The clips on the bench that aren't
+      finished (ready, failed, canceled, left out, and running ones, which
+      quitting stops) are saved with their trim, typed name and "leave
+      out" to `bench.json` (`sub20_core::bench`), by the window a moment
+      after they change, and come back at the next launch or when the
+      window is built again; files that are gone are dropped. Clips the
+      watch benches while there is no window are added to that file by the
+      shell, so they are waiting when the window opens. Desktop only: Lite's
+      files can't be opened again.
+      *Done when:* tests in `bench.rs` (round trip, missing files dropped,
+      adding without duplicates), and in a test copy a trimmed clip and a
+      clip benched from the tray are on the bench after quitting and
+      starting again.
 - [ ] **7.5 Pause watching, in the core.** `Watcher::pause` and `resume`,
       for this session only, and `WatchStatus::paused` with its mirror.
       Clips that arrived during a pause follow the pile rule
@@ -123,7 +173,11 @@ until after the owner's Arch sitting.
 - [ ] **7.6 The pile with no window.** When more than `PILE` clips are
       held and there is no window to ask, a notice says so ("7 clips
       arrived while Sub20 was closed. Open Sub20 to compress or skip
-      them.") and clicking it opens the window on the question.
+      them.") and clicking it opens the window on the question. Since
+      7.12 that question is only for "Compress straight away"; with it off
+      (the default), the notice says a clip is on the bench ("clip.mp4 is
+      on the bench", or "7 clips are on the bench"), held during games like
+      the others, and clicking it opens the window.
       *Done when:* tried on the mock and in a test copy started without a
       window.
 - [ ] **7.7 Updates with no window.** The shell checks at start when
@@ -162,8 +216,8 @@ until after the owner's Arch sitting.
 ## Needs the owner
 
 - [ ] **What closing does while a manual compress runs,** with the
-      setting on. Until the owner says otherwise: it asks, as today, and
-      the clips on the bench are lost with the window.
+      setting on. Until the owner says otherwise: it asks, as today. Since
+      7.13 the clips on the bench are kept either way.
 - [ ] **A game, twice:** a full-screen and a borderless game while a
       watched clip encodes, with an overlay showing frame times, once at
       normal priority and once below normal. Watched jobs use NVENC first,

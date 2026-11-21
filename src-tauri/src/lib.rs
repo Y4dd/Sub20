@@ -16,6 +16,7 @@ use std::time::Duration;
 
 use base64::Engine as _;
 use serde::{Deserialize, Serialize};
+use sub20_core::bench::{self, BenchClip};
 use sub20_core::crawl::{self, Found};
 use sub20_core::cut::Cut;
 use sub20_core::hardware::Report;
@@ -61,6 +62,8 @@ struct AppState {
     /// This session's watch jobs, kept here so a window built again after
     /// closing still lists them.
     watched: Arc<Mutex<WatchedJobs>>,
+    /// The bench as it was left (`sub20_core::bench`).
+    bench_file: PathBuf,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -115,21 +118,26 @@ struct Bootstrap {
     /// A watch notice clicked while there was no window: the results it
     /// names, for the window to open.
     notice: Option<Vec<PathBuf>>,
+    /// The bench as it was left, with what the watch put on it meanwhile
+    /// (plan 7's 7.13).
+    bench: Vec<BenchClip>,
 }
 
 /// Everything the window needs when it opens.
 #[tauri::command]
 async fn bootstrap(state: State<'_, AppState>) -> CommandResult<Bootstrap> {
-    // From here on, opened videos and notice clicks go to the window as
-    // events. Both locks are held while it becomes ready, so nothing slips
-    // between being held for it and being sent to it.
-    let (opened_with, notice) = {
+    // From here on, opened videos, notice clicks and clips the watch
+    // benches go to the window as events. The locks are held while it
+    // becomes ready, so nothing slips between being held for it and being
+    // sent to it.
+    let (opened_with, notice, bench) = {
         let mut waiting = OPENED.lock().unwrap_or_else(|e| e.into_inner());
         let mut notice = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
         WINDOW_READY.store(true, Ordering::SeqCst);
-        (in_name_order(std::mem::take(&mut *waiting)), notice.take())
+        (in_name_order(std::mem::take(&mut *waiting)), notice.take(), bench::load(&state.bench_file))
     };
     Ok(Bootstrap {
+        bench,
         settings: state.engine.settings().get(),
         ffmpeg: ffmpeg_state(&state.engine).await,
         version: env!("CARGO_PKG_VERSION"),
@@ -415,6 +423,37 @@ async fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Set
     state.engine.settings_changed();
     follow_tray(&app, &saved);
     Ok(saved)
+}
+
+/// Keeps the bench as the window has it now, for the next launch or the
+/// next window (plan 7's 7.13). The window calls it a moment after the
+/// bench changes.
+#[tauri::command]
+async fn save_bench(state: State<'_, AppState>, clips: Vec<BenchClip>) -> CommandResult<()> {
+    // The same lock as the watch's additions, so the two never interleave.
+    let _turn = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+    bench::save(&state.bench_file, &clips).map_err(text)
+}
+
+/// Clips the folder watch puts on the bench: saved with it first, so they
+/// wait there while there is no window, then sent to the window if there is
+/// one. Results Sub20 made are left out (a name typed for a result isn't
+/// one the watch recognises as its own).
+fn bench_arrivals(app: &AppHandle, file: &Path, results: &Mutex<HashSet<PathBuf>>, paths: Vec<PathBuf>) {
+    let paths: Vec<PathBuf> = {
+        let made = results.lock().expect("results lock");
+        paths.into_iter().filter(|path| !made.contains(path)).collect()
+    };
+    if paths.is_empty() {
+        return;
+    }
+    let _turn = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+    if let Err(e) = bench::add(file, &paths) {
+        log::warn!("could not save the bench: {e}");
+    }
+    if WINDOW_READY.load(Ordering::SeqCst) {
+        let _ = app.emit("benched", paths);
+    }
 }
 
 /// A folder chosen in the system's dialog, or `None` if it was closed. The
@@ -1026,7 +1065,13 @@ pub fn run() {
                 let _ = window.emit("job", event);
             });
             let engine = Engine::new(&data_dir, &cache_dir.join("work"), bundled, sink);
-            let watcher = Arc::new(Watcher::new(engine.clone(), &data_dir));
+            let bench_file = data_dir.join("bench.json");
+            let (benching, bench_to, made) = (app.handle().clone(), bench_file.clone(), results.clone());
+            let watcher = Arc::new(Watcher::new(
+                engine.clone(),
+                &data_dir,
+                Arc::new(move |paths| bench_arrivals(&benching, &bench_to, &made, paths)),
+            ));
 
             // Test the encoders and start the folder watch in the background.
             let (warm_engine, warm_watcher) = (engine.clone(), watcher.clone());
@@ -1063,6 +1108,7 @@ pub fn run() {
                 fetch_dir: cache_dir.join("ffmpeg-download"),
                 picked: Mutex::default(),
                 watched,
+                bench_file,
             });
             follow_tray(app.handle(), &app.state::<AppState>().engine.settings().get());
             // The window isn't made from the config at startup (`create:
@@ -1084,6 +1130,7 @@ pub fn run() {
             cancel,
             cancel_all,
             save_settings,
+            save_bench,
             pick_folder,
             encoders,
             history_list,

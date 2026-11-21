@@ -1,4 +1,5 @@
-//! Folder watch: compress whatever appears in a folder.
+//! Folder watch: put whatever appears in a folder on the bench, or compress
+//! it straight away (`WatchSettings::compress`).
 //!
 //! The folder is scanned on a timer rather than through OS notifications.
 //! That is slower to react but behaves the same on network shares, synced
@@ -104,7 +105,13 @@ enum Outcome {
     Failed,
     /// Was already there when a "new files only" watch began.
     Skipped,
+    /// Handed over to go on the bench.
+    Benched,
 }
+
+/// Takes the clips the watch puts on the bench (the shell: the window's
+/// bench, or the saved one while there is no window).
+pub type BenchHand = Arc<dyn Fn(Vec<PathBuf>) + Send + Sync>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Seen {
@@ -132,6 +139,8 @@ pub struct WatchStatus {
     pub in_progress: u32,
     pub done: u32,
     pub failed: u32,
+    /// Clips put on the bench since the app opened.
+    pub benched: u32,
     /// Why the watch cannot run, when it cannot.
     pub problem: Option<String>,
     /// Clips that arrived while Sub20 was closed, held until the user says
@@ -151,6 +160,7 @@ struct Shared {
     in_flight: Mutex<HashSet<String>>,
     /// The pile held at launch (keys), while the question is open.
     held: Mutex<Option<HashSet<String>>>,
+    bench: BenchHand,
 }
 
 /// Owns the background scan. Call [`Watcher::reload`] whenever the watch
@@ -164,7 +174,7 @@ pub struct Watcher {
 }
 
 impl Watcher {
-    pub fn new(engine: Engine, data_dir: &Path) -> Watcher {
+    pub fn new(engine: Engine, data_dir: &Path, bench: BenchHand) -> Watcher {
         let memory_path = data_dir.join("watch.json");
         let memory = crate::settings::read_json(&memory_path)
             .ok()
@@ -178,6 +188,7 @@ impl Watcher {
                 status: Mutex::new(WatchStatus::default()),
                 in_flight: Mutex::new(HashSet::new()),
                 held: Mutex::new(None),
+                bench,
             }),
             stop: Mutex::new(None),
             launched: AtomicBool::new(true),
@@ -204,7 +215,13 @@ impl Watcher {
         }
         let waiting = held.as_ref().map_or(0, |keys| keys.len() as u32);
         drop(held);
-        *status = WatchStatus { done: status.done, failed: status.failed, waiting, ..WatchStatus::default() };
+        *status = WatchStatus {
+            done: status.done,
+            failed: status.failed,
+            benched: status.benched,
+            waiting,
+            ..WatchStatus::default()
+        };
         if !config.enabled {
             return;
         }
@@ -342,8 +359,9 @@ fn scan(
     }
 
     // Many clips that arrived while Sub20 was closed wait for a question,
-    // rather than all starting at once on a computer that may be busy.
-    if ask {
+    // rather than all starting at once on a computer that may be busy. On
+    // the bench they cost nothing, so there is nothing to ask.
+    if ask && config.compress {
         let new = arrivals(&files, &memory, &shared.in_flight.lock().expect("flight lock"));
         if new.len() > PILE {
             shared.status.lock().expect("status lock").waiting = new.len() as u32;
@@ -383,7 +401,21 @@ fn scan(
             }
         }
     }
-    drop(memory);
+    if !config.compress && !ready.is_empty() {
+        // Marked first, so a clip is handed over once, whatever the bench
+        // then does with it.
+        for (_, k, print) in &ready {
+            memory.files.insert(k.clone(), Seen { print: *print, outcome: Outcome::Benched });
+        }
+        save(shared, &memory);
+        drop(memory);
+        let count = ready.len() as u32;
+        (shared.bench)(ready.into_iter().map(|(path, _, _)| path).collect());
+        shared.status.lock().expect("status lock").benched += count;
+        ready = Vec::new();
+    } else {
+        drop(memory);
+    }
 
     for (path, k, print) in ready {
         dispatch(shared, config, path, k, print);
@@ -533,21 +565,62 @@ mod tests {
         assert_eq!(names(true), ["a.mp4", "b.MOV", "sub/c.mkv"]);
     }
 
-    /// A watcher as Sub20 makes one at launch, over `inbox`, new files only.
+    /// A watcher as Sub20 makes one at launch, over `inbox`, new files only,
+    /// compressing straight away.
     fn launch(root: &Path, inbox: &Path) -> Watcher {
+        launch_with(root, inbox, true, Arc::new(|_| panic!("a compressing watch benched a clip")))
+    }
+
+    fn launch_with(root: &Path, inbox: &Path, compress: bool, bench: BenchHand) -> Watcher {
         let engine = Engine::new(&root.join("data"), &root.join("work"), Vec::new(), Arc::new(|_| {}));
         engine
             .settings()
             .update(|s| {
                 s.watch.enabled = true;
                 s.watch.folder = Some(inbox.to_path_buf());
+                s.watch.compress = compress;
                 s.watch.stable_seconds = 2;
                 s.watch.poll_seconds = 2;
             })
             .unwrap();
-        let watcher = Watcher::new(engine, &root.join("data"));
+        let watcher = Watcher::new(engine, &root.join("data"), bench);
         watcher.reload();
         watcher
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn new_clips_go_on_the_bench_once_and_are_not_compressed() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        std::fs::create_dir_all(&inbox).unwrap();
+        std::fs::write(inbox.join("old.mp4"), b"already there").unwrap();
+        let handed: Arc<Mutex<Vec<PathBuf>>> = Arc::default();
+        let bench = |handed: &Arc<Mutex<Vec<PathBuf>>>| -> BenchHand {
+            let handed = handed.clone();
+            Arc::new(move |paths| handed.lock().unwrap().extend(paths))
+        };
+
+        let first = launch_with(dir.path(), &inbox, false, bench(&handed));
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        // Seven at once: on the bench there is no question about a pile.
+        for n in 1..=7 {
+            std::fs::write(inbox.join(format!("clip{n}.mp4")), b"not really a video").unwrap();
+        }
+        // Settled after two scans two seconds apart.
+        tokio::time::sleep(Duration::from_millis(4600)).await;
+        let mut names: Vec<_> =
+            handed.lock().unwrap().iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
+        names.sort();
+        assert_eq!(names, (1..=7).map(|n| format!("clip{n}.mp4")).collect::<Vec<_>>(), "not the one already there");
+        let status = first.status();
+        assert_eq!((status.waiting, status.benched, status.in_progress, status.done), (0, 7, 0, 0), "{status:?}");
+        drop(first);
+
+        // A relaunch doesn't hand them over again.
+        let again = launch_with(dir.path(), &inbox, false, bench(&handed));
+        tokio::time::sleep(Duration::from_millis(4600)).await;
+        assert_eq!(handed.lock().unwrap().len(), 7);
+        assert_eq!(again.status().benched, 0);
     }
 
     #[tokio::test(flavor = "multi_thread")]

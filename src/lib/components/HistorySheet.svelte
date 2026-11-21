@@ -35,6 +35,7 @@
     if (w.inProgress) parts.push(`${w.inProgress} compressing or waiting`);
     if (w.done) parts.push(`${plural(w.done, "clip")} done`);
     if (w.failed) parts.push(`${w.failed} failed`);
+    if (w.benched) parts.push(`${plural(w.benched, "clip")} put on the bench`);
     return parts.length ? `${parts.join(", ")}.` : "Waiting for new clips.";
   }
 

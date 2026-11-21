@@ -19,6 +19,7 @@
 //! * download FFmpeg for the lean build ([`fetch`]).
 
 // The planner and its types: no FFmpeg, no runtime, builds for WebAssembly.
+pub mod bench;
 pub mod command;
 pub mod cut;
 pub mod encoders;

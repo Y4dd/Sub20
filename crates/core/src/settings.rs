@@ -70,6 +70,9 @@ pub struct WatchSettings {
     /// Say so with a system notification when a watched clip is ready
     /// (held while a game or other full-screen app has the focus).
     pub notify: bool,
+    /// Compress a new clip straight away. Off, it goes on the bench to be
+    /// trimmed first (plan 7's 7.12; off also for watches set up before).
+    pub compress: bool,
     /// Closing the window leaves the watch running from the tray (Windows;
     /// plan 7). Off by default, so closing quits as it always did.
     pub keep_watching: bool,
@@ -89,6 +92,7 @@ impl Default for WatchSettings {
             stable_seconds: 5,
             poll_seconds: 5,
             notify: true,
+            compress: false,
             keep_watching: false,
         }
     }
@@ -408,6 +412,7 @@ mod tests {
         let store = SettingsStore::open(path.clone());
         assert!(store.get().watch.enabled && !store.get().watch.notify);
         assert!(!store.get().watch.keep_watching, "closing still quits until the user says otherwise");
+        assert!(!store.get().watch.compress, "a watch set up before puts clips on the bench (owner's choice)");
 
         store.update(|s| s.watch.keep_watching = true).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();

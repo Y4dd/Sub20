@@ -33,21 +33,26 @@ let settings: Settings = {
   lastOptions: null,
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
-    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true, keepWatching: false,
+    existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true, compress: false,
+    keepWatching: false,
   },
 };
 
 // `?watch` sets up a watch on a demo clip folder that finds a clip now and
-// then; `?watch=pile` adds a pile that arrived while the app was closed, and
-// `?watch=notice` clicks the notice for the first watched clip a second after
-// it is ready.
+// then and puts it on the bench; `?watch=compress` compresses it straight
+// away instead, `?watch=pile` adds a pile that arrived while the app was
+// closed, and `?watch=notice` clicks the notice for the first watched clip a
+// second after it is ready (both compressing).
 const WATCH = new URLSearchParams(location.search).get("watch");
 /** Who hears a click on a watch notice. */
 const noticeHandlers = new Set<(results: string[]) => void>();
+/** Who hears clips the watch put on the bench. */
+const benchedHandlers = new Set<(paths: string[]) => void>();
 let noticeClicked = false;
-const watching = { inProgress: 0, done: 0, failed: 0, waiting: WATCH === "pile" ? 12 : 0 };
+const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" ? 12 : 0 };
 if (WATCH !== null) {
-  settings.watch = { ...settings.watch, enabled: true, folder: "/Users/demo/Videos/NVIDIA", recursive: true };
+  const compress = WATCH === "compress" || WATCH === "pile" || WATCH === "notice";
+  settings.watch = { ...settings.watch, enabled: true, folder: "/Users/demo/Videos/NVIDIA", recursive: true, compress };
 }
 
 interface Demo {
@@ -284,6 +289,12 @@ function findClips() {
       const demo = DEMOS[next++ % DEMOS.length];
       const path = `${settings.watch.folder}/${demo.name}`;
       added.set(path, demo);
+      if (!settings.watch.compress) {
+        watching.benched++;
+        benchedHandlers.forEach((handler) => handler([path]));
+        window.setTimeout(find, 20000);
+        return;
+      }
       const profile = settings.profiles.find((p) => p.name === settings.watch.profile);
       const options = profile?.options ?? settings.lastOptions ?? DEFAULT_OPTIONS;
       simulate(`demo-${nextId++}`, { path, trim: null, options, outputName: null }, "watch");
@@ -338,6 +349,7 @@ export const mockBackend: Backend = {
     ffmpegOffer: DEMO_OFFER,
     watched: [],
     notice: null,
+    bench: [],
     // `?clips` opens the demo clips at startup, so a headless screenshot can
     // show the bench without clicking.
     openedWith: new URLSearchParams(location.search).has("clips")
@@ -516,4 +528,10 @@ export const mockBackend: Backend = {
     noticeHandlers.add(handler);
     return () => noticeHandlers.delete(handler);
   },
+  onBenched: async (handler) => {
+    benchedHandlers.add(handler);
+    return () => benchedHandlers.delete(handler);
+  },
+  // The demo bench isn't kept between page loads.
+  saveBench: async () => {},
 };
