@@ -292,7 +292,7 @@
    handle about a fifth of the height, its grip a third), frames of the ground's own surface. */
 .kinds { margin: 0 0 var(--s-7); display: grid; gap: var(--s-3); min-width: 0; }
 .kinds figcaption { font-size: var(--t-small); color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
-.kinds__rail { --hw: 7px; --tb: 2px; --gh: 11px; position: relative; margin: 0; padding: var(--tb) var(--hw); list-style: none;
+.kinds__rail { --hw: 10px; --tb: 2px; --gh: 20px; position: relative; margin: 0; padding: var(--tb) var(--hw); list-style: none;
   display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px;
   background: linear-gradient(var(--trim-bar) 0 0) 50% 0 / calc(100% - 2 * var(--hw)) var(--tb) no-repeat,
     linear-gradient(var(--trim-bar) 0 0) 50% 100% / calc(100% - 2 * var(--hw)) var(--tb) no-repeat; }
@@ -302,7 +302,7 @@
 .kinds__rail::after { right: 0; border-radius: 0 3px 3px 0; }
 .kinds__rail li { display: grid; place-items: center; height: 30px; min-width: 0; background: var(--p-surface);
   font-size: 12px; font-weight: 500; color: var(--p-muted); }
-@media (min-width: 900px) { .kinds__rail { --hw: 8px; --gh: 13px; grid-template-columns: repeat(14, minmax(0, 1fr)); } .kinds__rail li { height: 36px; font-size: 13px; letter-spacing: .02em; } }
+@media (min-width: 900px) { .kinds__rail { --hw: 8px; --gh: 14px; grid-template-columns: repeat(14, minmax(0, 1fr)); } .kinds__rail li { height: 36px; font-size: 13px; letter-spacing: .02em; } }
 
 /* Words and links: the nav, the footer, the document pages. */
 /* A heading a button jumps to (the nav's Download Sub20 on /download/) clears the fixed bar. */
