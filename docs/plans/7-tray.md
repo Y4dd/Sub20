@@ -92,7 +92,18 @@ until after the owner's Arch sitting.
       says the tray exists (Windows).
       *Done when:* old settings files load, and the option is hidden in
       Lite and on Linux.
-- [ ] **7.4 Close to the tray.** Tauri's `tray-icon` feature, for the
+- [ ] **7.4 Close to the tray.** Built 20 November 2026, waiting on the
+      owner's look at the icon, Open and Quit. In a debug test copy with
+      the setting on: closing the window left one process at 8–9 MB with
+      no WebView2 processes, a clip dropped in the watched folder was
+      compressed with no window, and a plain second launch built the
+      window again (one process). `Engine::active_manual` is tested in
+      `cancel_stops_the_encode_and_cleans_up`. Decided while building:
+      the tray needs the watch on as well as `keep_watching` (the setting
+      outlives switching the watch off), and is there while both are on,
+      window or not; the process stays only while the icon is there.
+      Pause watching joins the menu in 7.5, with the thing it calls.
+      Tauri's `tray-icon` feature, for the
       Windows target only. The tray menu has Open (also a left click),
       Pause watching and Quit. With the setting on, closing the window
       destroys it and keeps the process, without asking when only watched

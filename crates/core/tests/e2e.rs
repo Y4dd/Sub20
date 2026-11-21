@@ -284,8 +284,9 @@ async fn cancel_stops_the_encode_and_cleans_up() {
     // Slow on purpose, so there is time to cancel.
     let options = EncodeOptions { target_mb: 20.0, effort: Effort::P7, auto_resolution: false, ..Default::default() };
     let (first, first_done) = b.engine.submit_and_wait(spec(&input, options.clone()));
-    // The second job waits in the queue behind the first.
-    let (second, second_done) = b.engine.submit_and_wait(spec(&input, options));
+    // The second job, the watch's, waits in the queue behind the first.
+    let (second, second_done) = b.engine.submit_and_wait(JobSpec { origin: Origin::Watch, ..spec(&input, options) });
+    assert_eq!((b.engine.active(), b.engine.active_manual()), (2, 1), "the watch's job isn't counted as manual");
 
     // Wait until the first is really encoding.
     for _ in 0..200 {

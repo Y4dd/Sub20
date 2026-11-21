@@ -17,7 +17,7 @@ use crate::error::{Error, IoContext, Result};
 use crate::ffmpeg::Tools;
 use crate::hardware::{self, Report};
 use crate::history::{self, Entry, History};
-use crate::job::{EncodeOptions, JobEvent, JobId, JobResult, JobSpec, Phase};
+use crate::job::{EncodeOptions, JobEvent, JobId, JobResult, JobSpec, Origin, Phase};
 use crate::output;
 use crate::plan::{self, lower_bitrate, Plan, SIZE_RETRIES};
 use crate::probe::{self, MediaInfo};
@@ -127,7 +127,8 @@ struct Inner {
     work_dir: PathBuf,
     tools: RwLock<Option<Tools>>,
     report: tokio::sync::Mutex<Option<Arc<Report>>>,
-    jobs: Mutex<HashMap<JobId, watch::Sender<bool>>>,
+    /// Queued and running jobs: who asked for each, and how to stop it.
+    jobs: Mutex<HashMap<JobId, (Origin, watch::Sender<bool>)>>,
     gate: Gate,
 }
 
@@ -285,6 +286,12 @@ impl Engine {
         self.inner.jobs.lock().expect("jobs lock").len()
     }
 
+    /// Number of jobs the user asked for, queued or running; the watch's are
+    /// left out. Closing to the tray asks only about these (plan 7).
+    pub fn active_manual(&self) -> usize {
+        self.inner.jobs.lock().expect("jobs lock").values().filter(|(origin, _)| *origin == Origin::Manual).count()
+    }
+
     /// Adds a job to the queue and returns its id straight away.
     pub fn submit(&self, spec: JobSpec) -> JobId {
         self.start(spec, None)
@@ -299,7 +306,7 @@ impl Engine {
     fn start(&self, spec: JobSpec, waiter: Option<Waiter>) -> JobId {
         let id: JobId = uuid::Uuid::new_v4().simple().to_string();
         let (cancel_tx, cancel_rx) = watch::channel(false);
-        self.inner.jobs.lock().expect("jobs lock").insert(id.clone(), cancel_tx);
+        self.inner.jobs.lock().expect("jobs lock").insert(id.clone(), (spec.origin, cancel_tx));
         self.inner.sink.emit(JobEvent::Queued { id: id.clone(), input: spec.input.clone(), origin: spec.origin });
 
         let ticket = self.inner.gate.line_up();
@@ -341,13 +348,13 @@ impl Engine {
     /// Stops a job, queued or running. Its partial output is removed.
     pub fn cancel(&self, id: &str) -> bool {
         match self.inner.jobs.lock().expect("jobs lock").get(id) {
-            Some(cancel) => cancel.send(true).is_ok(),
+            Some((_, cancel)) => cancel.send(true).is_ok(),
             None => false,
         }
     }
 
     pub fn cancel_all(&self) {
-        for cancel in self.inner.jobs.lock().expect("jobs lock").values() {
+        for (_, cancel) in self.inner.jobs.lock().expect("jobs lock").values() {
             let _ = cancel.send(true);
         }
     }

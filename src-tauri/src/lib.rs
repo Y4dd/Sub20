@@ -5,6 +5,8 @@
 
 mod media;
 mod notify;
+#[cfg(windows)]
+mod tray;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -388,7 +390,7 @@ async fn cancel_all(state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn save_settings(state: State<'_, AppState>, settings: Settings) -> CommandResult<Settings> {
+async fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Settings) -> CommandResult<Settings> {
     let before = state.engine.settings().get();
     if let Some(folder) = &settings.ffmpeg_folder {
         let known =
@@ -411,6 +413,7 @@ async fn save_settings(state: State<'_, AppState>, settings: Settings) -> Comman
         let _ = state.engine.history().prune(saved.history_keep_days);
     }
     state.engine.settings_changed();
+    follow_tray(&app, &saved);
     Ok(saved)
 }
 
@@ -602,10 +605,45 @@ pub(crate) fn show_window(app: &AppHandle) {
         let _ = window.set_focus();
         return;
     }
-    let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else { return };
-    if let Err(e) = tauri::WebviewWindowBuilder::from_config(app, config).and_then(|b| b.build()) {
-        log::warn!("could not open the window: {e}");
+    // Built on a thread of its own: on Windows, building a window inside an
+    // event handler (a tray click, a second launch) can deadlock WebView2.
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else { return };
+        if let Err(e) = tauri::WebviewWindowBuilder::from_config(&app, config).and_then(|b| b.build()) {
+            log::warn!("could not open the window: {e}");
+        }
+    });
+}
+
+/// Whether the watch is to keep going from the tray once the window closes:
+/// a watch on, `keep_watching` on, and the tray icon really there, so the
+/// process is never left with no way back to it. Windows only (plan 7).
+#[cfg(windows)]
+fn keeps_watching(settings: &Settings) -> bool {
+    settings.watch.enabled && settings.watch.keep_watching
+}
+
+/// Closing the window leaves the process running, in the tray.
+fn stays_in_tray(app: &AppHandle) -> bool {
+    #[cfg(windows)]
+    {
+        let Some(state) = app.try_state::<AppState>() else { return false };
+        !state.quitting.load(Ordering::SeqCst) && keeps_watching(&state.engine.settings().get()) && tray::shown(app)
     }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        false
+    }
+}
+
+/// Puts the tray icon up or takes it down to match the settings.
+fn follow_tray(app: &AppHandle, settings: &Settings) {
+    #[cfg(windows)]
+    tray::follow(app, keeps_watching(settings));
+    #[cfg(not(windows))]
+    let _ = (app, settings);
 }
 
 /// A watch notice was clicked: the window comes forward, built again if it
@@ -799,10 +837,12 @@ async fn install_update(app: AppHandle, state: State<'_, AppState>) -> CommandRe
 
 /// Asks before quitting while videos are compressing or waiting. Returns
 /// true when the quit may go ahead now; otherwise a dialog is up, and
-/// "Stop and quit" exits the app.
-fn may_quit(app: &AppHandle) -> bool {
+/// "Stop and quit" exits the app. `manual_only` counts only the videos the
+/// user asked for: closing the window into the tray leaves the watch's
+/// running, so it asks about the others alone.
+fn may_quit(app: &AppHandle, manual_only: bool) -> bool {
     let Some(state) = app.try_state::<AppState>() else { return true };
-    let running = state.engine.active();
+    let running = if manual_only { state.engine.active_manual() } else { state.engine.active() };
     if running == 0 || state.quitting.load(Ordering::SeqCst) {
         return true;
     }
@@ -1014,6 +1054,7 @@ pub fn run() {
                 picked: Mutex::default(),
                 watched,
             });
+            follow_tray(app.handle(), &app.state::<AppState>().engine.settings().get());
             // The window isn't made from the config at startup (`create:
             // false`), so it is built the same way here as when it comes
             // back after closing.
@@ -1057,7 +1098,9 @@ pub fn run() {
 
     app.run(|app, event| match event {
         RunEvent::WindowEvent { event: WindowEvent::CloseRequested { api, .. }, .. } => {
-            if !may_quit(app) {
+            // Into the tray, only the user's own videos are worth asking
+            // about (plan 7's "Needs the owner" keeps that open).
+            if !may_quit(app, stays_in_tray(app)) {
                 api.prevent_close();
             }
         }
@@ -1067,8 +1110,12 @@ pub fn run() {
             let _notice = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
             WINDOW_READY.store(false, Ordering::SeqCst);
         }
+        // No code: the last window closed. With the watch kept going, the
+        // process stays in the tray. A code (Quit, an update's restart)
+        // asks as before.
+        RunEvent::ExitRequested { code: None, api, .. } if stays_in_tray(app) => api.prevent_exit(),
         RunEvent::ExitRequested { api, .. } => {
-            if !may_quit(app) {
+            if !may_quit(app, false) {
                 api.prevent_exit();
             }
         }
