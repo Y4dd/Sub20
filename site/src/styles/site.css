@@ -119,7 +119,7 @@
 .downloads__after a:not(.link) { color: var(--p-ink); }
 /* Beside it, the finished clip (what the download is for): the result's file and Copy, cropped out of the
    app's result row (src/assets/img/done.webp, 970 × 180) at --cx, --cy, --cw × --ch, in the source's pixels. */
-.downloads__frame { background: #15171c; --ratio: 40%; padding: var(--s-6); }
+.downloads__frame { background: #15171c; --ratio: 48%; padding: var(--s-6); }
 .downloads__crop { --cx: 16; --cy: 8; --cw: 936; --ch: 118; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; }
 .downloads__crop > img { position: absolute; max-width: none; height: auto; width: calc(970 / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
@@ -203,18 +203,19 @@
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 
 /* A phone: the questions take two screens (--hm: 2) but fill about 1.75 (1,336px at 390x844). The
-   questions keep their own 16px rows, and the room to spare (about 200px) goes half above them, so the
-   guides and the questions read as two groups, and half under the last answer. Shared out between the
-   questions it opened 80px gaps inside one list. The guide links that wrap keep their arrow after
-   their last word (a block, not the kit's flex row, which pushed it to the right edge). */
+   questions keep their own 16px rows, and the room to spare (about 200px) goes above them, so the
+   guides and the questions read as two groups. Shared out between the questions it opened 80px gaps
+   inside one list; under the last answer it made the gap to the close a third wider than the page's
+   others. The guide links that wrap keep their arrow after their last word (a block, not the kit's
+   flex row, which pushed it to the right edge), 44px tall on one line. */
 @media (max-width: 639px) {
   #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; }
-  #faq .faq { display: flex; flex-direction: column; justify-content: center; }
+  #faq .faq { display: flex; flex-direction: column; justify-content: flex-end; }
   .faq__guides { gap: 0; }
   .faq__guides > li { display: flex; align-items: center; min-height: 44px; }
-  html .faq__guides .link { display: block; min-height: 0; padding-block: var(--s-2); text-wrap: balance; }
+  html .faq__guides .link { display: block; min-height: 0; padding-block: 10px; line-height: 1.5; text-wrap: balance; }
   html .faq__guides .link::after { margin-left: var(--s-2); }
-  html:not([data-motion="off"]) .faq__guides .link { background: none; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+  html:not([data-motion="off"]) .faq__guides .link { padding-block: 10px; background: none; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 }
 
 /* Where the desktop app doesn't run (a phone, a tablet, a Mac: data-lite, set by Base's head script),
