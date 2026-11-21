@@ -419,8 +419,9 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
    empty). The lines on the title's first baseline take 296px, enough to stay three lines deep (two
    fifths for the title, as before, where the card has less), and the title the rest, up to half the
    card: with two fifths every title broke into two short lines beside wider lines (they are 284 to
-   330px long on one line); now three of the four are one line at 1440, and at 1280 their two lines are
-   228px wide, not 210. The words of the cards in a row share one height (a subgrid of the row), so
+   330px long on one line); now three of the four are one line from 1440. At 1280 and 1366 they stay
+   two lines (one line would cost the lines a fourth row), in a column of 228 and 271px, not 210 and
+   227. The words of the cards in a row share one height (a subgrid of the row), so
    their shots line up. The lines stop 32px short of the card's edge, so a card's title sits nearer its
    own lines (24px) than the card before it's (56px). */
 @media (min-width: 640px) {
@@ -440,9 +441,10 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* The features end where their last cards end, so the download section's heading sits 120px under them:
    the drop every heading has under its own section's top, where 72px of the features' foot and 120px of
    the download's top left 192px of empty ground with no change of ground to say a section had begun.
-   Only where #download comes next: where the desktop app doesn't run (data-lite) Lite may come first on
-   its own ground, and the cards keep their 72px above that edge. */
-:root:not([data-lite]) #features { padding-bottom: 0; }
+   Only where #download comes next in the page: where Lite comes first (on phones, tablets and Macs a
+   script moves it up), the cards keep their 72px above its ground. There the download section is
+   followed by the questions on the same ground, so it ends where its own words end, the same way. */
+#features:has(+ #download), #download:has(+ #faq) { padding-bottom: 0; }
 
 /* Lite's "Open Sub20 Lite" is as wide as its words; across the column its underline read as a rule. */
 .lite__text > .link { justify-self: start; }
