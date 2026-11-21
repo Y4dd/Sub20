@@ -58,30 +58,71 @@
 #features > .wrap { grid-template-columns: minmax(0, 1fr); }
 .formats { margin-bottom: var(--s-7); min-width: 0; }
 
-/* Downloads: a list of systems beside the app's first screen. */
-.downloads { display: grid; gap: var(--s-5); align-content: start; }
-.downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-4); }
-.downloads__list li { display: grid; gap: var(--s-1); text-wrap: pretty; }
-.downloads__list b { font-weight: 500; }
-/* The visitor's system (data-os on <html>, set by Base's head script): a bar beside its rows,
-   drawn outside the flow so nothing moves, and nothing at all without JavaScript. */
-.downloads__list li, .doc tbody th { position: relative; }
-:is(.downloads__list li, .doc tbody tr > th)::before { content: ""; position: absolute; left: -14px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--p-accent); opacity: 0; transition: opacity 0.2s; }
-.doc tbody tr > th::before { top: var(--s-3); bottom: var(--s-3); }
-:root[data-os="windows"] :is(.downloads__list li, .doc tbody tr)[data-os="windows"],
-:root[data-os="linux"] :is(.downloads__list li, .doc tbody tr)[data-os="linux"] { --os-mark: 1; }
-:is(.downloads__list li, .doc tbody tr > th)::before { opacity: var(--os-mark, 0); }
+/* Downloads: one button for the visitor's system (data-os on <html>, set by Base's head script), the
+   other files behind "Other systems and downloads"; without JavaScript, or on a system the page can't
+   tell, every file in a list. Where the desktop app doesn't run (data-lite), Sub20 Lite leads. */
+.downloads { display: grid; gap: var(--s-6); align-content: start; }
+.downloads > h2 { max-width: 10em; }
+/* Only where no button below fits the visitor (no JavaScript, or a system the page can't tell). */
+:root:is([data-lite], [data-os="windows"], [data-os="linux"]) .downloads__fallback { display: none; }
+#download { --dl-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v6.5M3 5.25 6 8.25l3-3M2 10.5h8' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --dl-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.downloads__pick, .downloads__lite { display: grid; gap: var(--s-3); justify-items: start; }
+.downloads__lite { gap: var(--s-5); }
+.downloads__pick { display: none; }
+:root[data-os="windows"]:not([data-lite]) .downloads__pick[data-for="windows"],
+:root[data-os="linux"]:not([data-lite]) .downloads__pick[data-for="linux"] { display: grid; }
+.downloads__btn { height: 52px; padding-inline: var(--s-6); font-size: 17px; margin-bottom: var(--s-2); }
+.downloads__note, .downloads__lite > p, .downloads__fallback, .downloads__all > p:first-child { max-width: 50ch; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+.downloads__note b, .downloads__all b { color: var(--p-ink); font-weight: 500; }
+.downloads__note .link { display: inline; white-space: nowrap; }
+.downloads__note .link:not(.dl)::after { margin-left: 0.3em; }
+/* A link or button that starts a download: its size in the label, and a drawn arrow into a tray in
+   place of the page arrow (a button leads with it). Without a release they go to the releases page,
+   carry no .dl, and keep the page arrow. */
+#download .dl::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor;
+  -webkit-mask: var(--dl-glyph) center / contain no-repeat; mask: var(--dl-glyph) center / contain no-repeat; }
+#download .link.dl::after { display: inline-block; margin-left: var(--s-2); vertical-align: -1px; }
+#download .btn.dl::after { content: none; }
+#download .btn.dl::before { content: ""; flex: none; width: 15px; height: 15px; background: currentColor;
+  -webkit-mask: var(--dl-glyph) center / contain no-repeat; mask: var(--dl-glyph) center / contain no-repeat; }
+@media (hover: hover) and (pointer: fine) { #download .link.dl:hover::after { transform: translateY(2px); } }
+.downloads__size { font-weight: 400; }
+/* "Other systems and downloads": a text link that opens the list, its chevron turning down. */
+.downloads__more > summary { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 44px; cursor: pointer; list-style: none;
+  font-weight: 500; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; transition: text-decoration-color var(--dur) var(--ease); }
+.downloads__more > summary::-webkit-details-marker { display: none; }
+.downloads__more > summary:hover { text-decoration-color: currentColor; }
+.downloads__more > summary::after { content: ""; flex: none; width: 12px; height: 12px; background: currentColor; transition: rotate var(--dur) var(--ease);
+  -webkit-mask: var(--dl-chevron) center / contain no-repeat; mask: var(--dl-chevron) center / contain no-repeat; }
+.downloads__more[open] > summary::after { rotate: 90deg; }
+/* With no button above it (no JavaScript, or a system the page can't tell), the list stands open without its summary. */
+:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__more > summary { display: none; }
+.downloads__all { display: grid; gap: var(--s-5); padding-top: var(--s-3); }
+.downloads__all > p:first-child { max-width: 72ch; }
+:root:not([data-lite]):not([data-os="windows"]):not([data-os="linux"]) .downloads__all { padding-top: 0; }
+.downloads__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-5) var(--gutter); }
+/* A column a system: four side by side on a computer, two on a tablet. */
+@media (min-width: 640px) { .downloads__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .downloads__list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.downloads__list li { display: grid; gap: var(--s-1); align-content: start; text-wrap: pretty; }
+.downloads__list b { font-weight: 500; display: block; }
+/* The download page's table: a mark beside the visitor's system, drawn outside the flow so nothing
+   moves, and nothing at all without JavaScript. */
+.doc tbody th { position: relative; }
+.doc tbody tr > th::before { content: ""; position: absolute; left: -14px; top: var(--s-3); bottom: var(--s-3); width: 3px; border-radius: 2px; background: var(--p-accent); opacity: var(--os-mark, 0); transition: opacity 0.2s; }
+:root[data-os="windows"] .doc tbody tr[data-os="windows"], :root[data-os="linux"] .doc tbody tr[data-os="linux"] { --os-mark: 1; }
 .downloads__list .muted { color: color-mix(in srgb, var(--p-ink) 72%, var(--p-bg)); }
-.downloads__links { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-5); }
-/* From 640px, two columns of the same width in every row, so the second links line up whatever the sizes say. */
-@media (min-width: 640px) { .downloads__links { display: grid; grid-template-columns: 10em auto; justify-content: start; } }
+.downloads__links { display: grid; justify-items: start; }
 .downloads__after { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
 .downloads__after a:not(.link) { color: var(--p-ink); }
-.downloads__frame { background: #15171c; }
-.downloads__frame > .frame__img { inset: var(--s-7); width: calc(100% - 2 * var(--s-7)); height: calc(100% - 2 * var(--s-7)); object-fit: contain; }
+/* Beside it, the finished clip (what the download is for): the result's file and Copy, cropped out of the
+   app's result row (src/assets/img/done.webp, 970 × 180) at --cx, --cy, --cw × --ch, in the source's pixels. */
+.downloads__frame { background: #15171c; --ratio: 40%; padding: var(--s-6); }
+.downloads__crop { --cx: 16; --cy: 8; --cw: 936; --ch: 118; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; }
+.downloads__crop > img { position: absolute; max-width: none; height: auto; width: calc(970 / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
 /* The questions' guide links, one under the other. */
-.faq__shot { display: block; width: min(100%, 485px); height: auto; margin-top: var(--s-5); border-radius: var(--r-md); border: 1px solid color-mix(in srgb, var(--p-ink) 14%, transparent); }
 .faq__guides { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: var(--s-1); justify-items: start; text-wrap: pretty; }
 
 /* Lite: the phone rising out of the frame's foot. */
@@ -100,9 +141,9 @@
   #lite .frame--split { --ratio: 120%; }
 }
 @media (max-width: 639px) {
-  /* the first screen cropped to its drop zone, so the section stays under a screen and a half */
-  #download .frame--split { --ratio: 90%; }
-  .downloads__frame > .frame__img { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* the result's name and size alone, from inside its file chip and on the chip's own ground, so they stay readable on a phone */
+  .downloads__frame { --ratio: 0px; padding: var(--s-4) var(--s-5); background: #1c2028; }
+  .downloads__crop { --cx: 154; --cy: 25; --cw: 432; --ch: 86; }
 }
 
 /* Document pages (guides, download, compare, privacy, changelog): sections
@@ -163,6 +204,9 @@
 :root:not([data-lite]) .if-lite, :root[data-lite] .if-app { display: none !important; }
 
 /* The download block. */
+/* From 1280px a section is exactly a screen tall; the opened list (or the whole list without JavaScript)
+   can be taller on a short screen, so this one grows with it instead of running into Lite. */
+@media (min-width: 1280px) { #download { height: auto; min-height: 100vh; min-height: 100svh; } }
 
 /* The hero, and Lite. */
 
