@@ -175,6 +175,9 @@
 :root:not([data-lite]) .if-lite, :root[data-lite] .if-app { display: none !important; }
 
 /* The download block. */
+/* From 1280px a section is exactly a screen tall; the opened list (or the whole list without JavaScript)
+   can be taller on a short screen, so this one grows with it instead of running into Lite. */
+@media (min-width: 1280px) { #download { height: auto; min-height: 100vh; min-height: 100svh; } }
 
 /* The hero, and Lite. */
 
