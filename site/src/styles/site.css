@@ -142,3 +142,21 @@
 /* The trim bracket, the site's own device. */
 
 /* Words and links: the nav, the footer, the document pages. */
+/* A heading a button jumps to (the nav's Download Sub20 on /download/) clears the fixed bar. */
+.doc [id] { scroll-margin-top: calc(var(--nav) + var(--s-5)); }
+/* A guide's way back: the drawn arrow turned to point back, before the words; the underline runs under
+   the words only (the kit sizes it for an arrow after them, so it is set from the right here). */
+.doc__back .m-arrow { transform: scaleX(-1); margin: 0 0 0 -2px; }
+html:not([data-motion="off"]) .doc .doc__back { background-size: 0% 1px, calc(100% - 10px - var(--s-2)) 1px; background-position: 100% 100%, 100% 100%; }
+html:not([data-motion="off"]) .doc .doc__back:is(:hover, :focus-visible) { background-size: calc(100% - 10px - var(--s-2)) 1px, calc(100% - 10px - var(--s-2)) 1px; background-position: 100% 100%, 100% 100%; }
+/* A link that starts a file download: a drawn down-arrow after its words, never the page-link arrow.
+   Reusable anywhere: <svg class="dl-mark" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v6.5M3 5.5 6 8.5l3-3M2 10.5h8"/></svg>. */
+.dl-mark { display: inline-block; flex: none; width: 12px; height: 12px; margin-left: 6px; vertical-align: -1px; overflow: visible;
+  fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur) var(--ease); }
+@media (hover: hover) and (pointer: fine) { a:hover .dl-mark { transform: translateY(2px); } }
+a:focus-visible .dl-mark { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .dl-mark { transition: none; } a:is(:hover, :focus-visible) .dl-mark { transform: none; } }
+/* the size and its mark stay on one line; on a phone the link may break after "Download," */
+.dl__end { white-space: nowrap; }
+/* What each download is, under its column's name in /download/'s table. */
+.doc thead .dl-note { font-weight: 400; }
