@@ -6,6 +6,8 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-11-22
+
 ### Added
 
 - With **Keep watching when the window is closed** on, a notice says when
@@ -223,7 +225,8 @@ The first version, before any public release.
 - Folder watch, history, saved profiles, the FFmpeg log for each job.
 - A title bar drawn by the app on Windows.
 
-[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.5...HEAD
+[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.6...HEAD
+[0.9.6]: https://github.com/Y4dd/Sub20/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/Y4dd/Sub20/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/Y4dd/Sub20/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/Y4dd/Sub20/compare/v0.9.2...v0.9.3
