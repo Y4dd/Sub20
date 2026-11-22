@@ -58,7 +58,7 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
         <a class="pill" href={u("changelog/")}><span>{release ? `Sub20 ${release.version}` : "Free and open source"}</span><span class="muted">Read the changelog</span></a>
         <h1 id="hero-h">Video compressor for <span class="trim">Discord clips</span></h1>
         <p class="hero__lead"><span class="if-app">Trim a clip, pick a size, and Sub20 encodes it on your graphics card until it fits: 20 MB unless you say otherwise.</span><span class="if-lite">Trim a clip and Sub20 Lite fits it in your browser: 20 MB unless you pick another size. On a phone, Share hands it to Discord.</span></p>
-        <div class="btn-row"><GetSub20 class="btn btn--primary if-app" jump="#download" /><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="btn btn--secondary if-lite" href="#download">Download for Windows or Linux</a></div>
+        <div class="btn-row"><GetSub20 class="btn btn--primary if-app" jump="#download" /><a class="btn btn--secondary if-app" href={u("app/")}>Try it in your browser</a><a class="btn btn--primary if-lite" href={u("app/")}>Open Sub20 Lite</a><a class="link if-lite hero__other" href="#download">Download for Windows or Linux</a></div>
         <SmartScreenNote class="hero__note" />
       </div>
       {/* The window's width as site.css draws it (measured from 640 to 2560px wide, 700 to 1440px tall): the column,
