@@ -929,6 +929,9 @@ async fn find_update(app: &AppHandle) -> CommandResult<Option<UpdateInfo>> {
             if let Some(state) = recorder.try_state::<AppState>() {
                 if window_gone(&recorder) {
                     let _ = std::fs::write(&state.tray_record, env!("CARGO_PKG_VERSION"));
+                } else {
+                    // One left by an install from the tray that never ran.
+                    let _ = std::fs::remove_file(&state.tray_record);
                 }
             }
         })
@@ -969,6 +972,9 @@ async fn install(app: &AppHandle) -> CommandResult<()> {
         tokio::time::sleep(Duration::from_millis(600)).await;
     }
     if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+        // The installer may have failed to start after the record was
+        // written: this version stays, so the record must not.
+        let _ = std::fs::remove_file(&state.tray_record);
         state.installing.store(false, Ordering::SeqCst);
         #[cfg(windows)]
         tray::refresh(app);
@@ -987,6 +993,10 @@ pub(crate) async fn update_from_tray(app: AppHandle) {
     let Some(state) = app.try_state::<AppState>() else { return };
     let running = state.engine.active();
     if running > 0 {
+        // One dialog at a time, shared with the quit question.
+        if state.asking.swap(true, Ordering::SeqCst) {
+            return;
+        }
         let message = if running == 1 {
             "A video is still compressing. Updating stops it and deletes the unfinished file.".to_string()
         } else {
@@ -1001,7 +1011,9 @@ pub(crate) async fn update_from_tray(app: AppHandle) {
             .show(move |stop| {
                 let _ = tx.send(stop);
             });
-        if !rx.await.unwrap_or(false) {
+        let stop = rx.await.unwrap_or(false);
+        state.asking.store(false, Ordering::SeqCst);
+        if !stop {
             return;
         }
     }

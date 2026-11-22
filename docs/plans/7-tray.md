@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -247,7 +247,12 @@ until after the owner's Arch sitting.
       relaunches with the old start's arguments and Sub20 can't add
       `--tray` to them. Checked in a debug test copy that called itself
       0.9.4: with a record from 0.0.1 it started with no window (7 MB, no
-      WebView2), deleted the record, and checked for updates itself.
+      WebView2) and deleted the record; whether its own check put Update
+      to 0.9.5 in the tray menu waits on the owner looking (don't choose
+      it: that copy asks for the without-FFmpeg feed and would install the
+      real release over the owner's Sub20). A record left by an installer
+      that never started is deleted on the error path and by the next
+      install with a window.
       **Can't be proved in a test copy:** the installer is the real
       release's and installs over the real Sub20, and the old version has
       to write the record, so the first real proof is the first update
