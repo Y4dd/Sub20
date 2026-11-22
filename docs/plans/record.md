@@ -122,7 +122,36 @@ closed with `WM_CLOSE`, as the close button or Alt+F4 sends.
   process, far under plan 7's 100 MB.
 - **WebView2's own floor is about 156 MB**, so Sub20's window adds about
   60–90 MB to it on an empty bench and about 105 MB with 20 clips.
-- Not measured here: CPU, and a watch running (both 7.10).
+- Not measured here: CPU, and a watch running (both 7.10, below).
+
+### In the tray with a watch on (Windows 11, release test copy, 22 November 2026)
+
+Plan 7's 7.10. A release build (`tauri build --no-bundle`) under the test
+identifier, started with `--tray` (7.9), watching a folder of 2,000
+one-second clips (all already there, so the watch baselined them and then
+checked the listing every 5 s), bench empty. Private bytes summed over
+the process and every process under it, sampled every 3 s for 60 s; CPU
+from the processes' total processor time over the same 60 s, as a share
+of one core. The window was opened by a second plain launch and closed
+with `WM_CLOSE`, 6 s open each time.
+
+| State | Processes | Private | CPU (one core) |
+| --- | --- | --- | --- |
+| Started in the tray (from 30 s after start) | 1 | 6–7 MB | 0.03% |
+| Window open, six times | 7 | 214–245 MB | not measured |
+| Closed, after one open | 1 | 8–9 MB | 0.07% |
+| Closed, after six opens | 1 | 9–10 MB | 0.08% |
+| The same, four more 30 s windows | 1 | 10 MB | 0.05–0.21% |
+
+- **Within the budget** of 100 MB and 0.5% of one core: a tenth of the
+  memory and under half the CPU.
+- The watch made about 12 file operations a second (13 after the fix of
+  13 November), so it was scanning; no file was opened (0 reads).
+- Memory grew by about 1 MB per window cycle (7, then 9, then 10 MB) and
+  wasn't watched for longer; 7.1 measured 8 MB after five cycles.
+- The copy ran from Claude's side, inside the Claude app's package, where
+  file and registry writes can be virtualized; that doesn't change what a
+  process uses.
 
 ## Releases and CI
 

@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day; 7.9 built the same day, its uninstall waiting on a release.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day; 7.9 built the same day, its uninstall waiting on a release; 7.10 passed the same day (10 MB, under 0.25% of a core).
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -333,7 +333,12 @@ until after the owner's Arch sitting.
       `tauri-plugin-autostart`, so the arguments stay Sub20's.
       *Done when:* the Run value appears and goes as the setting changes,
       and an uninstall leaves none.
-- [ ] **7.10 The budget, as a gate.** 7.1's method on a start from the
+- [x] **7.10 The budget, as a gate.** Passed 22 November 2026 (numbers
+      in [record.md](record.md), "In the tray with a watch on"): with the
+      watch on 2,000 clips, 6–10 MB private and 0.03–0.21% of one core,
+      one process, from a start in the tray, after a close and after six
+      opens; WebView2 went with the window each time. The option stays.
+      Originally: 7.1's method on a start from the
       tray, after a close, and after five cycles, with the watch on 2,000
       files.
       *Done when:* under 100 MB private and under 0.5% of one core, with
