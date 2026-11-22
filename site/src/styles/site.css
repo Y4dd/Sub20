@@ -258,17 +258,18 @@
 /* A guide's way back to the guides, above its heading. */
 .doc .doc__crumbs + h1 { margin-top: var(--s-3); }
 
-/* A phone: the questions take two screens (--hm: 2). With the guides' titles alone they filled about
-   1.75 and left a 200px hole between the guide links and the first question; with each guide's summary
-   under its link the guides fill that room themselves, and the two groups are 40px apart (more than the
-   questions' 32px rows), which keeps the section at two screens exactly. Any room left goes there too,
-   never between the questions or under the last answer, which made the gap to the close wider than the
+/* A phone: the heading, the five answers, then the guides (the order they are written in), two screens
+   (--hm: 2). The heading is the kit's heading gap (32px) above the first question; the guides start
+   24px under the last answer's 16px foot, so 40px apart, more than the questions' 32px rows, and the
+   section is two screens exactly (390x844, 1712px; 32px there made it 8px longer). Any room
+   the two screens leave goes there too, so the guides end on the section's foot and nothing opens
+   between the questions or under the last guide, which made the gap to the close wider than the
    page's others. The guide links that wrap keep their arrow after their last word (a block, not the
    kit's flex row, which pushed it to the right edge), 44px tall on one line; the summary rides up into
    the link's bottom padding, under the link, so the whole 44px still takes the tap. */
 @media (max-width: 639px) {
-  #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto 1fr; row-gap: calc(var(--s-6) + var(--s-2)); }
-  #faq .faq { display: flex; flex-direction: column; justify-content: flex-end; }
+  #faq > .wrap > .grid { flex: 1 1 auto; grid-template-rows: auto auto 1fr; }
+  #faq .faq__grid > .faq__more { align-self: end; }
   .faq__guides { margin-top: 0; gap: var(--s-1); }
   .faq__guides > li { gap: 0; }
   .faq__guides > li > span { margin-top: -6px; }
@@ -494,6 +495,22 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 
 /* Round 4: the payoff, on both paths, and the file list. */
 
-/* Round 4: the questions. */
+/* Round 4: the questions. The heading, the answers and the guides are three blocks in that order (a phone
+   reads the answers first). From 1024px they are two columns again, as before: the heading over the
+   guides on the left (16px apart, stack-4's step), the answers on the right beside both. The guides' row
+   takes what the answers leave (1fr), so no gap opens between the heading and the guides. */
+@media (min-width: 1024px) {
+  #faq .faq__grid { grid-template-rows: auto 1fr; row-gap: var(--s-4); }
+  #faq .faq__grid > .faq__head { grid-area: 1 / 1 / 2 / span 5; }
+  #faq .faq__grid > .faq { grid-row: 1 / span 2; }
+  #faq .faq__grid > .faq__more { grid-area: 2 / 1 / 3 / span 5; align-self: start; }
+}
+/* Stacked (below 1024px): the kit's heading gap under the heading (32px on a phone, 48px on a tablet), and
+   the guides 24px under the last answer's 16px foot, 40px in all, more than the questions' 32px rows. */
+@media (max-width: 1023px) {
+  #faq .faq__grid { row-gap: 0; }
+  #faq .faq__grid > .faq { margin-top: var(--head-gap); }
+  #faq .faq__grid > .faq__more { margin-top: var(--s-5); }
+}
 
 /* Round 4: the hero's note and the close. */
