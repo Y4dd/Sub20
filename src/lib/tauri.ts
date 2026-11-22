@@ -6,7 +6,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
-import { DESKTOP, type Added, type Backend, type Fetching, type Frame, type JobEvent } from "./types";
+import { DESKTOP, type Added, type Backend, type Fetching, type Frame, type JobEvent, type NoticeClick } from "./types";
 
 /** File types offered in the "choose files" dialog. */
 const VIDEO_EXTENSIONS = [
@@ -107,7 +107,7 @@ export const tauriBackend: Backend = {
   pickFolder: () => invoke<string | null>("pick_folder"),
   onJob: (handler) => listen<JobEvent>("job", (event) => handler(event.payload)),
   onOpened: (handler) => listen<string[]>("opened", (event) => handler(event.payload)),
-  onNotice: (handler) => listen<string[]>("notice", (event) => handler(event.payload)),
+  onNotice: (handler) => listen<NoticeClick>("notice", (event) => handler(event.payload)),
   onBenched: (handler) => listen<string[]>("benched", (event) => handler(event.payload)),
   saveBench: (clips) => invoke("save_bench", { clips }),
   onDrop: (handler) =>

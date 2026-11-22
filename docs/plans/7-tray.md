@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 built the same day, waiting on a test-copy try.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -195,7 +195,25 @@ until after the owner's Arch sitting.
       (`watch::PILE`) on resume.
       *Done when:* tests in `watch.rs`, and the title bar says the watch
       is paused.
-- [ ] **7.6 The pile with no window.** When more than `PILE` clips are
+- [ ] **7.6 The pile with no window.** Built 22 November 2026, not yet
+      tried in a test copy (the owner's step: `docs/testing.md` §4,
+      steps 5 and 7, in the debug test copy). The core hands the shell
+      `Arrival::Pile` once per pile, beside `Arrival::Bench` (tests: a
+      pile at launch and on resume is said once, five or fewer say
+      nothing). With no window (`window_gone`), `Notices::benched` and
+      `Notices::pile` say so, held during games and dropped if a window
+      has opened meanwhile; a click carries its kind (`notify::Clicked`,
+      `NoticeClick`), so a bench notice selects its clip and a pile notice
+      shows the question. Decided while building: the narrow reading, no
+      bench notice while a window exists, even behind a game; the
+      notice toggle shows for the bench when `keep_watching` is on; the
+      notice and the window's banner say "while Sub20 wasn't watching",
+      which is also true after a pause. On the mock in both schemes
+      (`?watch=bench-notice` selects the benched clip,
+      `?watch=pile-notice` shows the banner, the toggle's bench words).
+      A start with no window waits for 7.9's `--tray`; until then the
+      tray's resume is the way to hold a pile with no window.
+      When more than `PILE` clips are
       held and there is no window to ask, a notice says so ("7 clips
       arrived while Sub20 was closed. Open Sub20 to compress or skip
       them.") and clicking it opens the window on the question. Since
@@ -242,8 +260,10 @@ until after the owner's Arch sitting.
       Started 22 November 2026, for the release with 7.2 to 7.5: the
       README's feature line, `docs/testing.md` §4 (bench, compress, tray,
       pause, Quit), the changelog, and the NVIDIA guide's watch section
-      (read against the app, `checked` moved). Left: 7.6 to 7.9's words
-      as they land. The home page's watch card ("picks up each new clip
+      (read against the app, `checked` moved). 7.6's: `CLAUDE.md`,
+      §4 steps 5 and 7, the changelog's Unreleased. The NVIDIA guide
+      waits for the release that ships the bench notice. Left: 7.7 to
+      7.9's words as they land. The home page's watch card ("picks up each new clip
       as it lands") is still true; its screenshot shows a compressed clip
       in History, the compressing mode.
 

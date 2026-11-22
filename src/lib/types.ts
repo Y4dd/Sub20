@@ -232,12 +232,19 @@ export interface Bootstrap {
   /** This session's watch jobs, newest first, kept by the shell so a
    *  window built again after closing still lists them. */
   watched: ShellWatchedJob[];
-  /** A watch notice clicked while there was no window: the results it
-   *  names, to open as a click would. */
-  notice: string[] | null;
+  /** A watch notice clicked while there was no window: what it opens. */
+  notice: NoticeClick | null;
   /** The bench as it was left, with what the watch put on it meanwhile. */
   bench: BenchClip[];
 }
+
+/** What a click on a watch notice opens (`notify::Clicked` in the shell):
+ *  compressed clips (none named for failures), clips the watch put on the
+ *  bench, or the question about a pile. */
+export type NoticeClick =
+  | { kind: "results"; paths: string[] }
+  | { kind: "bench"; paths: string[] }
+  | { kind: "pile" };
 
 /** A clip waiting on the bench, as saved (`sub20_core::bench::BenchClip`). */
 export interface BenchClip {
@@ -443,8 +450,8 @@ export interface Backend {
   onDrop(handler: (event: DropEvent) => void): Promise<() => void>;
   /** Videos opened with Sub20 ("Open with", Explorer, a file manager) while it is already running. */
   onOpened(handler: (paths: string[]) => void): Promise<() => void>;
-  /** A watch notice was clicked; it names the results it said were ready (none for failures). */
-  onNotice(handler: (results: string[]) => void): Promise<() => void>;
+  /** A watch notice was clicked; it says what to open. */
+  onNotice(handler: (notice: NoticeClick) => void): Promise<() => void>;
   /** The folder watch put new clips on the bench. */
   onBenched(handler: (paths: string[]) => void): Promise<() => void>;
   /** Keeps the bench's unfinished clips for the next launch (desktop only). */

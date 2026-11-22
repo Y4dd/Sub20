@@ -194,10 +194,10 @@
   {/if}
 
   {#if app.watch?.waiting}
-    <section class="pile" aria-label="Clips that arrived while Sub20 was closed">
+    <section class="pile" aria-label="Clips that arrived while Sub20 wasn't watching">
       <p>
         {plural(app.watch.waiting, "clip")} arrived in <strong title={app.watch.folder ?? ""}>{baseName(app.watch.folder ?? "the watched folder")}</strong>
-        while Sub20 was closed.
+        while Sub20 wasn't watching.
       </p>
       <p class="links">
         <button type="button" class="link" onclick={() => app.decidePile(true)}>Compress them</button>

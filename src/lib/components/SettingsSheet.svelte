@@ -282,14 +282,17 @@
             </select>
           </div>
         </div>
-        <Toggle checked={s.watch.notify} onchange={(on) => app.saveSettings((n) => (n.watch.notify = on))}>
-          Tell me when a watched clip is ready, never during a game
-        </Toggle>
       {/if}
       {#if backend.can.tray}
         <Toggle checked={s.watch.keepWatching} onchange={(on) => app.saveSettings((n) => (n.watch.keepWatching = on))}>
           Keep watching when the window is closed
           <small class="muted">Sub20 stays in the tray. Quit it from there.</small>
+        </Toggle>
+      {/if}
+      <!-- On the bench, notices come only from the tray (plan 7's 7.6). -->
+      {#if s.watch.compress || (backend.can.tray && s.watch.keepWatching)}
+        <Toggle checked={s.watch.notify} onchange={(on) => app.saveSettings((n) => (n.watch.notify = on))}>
+          {s.watch.compress ? "Tell me when a watched clip is ready, never during a game" : "Tell me when a clip goes on the bench with the window closed, never during a game"}
         </Toggle>
       {/if}
       {#if watch}

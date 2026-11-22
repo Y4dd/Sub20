@@ -6,6 +6,15 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- With **Keep watching when the window is closed** on, a notice says when
+  the watch puts a video on the bench while the window is closed, and when
+  videos that arrived while Sub20 wasn't watching wait for you to compress
+  or skip them. Click it to open Sub20 on them. Like the other notices, it
+  waits until you leave a game, and Settings → Folder watch can switch it
+  off.
+
 ## [0.9.5] - 2026-11-22
 
 ### Changed

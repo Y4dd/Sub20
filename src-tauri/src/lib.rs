@@ -24,7 +24,7 @@ use sub20_core::history::Entry;
 use sub20_core::job::{EncodeOptions, JobEvent, JobId, JobSpec, Origin, Trim};
 use sub20_core::plan::{self, Plan};
 use sub20_core::settings::{OutputMode, Settings};
-use sub20_core::watch::{self, WatchStatus, Watcher};
+use sub20_core::watch::{self, Arrival, WatchStatus, Watcher};
 use sub20_core::watched::{WatchedJob, WatchedJobs};
 use sub20_core::{fetch, thumbs, Engine, MediaInfo};
 use tauri::ipc::Channel;
@@ -115,9 +115,8 @@ struct Bootstrap {
     ffmpeg_offer: Option<fetch::Offer>,
     /// This session's watch jobs, newest first.
     watched: Vec<WatchedJob>,
-    /// A watch notice clicked while there was no window: the results it
-    /// names, for the window to open.
-    notice: Option<Vec<PathBuf>>,
+    /// A watch notice clicked while there was no window: what it opens.
+    notice: Option<notify::Clicked>,
     /// The bench as it was left, with what the watch put on it meanwhile
     /// (plan 7's 7.13).
     bench: Vec<BenchClip>,
@@ -439,7 +438,13 @@ async fn save_bench(state: State<'_, AppState>, clips: Vec<BenchClip>) -> Comman
 /// wait there while there is no window, then sent to the window if there is
 /// one. Results Sub20 made are left out (a name typed for a result isn't
 /// one the watch recognises as its own).
-fn bench_arrivals(app: &AppHandle, file: &Path, results: &Mutex<HashSet<PathBuf>>, paths: Vec<PathBuf>) {
+fn bench_arrivals(
+    app: &AppHandle,
+    file: &Path,
+    results: &Mutex<HashSet<PathBuf>>,
+    notices: &Arc<notify::Notices>,
+    paths: Vec<PathBuf>,
+) {
     let paths: Vec<PathBuf> = {
         let made = results.lock().expect("results lock");
         paths.into_iter().filter(|path| !made.contains(path)).collect()
@@ -447,13 +452,24 @@ fn bench_arrivals(app: &AppHandle, file: &Path, results: &Mutex<HashSet<PathBuf>
     if paths.is_empty() {
         return;
     }
-    let _turn = OPENED.lock().unwrap_or_else(|e| e.into_inner());
-    if let Err(e) = bench::add(file, &paths) {
-        log::warn!("could not save the bench: {e}");
+    {
+        let _turn = OPENED.lock().unwrap_or_else(|e| e.into_inner());
+        if let Err(e) = bench::add(file, &paths) {
+            log::warn!("could not save the bench: {e}");
+        }
+        if WINDOW_READY.load(Ordering::SeqCst) {
+            let _ = app.emit("benched", paths.clone());
+        }
     }
-    if WINDOW_READY.load(Ordering::SeqCst) {
-        let _ = app.emit("benched", paths);
+    // With no window, a notice says they are waiting (plan 7's 7.6).
+    if window_gone(app) && wants_notices(app) {
+        notices.benched(app, &paths);
     }
+}
+
+/// The watch's notices are switched on.
+fn wants_notices(app: &AppHandle) -> bool {
+    app.try_state::<AppState>().is_some_and(|state| state.engine.settings().get().watch.notify)
 }
 
 /// A folder chosen in the system's dialog, or `None` if it was closed. The
@@ -660,9 +676,15 @@ static OPENED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 /// as `opened` events. Cleared when the window is destroyed, so they wait
 /// again for the next one.
 static WINDOW_READY: AtomicBool = AtomicBool::new(false);
-/// A watch notice clicked while no window was ready to hear it: the results
-/// it names, until `bootstrap` takes them.
-static NOTICE: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
+/// A watch notice clicked while no window was ready to hear it: what it
+/// opens, until `bootstrap` takes it.
+static NOTICE: Mutex<Option<notify::Clicked>> = Mutex::new(None);
+
+/// There is no window, and none is being built: nobody sees the bench or the
+/// question about a pile, so a notice says so.
+pub(crate) fn window_gone(app: &AppHandle) -> bool {
+    app.get_webview_window("main").is_none() && !BUILDING.load(Ordering::SeqCst)
+}
 
 /// Brings the main window forward, building it again from its config if it
 /// was closed.
@@ -728,19 +750,19 @@ fn follow_tray(app: &AppHandle, settings: &Settings) {
 }
 
 /// A watch notice was clicked: the window comes forward, built again if it
-/// was closed, and opens the results it names (see `notify::listen`).
-pub(crate) fn notice_clicked(app: &AppHandle, results: Vec<PathBuf>) {
+/// was closed, and opens what it names (see `notify::listen`).
+pub(crate) fn notice_clicked(app: &AppHandle, clicked: notify::Clicked) {
     {
         let mut held = NOTICE.lock().unwrap_or_else(|e| e.into_inner());
         if !WINDOW_READY.load(Ordering::SeqCst) {
-            *held = Some(results);
+            *held = Some(clicked);
             drop(held);
             show_window(app);
             return;
         }
     }
     show_window(app);
-    let _ = app.emit("notice", results);
+    let _ = app.emit("notice", clicked);
 }
 /// A batch of opened videos is being gathered for the window.
 static GATHERING: AtomicBool = AtomicBool::new(false);
@@ -1086,31 +1108,33 @@ pub fn run() {
             let notices = Arc::new(notify::Notices::default());
             let watched: Arc<Mutex<WatchedJobs>> = Arc::default();
             let following = watched.clone();
+            let telling = notices.clone();
             let sink = Arc::new(move |event: JobEvent| {
                 if let JobEvent::Done { result, .. } = &event {
                     produced.lock().expect("results lock").insert(result.output.clone());
                 }
                 following.lock().expect("watched lock").see(&event);
-                notices.see(&window, &event, || {
-                    window.try_state::<AppState>().is_some_and(|state| state.engine.settings().get().watch.notify)
-                });
+                notices.see(&window, &event, || wants_notices(&window));
                 let _ = window.emit("job", event);
             });
             let engine = Engine::new(&data_dir, &cache_dir.join("work"), bundled, sink);
             let bench_file = data_dir.join("bench.json");
-            let (benching, bench_to, made) = (app.handle().clone(), bench_file.clone(), results.clone());
+            let (handing, bench_to, made) = (app.handle().clone(), bench_file.clone(), results.clone());
             let watcher = Arc::new(Watcher::new(
                 engine.clone(),
                 &data_dir,
-                Arc::new(move |paths| bench_arrivals(&benching, &bench_to, &made, paths)),
+                Arc::new(move |arrival| match arrival {
+                    Arrival::Bench(paths) => bench_arrivals(&handing, &bench_to, &made, &telling, paths),
+                    // With a window, the window asks; with none, a notice
+                    // says there is a question (plan 7's 7.6).
+                    Arrival::Pile(_) => {
+                        if window_gone(&handing) && wants_notices(&handing) {
+                            telling.pile(&handing);
+                        }
+                    }
+                }),
             ));
-
-            // Test the encoders and start the folder watch in the background.
             let (warm_engine, warm_watcher) = (engine.clone(), watcher.clone());
-            tauri::async_runtime::spawn(async move {
-                warm_watcher.reload();
-                let _ = warm_engine.hardware(false).await;
-            });
 
             // Files handed over by "Open with" or dropped on the app icon wait
             // for the window, which is built below once the state exists.
@@ -1147,6 +1171,14 @@ pub fn run() {
             // false`), so it is built the same way here as when it comes
             // back after closing.
             show_window(app.handle());
+
+            // Test the encoders and start the folder watch in the background,
+            // once the window is on its way: a pile found by the first scan
+            // is then the window's to ask about, not a notice's.
+            tauri::async_runtime::spawn(async move {
+                warm_watcher.reload();
+                let _ = warm_engine.hardware(false).await;
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

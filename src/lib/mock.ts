@@ -3,7 +3,7 @@
 // ships behaviour: the desktop app always uses `tauri.ts`.
 
 import type {
-  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, FfmpegOffer, FfmpegStatus, Frame, HistoryEntry, JobEvent,
+  Added, Backend, CompressRequest, EncodeOptions, EncoderStatus, FfmpegOffer, FfmpegStatus, Frame, HistoryEntry, JobEvent, NoticeClick,
   JobResult, MediaInfo, Plan, Quality, Report, Settings, Trim,
 } from "./types";
 import { DESKTOP } from "./types";
@@ -48,16 +48,18 @@ const inFolder = (folder: string, name: string) => `${folder}\\${name}`;
 // then and puts it on the bench; `?watch=compress` compresses it straight
 // away instead, `?watch=pile` adds a pile that arrived while the app was
 // closed, and `?watch=notice` clicks the notice for the first watched clip a
-// second after it is ready (both compressing).
+// second after it is ready (all three compressing). `?watch=bench-notice`
+// clicks the notice for the first clip put on the bench, and
+// `?watch=pile-notice` the one about a pile, as the tray's notices would.
 const WATCH = new URLSearchParams(location.search).get("watch");
 /** Who hears a click on a watch notice. */
-const noticeHandlers = new Set<(results: string[]) => void>();
+const noticeHandlers = new Set<(notice: NoticeClick) => void>();
 /** Who hears clips the watch put on the bench. */
 const benchedHandlers = new Set<(paths: string[]) => void>();
 let noticeClicked = false;
-const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" ? 12 : 0, paused: false };
+const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" || WATCH === "pile-notice" ? 12 : 0, paused: false };
 if (WATCH !== null) {
-  const compress = WATCH === "compress" || WATCH === "pile" || WATCH === "notice";
+  const compress = WATCH === "compress" || WATCH === "pile" || WATCH === "notice" || WATCH === "pile-notice";
   settings.watch = { ...settings.watch, enabled: true, folder: inFolder(VIDEOS, "NVIDIA"), recursive: true, compress };
 }
 
@@ -275,7 +277,7 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
       emit({ type: "done", id, result });
       if (origin === "watch" && WATCH === "notice" && !noticeClicked) {
         noticeClicked = true;
-        window.setTimeout(() => noticeHandlers.forEach((handler) => handler([result.output])), 1000);
+        window.setTimeout(() => noticeHandlers.forEach((handler) => handler({ kind: "results", paths: [result.output] })), 1000);
       }
       return;
     }
@@ -299,6 +301,10 @@ function findClips() {
       if (!settings.watch.compress) {
         watching.benched++;
         benchedHandlers.forEach((handler) => handler([path]));
+        if (WATCH === "bench-notice" && !noticeClicked) {
+          noticeClicked = true;
+          window.setTimeout(() => noticeHandlers.forEach((handler) => handler({ kind: "bench", paths: [path] })), 1000);
+        }
         window.setTimeout(find, 20000);
         return;
       }
@@ -537,6 +543,7 @@ export const mockBackend: Backend = {
   onOpened: async () => () => {},
   onNotice: async (handler) => {
     noticeHandlers.add(handler);
+    if (WATCH === "pile-notice") window.setTimeout(() => handler({ kind: "pile" }), 1000);
     return () => noticeHandlers.delete(handler);
   },
   onBenched: async (handler) => {

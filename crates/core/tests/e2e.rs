@@ -11,7 +11,7 @@ use sub20_core::encoders::Codec;
 use sub20_core::ffmpeg::{self, Tools};
 use sub20_core::job::{AudioChoice, Container, Effort, EncodeOptions, JobEvent, JobSpec, Origin, Trim};
 use sub20_core::settings::{Existing, Originals};
-use sub20_core::watch::Watcher;
+use sub20_core::watch::{Arrival, Watcher};
 use sub20_core::{probe, thumbs, Engine};
 
 const MB: u64 = 1024 * 1024;
@@ -516,7 +516,7 @@ async fn folder_watch_compresses_new_files_and_moves_originals() {
     let watcher = Watcher::new(
         b.engine.clone(),
         &b.root.join("data"),
-        Arc::new(|_| panic!("a compressing watch benched a clip")),
+        Arc::new(|arrival| assert!(!matches!(arrival, Arrival::Bench(_)), "a compressing watch benched a clip")),
     );
     watcher.reload();
     assert!(watcher.status().running, "{:?}", watcher.status().problem);

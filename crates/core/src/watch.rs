@@ -109,9 +109,19 @@ enum Outcome {
     Benched,
 }
 
-/// Takes the clips the watch puts on the bench (the shell: the window's
-/// bench, or the saved one while there is no window).
-pub type BenchHand = Arc<dyn Fn(Vec<PathBuf>) + Send + Sync>;
+/// What the watch hands to the shell.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Arrival {
+    /// Clips to put on the bench (the window's, or the saved one while there
+    /// is no window).
+    Bench(Vec<PathBuf>),
+    /// This many clips to compress are held for the question about a pile
+    /// ([`Watcher::decide`]), at launch or on resume. Said once per pile.
+    Pile(u32),
+}
+
+/// Takes what the watch hands over (the shell).
+pub type Hand = Arc<dyn Fn(Arrival) + Send + Sync>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Seen {
@@ -162,7 +172,7 @@ struct Shared {
     in_flight: Mutex<HashSet<String>>,
     /// The pile held at launch (keys), while the question is open.
     held: Mutex<Option<HashSet<String>>>,
-    bench: BenchHand,
+    hand: Hand,
 }
 
 /// Owns the background scan. Call [`Watcher::reload`] whenever the watch
@@ -178,7 +188,7 @@ pub struct Watcher {
 }
 
 impl Watcher {
-    pub fn new(engine: Engine, data_dir: &Path, bench: BenchHand) -> Watcher {
+    pub fn new(engine: Engine, data_dir: &Path, hand: Hand) -> Watcher {
         let memory_path = data_dir.join("watch.json");
         let memory = crate::settings::read_json(&memory_path)
             .ok()
@@ -192,7 +202,7 @@ impl Watcher {
                 status: Mutex::new(WatchStatus::default()),
                 in_flight: Mutex::new(HashSet::new()),
                 held: Mutex::new(None),
-                bench,
+                hand,
             }),
             stop: Mutex::new(None),
             launched: AtomicBool::new(true),
@@ -399,9 +409,11 @@ fn scan(
     // Many clips that arrived while Sub20 was closed wait for a question,
     // rather than all starting at once on a computer that may be busy. On
     // the bench they cost nothing, so there is nothing to ask.
+    let mut pile = None;
     if ask && config.compress {
         let new = arrivals(&files, &memory, &shared.in_flight.lock().expect("flight lock"));
         if new.len() > PILE {
+            pile = Some(new.len() as u32);
             shared.status.lock().expect("status lock").waiting = new.len() as u32;
             *shared.held.lock().expect("held lock") = Some(new.into_iter().collect());
         }
@@ -448,11 +460,15 @@ fn scan(
         save(shared, &memory);
         drop(memory);
         let count = ready.len() as u32;
-        (shared.bench)(ready.into_iter().map(|(path, _, _)| path).collect());
+        (shared.hand)(Arrival::Bench(ready.into_iter().map(|(path, _, _)| path).collect()));
         shared.status.lock().expect("status lock").benched += count;
         ready = Vec::new();
     } else {
         drop(memory);
+    }
+    // Said with no lock held, as the bench is: the shell may ask the status.
+    if let Some(count) = pile {
+        (shared.hand)(Arrival::Pile(count));
     }
 
     for (path, k, print) in ready {
@@ -606,10 +622,19 @@ mod tests {
     /// A watcher as Sub20 makes one at launch, over `inbox`, new files only,
     /// compressing straight away.
     fn launch(root: &Path, inbox: &Path) -> Watcher {
-        launch_with(root, inbox, true, Arc::new(|_| panic!("a compressing watch benched a clip")))
+        launch_with(root, inbox, true, piles(&Arc::default()))
     }
 
-    fn launch_with(root: &Path, inbox: &Path, compress: bool, bench: BenchHand) -> Watcher {
+    /// A compressing watch's hand: notes each pile it is told about.
+    fn piles(said: &Arc<Mutex<Vec<u32>>>) -> Hand {
+        let said = said.clone();
+        Arc::new(move |arrival| match arrival {
+            Arrival::Pile(count) => said.lock().unwrap().push(count),
+            Arrival::Bench(_) => panic!("a compressing watch benched a clip"),
+        })
+    }
+
+    fn launch_with(root: &Path, inbox: &Path, compress: bool, bench: Hand) -> Watcher {
         let engine = Engine::new(&root.join("data"), &root.join("work"), Vec::new(), Arc::new(|_| {}));
         engine
             .settings()
@@ -633,9 +658,12 @@ mod tests {
         std::fs::create_dir_all(&inbox).unwrap();
         std::fs::write(inbox.join("old.mp4"), b"already there").unwrap();
         let handed: Arc<Mutex<Vec<PathBuf>>> = Arc::default();
-        let bench = |handed: &Arc<Mutex<Vec<PathBuf>>>| -> BenchHand {
+        let bench = |handed: &Arc<Mutex<Vec<PathBuf>>>| -> Hand {
             let handed = handed.clone();
-            Arc::new(move |paths| handed.lock().unwrap().extend(paths))
+            Arc::new(move |arrival| match arrival {
+                Arrival::Bench(paths) => handed.lock().unwrap().extend(paths),
+                Arrival::Pile(_) => panic!("the bench was asked about a pile"),
+            })
         };
 
         let first = launch_with(dir.path(), &inbox, false, bench(&handed));
@@ -677,9 +705,12 @@ mod tests {
         for n in 1..=7 {
             std::fs::write(inbox.join(format!("clip{n}.mp4")), b"not really a video").unwrap();
         }
-        let again = launch(dir.path(), &inbox);
+        let said: Arc<Mutex<Vec<u32>>> = Arc::default();
+        let again = launch_with(dir.path(), &inbox, true, piles(&said));
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert_eq!(again.status().waiting, 7, "{:?}", again.status());
+        // The shell is told once, so it can say so when there is no window.
+        assert_eq!(*said.lock().unwrap(), [7]);
 
         // Skipped: they are never sent, even once they have settled.
         again.decide(false);
@@ -687,6 +718,7 @@ mod tests {
         tokio::time::sleep(Duration::from_secs(5)).await;
         let status = again.status();
         assert_eq!((status.in_progress, status.done, status.failed), (0, 0, 0), "{status:?}");
+        assert_eq!(*said.lock().unwrap(), [7], "later scans say nothing more");
 
         // A third launch doesn't ask about them again.
         let third = launch(dir.path(), &inbox);
@@ -704,9 +736,11 @@ mod tests {
         for n in 1..=PILE {
             std::fs::write(inbox.join(format!("clip{n}.mp4")), b"x").unwrap();
         }
-        let again = launch(dir.path(), &inbox);
+        let said: Arc<Mutex<Vec<u32>>> = Arc::default();
+        let again = launch_with(dir.path(), &inbox, true, piles(&said));
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert_eq!(again.status().waiting, 0);
+        assert!(said.lock().unwrap().is_empty());
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -714,7 +748,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let inbox = dir.path().join("inbox");
         std::fs::create_dir_all(&inbox).unwrap();
-        let watcher = launch(dir.path(), &inbox);
+        let said: Arc<Mutex<Vec<u32>>> = Arc::default();
+        let watcher = launch_with(dir.path(), &inbox, true, piles(&said));
         tokio::time::sleep(Duration::from_millis(300)).await;
 
         watcher.pause();
@@ -738,6 +773,8 @@ mod tests {
         let status = watcher.status();
         assert!(status.running && !status.paused, "{status:?}");
         assert_eq!(status.waiting, 7, "{status:?}");
+        // Told once, as at launch: resuming from the tray has no window to ask.
+        assert_eq!(*said.lock().unwrap(), [7]);
     }
 
     #[tokio::test(flavor = "multi_thread")]

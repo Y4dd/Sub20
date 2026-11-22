@@ -114,13 +114,20 @@ what the sheet says.
    full screen and borderless if you can, then leave the game.
    *Expected:* no notice during the game; one notice afterwards saying how
    many are ready.
-5. Switch on **Keep watching when the window is closed**, then close the
-   window. *Expected:* Sub20's icon stays in the tray. Save a clip, then
-   click the icon. *Expected:* the window comes back with the clip in it.
+5. Switch **Compress new videos straight away** off again and **Keep
+   watching when the window is closed** on, then close the window.
+   *Expected:* Sub20's icon stays in the tray. Save a clip. *Expected:* a
+   notice says it is on the bench. Click it while it is on screen.
+   *Expected:* the window comes back with that clip selected.
 6. Right-click the tray icon and choose **Pause watching**, then save a
    clip. *Expected:* the title bar says **Watch paused** and the clip
    doesn't arrive. **Resume watching** brings it in.
-7. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
+7. Switch **Compress new videos straight away** on, close the window,
+   choose **Pause watching** in the tray, and save six clips (or copy six
+   videos into the folder). Then choose **Resume watching**. *Expected:* a
+   notice says 6 clips arrived while Sub20 wasn't watching. Click it: the
+   window opens and asks whether to compress or skip them.
+8. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
    and the icon goes.
 
 ## 5. Opening videos from the system

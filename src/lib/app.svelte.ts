@@ -7,7 +7,7 @@ import { webBackend } from "./web/backend";
 import { baseName, plain } from "./format";
 import type {
   Added, Backend, BenchClip, EncodeOptions, FfmpegOffer, FfmpegStatus, Fetching, JobEvent, JobResult, MediaInfo, Phase, Plan, Report, Settings, Trim,
-  ShellWatchedJob, UpdateInfo, WatchStatus,
+  NoticeClick, ShellWatchedJob, UpdateInfo, WatchStatus,
 } from "./types";
 
 /** Sub20 Lite: the web build, or `?lite` under `npm run dev`. Both are
@@ -257,7 +257,7 @@ class App {
     this.#rememberOptions();
     await backend.onJob((event) => this.#onJob(event));
     await backend.onOpened((paths) => void this.add(paths));
-    await backend.onNotice((results) => void this.openNotice(results));
+    await backend.onNotice((notice) => void this.openNotice(notice));
     await backend.onDrop((event) => {
       if (event.type === "drop") {
         this.dragging = false;
@@ -279,8 +279,10 @@ class App {
       // Clips the watch puts on the bench join without taking the selection.
       benched = (paths) => void this.add(paths, { select: false });
       early.forEach(benched);
+      // A notice clicked while there was no window, once the clip it names
+      // is back on the bench.
+      if (boot.notice) void this.openNotice(boot.notice);
     });
-    if (boot.notice) void this.openNotice(boot.notice);
     if (boot.settings.checkUpdates) void this.checkUpdate(true);
     void this.#followWatch();
   }
@@ -348,12 +350,22 @@ class App {
     this.sheet = null;
   }
 
-  /** A watch notice was clicked: the one clip it names opens on the bench,
-   *  ready to copy; several, or a notice about failures, open History. */
-  async openNotice(results: string[]) {
-    const job = results.length === 1 ? this.watched.find((j) => j.result?.output === results[0]) : undefined;
-    if (job) return this.openWatched(job);
-    this.sheet = "history";
+  /** A watch notice was clicked. Compressed clips: the one it names opens on
+   *  the bench, ready to copy; several, or failures, open History. Clips the
+   *  watch put on the bench: the one it names is selected. A pile: the
+   *  question about it shows. */
+  async openNotice(notice: NoticeClick) {
+    if (notice.kind === "results") {
+      const [only] = notice.paths;
+      const job = notice.paths.length === 1 ? this.watched.find((j) => j.result?.output === only) : undefined;
+      if (job) return this.openWatched(job);
+      this.sheet = "history";
+      return;
+    }
+    this.sheet = null;
+    if (notice.kind === "pile") return this.refreshWatch();
+    const clip = notice.paths.length === 1 ? this.clips.find((c) => c.path === notice.paths[0]) : undefined;
+    if (clip) this.selectedKey = clip.key;
   }
 
   async copyWatched(job: WatchedJob) {

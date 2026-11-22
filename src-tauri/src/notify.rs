@@ -4,6 +4,9 @@
 //! presentation mode, quiet hours) or while another app's full-screen window
 //! has the focus, and what piled up is said in one notice afterwards. It
 //! never flashes the taskbar or takes the focus.
+//!
+//! With no window (plan 7's tray), it also says when the watch put clips on
+//! the bench, and when a pile of clips is held for the question about them.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -11,12 +14,27 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use sub20_core::job::{JobEvent, Origin};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_notification::NotificationExt;
 
-/// The key under which a notice carries the results it names.
-const RESULTS: &str = "results";
+/// The key under which a notice carries what a click on it opens.
+const CLICKED: &str = "clicked";
+
+/// What a click on a notice opens, as the window hears it (`notice`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum Clicked {
+    /// Watched clips that were compressed: one opens on the bench, several
+    /// (or failures) in History.
+    Results { paths: Vec<PathBuf> },
+    /// Clips the watch put on the bench: the window, with the one it names
+    /// selected.
+    Bench { paths: Vec<PathBuf> },
+    /// A pile of clips held for the question: the window, which asks it.
+    Pile,
+}
 
 /// How often a held notice checks whether the user is back.
 const RECHECK: Duration = Duration::from_secs(10);
@@ -34,6 +52,10 @@ pub struct Notices {
     watched: Mutex<HashMap<String, PathBuf>>,
     /// Outcomes not shown yet because the user was busy.
     held: Mutex<Vec<Outcome>>,
+    /// Clips put on the bench while there was no window, not said yet.
+    benched: Mutex<Vec<PathBuf>>,
+    /// A pile is held while there is no window, not said yet.
+    pile: AtomicBool,
     waiting: AtomicBool,
 }
 
@@ -68,6 +90,19 @@ impl Notices {
         self.flush_when_free(app);
     }
 
+    /// The watch put clips on the bench while there was no window.
+    pub fn benched(self: &Arc<Self>, app: &AppHandle, paths: &[PathBuf]) {
+        self.benched.lock().expect("benched lock").extend_from_slice(paths);
+        self.flush_when_free(app);
+    }
+
+    /// Clips to compress are held for the question while there is no window
+    /// to ask it.
+    pub fn pile(self: &Arc<Self>, app: &AppHandle) {
+        self.pile.store(true, Ordering::SeqCst);
+        self.flush_when_free(app);
+    }
+
     fn forget(&self, id: &str) -> Option<PathBuf> {
         self.watched.lock().expect("watched lock").remove(id)
     }
@@ -94,26 +129,46 @@ impl Notices {
 
     fn flush(&self, app: &AppHandle) {
         let outcomes = std::mem::take(&mut *self.held.lock().expect("held lock"));
-        let Some((title, body)) = summary(&outcomes) else { return };
-        // A click on the notice opens what it names (see `listen`).
-        let results: Vec<&PathBuf> = outcomes
-            .iter()
-            .filter_map(|o| match o {
-                Outcome::Ready { output, .. } => Some(output),
-                Outcome::Failed { .. } => None,
-            })
-            .collect();
-        if let Err(e) = app.notification().builder().title(title).body(body).extra(RESULTS, results).show() {
-            log::warn!("could not show a notification: {e}");
+        if let Some((title, body)) = summary(&outcomes) {
+            // A click on the notice opens what it names (see `listen`).
+            let paths = outcomes
+                .iter()
+                .filter_map(|o| match o {
+                    Outcome::Ready { output, .. } => Some(output.clone()),
+                    Outcome::Failed { .. } => None,
+                })
+                .collect();
+            show(app, title, body, Clicked::Results { paths });
+        }
+        // Said only while there is still no window: one opened meanwhile
+        // shows the bench, and asks about the pile itself.
+        let benched = std::mem::take(&mut *self.benched.lock().expect("benched lock"));
+        let pile = self.pile.swap(false, Ordering::SeqCst);
+        if !crate::window_gone(app) {
+            return;
+        }
+        if let Some((title, body)) = bench_summary(&benched) {
+            show(app, title, body, Clicked::Bench { paths: benched });
+        }
+        // Still held: it may have been answered by now.
+        let waiting = app.try_state::<crate::AppState>().map_or(0, |state| state.watcher.status().waiting);
+        if pile && waiting > 0 {
+            let (title, body) = pile_summary(waiting);
+            show(app, title, body, Clicked::Pile);
         }
     }
 }
 
+fn show(app: &AppHandle, title: String, body: String, clicked: Clicked) {
+    if let Err(e) = app.notification().builder().title(title).body(body).extra(CLICKED, clicked).show() {
+        log::warn!("could not show a notification: {e}");
+    }
+}
+
 /// Makes a click on a notice open what it names: the window comes forward
-/// (built again if it was closed) and hears `notice` with the paths of the
-/// results (none for a notice about failures), or finds them in
-/// `bootstrap`, then opens one result on the bench or several in History. Call before the first notice: one shown with no handler reports
-/// nothing. On Windows a click is heard while the notice is on screen, not
+/// (built again if it was closed) and hears `notice` with a [`Clicked`], or
+/// finds it in `bootstrap`. Call before the first notice: one shown with no
+/// handler reports nothing. On Windows a click is heard while the notice is on screen, not
 /// once it has gone to the notification centre.
 pub fn listen(app: &AppHandle) {
     let handle = app.clone();
@@ -121,12 +176,13 @@ pub fn listen(app: &AppHandle) {
         if performed.action_id() != "tap" {
             return;
         }
-        let results: Vec<PathBuf> = performed
+        // A notice that names nothing of its own just brings the window.
+        let clicked = performed
             .notification()
-            .and_then(|n| n.extra().get(RESULTS))
+            .and_then(|n| n.extra().get(CLICKED))
             .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_default();
-        crate::notice_clicked(&handle, results);
+            .unwrap_or(Clicked::Bench { paths: Vec::new() });
+        crate::notice_clicked(&handle, clicked);
     });
 }
 
@@ -207,6 +263,28 @@ pub fn summary(outcomes: &[Outcome]) -> Option<(String, String)> {
             "Open Sub20 to see them.".into(),
         ),
     })
+}
+
+/// The title and text of one notice for clips put on the bench.
+pub fn bench_summary(paths: &[PathBuf]) -> Option<(String, String)> {
+    let list: Vec<String> = paths.iter().map(|path| file_name(path)).collect();
+    Some(match list.as_slice() {
+        [] => return None,
+        [name] => (format!("{name} is on the bench"), "Open Sub20 to trim and compress it.".into()),
+        list => (
+            format!("{} clips are on the bench", list.len()),
+            format!(
+                "{}. Open Sub20 to trim and compress them.",
+                names(&list.iter().map(String::as_str).collect::<Vec<_>>())
+            ),
+        ),
+    })
+}
+
+/// The title and text of the notice about a pile held for the question.
+/// "Wasn't watching": Sub20 was closed, or the watch was paused.
+pub fn pile_summary(count: u32) -> (String, String) {
+    (format!("{count} clips arrived while Sub20 wasn't watching"), "Open Sub20 to compress or skip them.".into())
 }
 
 /// The user is in a game, presenting, in quiet hours or away, or another
@@ -306,5 +384,42 @@ mod tests {
         assert_eq!(said(&[failed("x.mp4"), failed("y.mp4")]).1, "x.mp4 and y.mp4. Open Sub20 to see why.");
         assert_eq!(said(&[ready("a.mp4", 1.0), failed("x.mp4")]).0, "1 clip is ready, 1 couldn't be compressed");
         assert_eq!(summary(&[]), None);
+    }
+
+    #[test]
+    fn clips_on_the_bench_are_named() {
+        let paths =
+            |names: &[&str]| names.iter().map(|n| PathBuf::from("C:/Videos/NVIDIA/Game").join(n)).collect::<Vec<_>>();
+        assert_eq!(
+            bench_summary(&paths(&["clip.mp4"])),
+            Some(("clip.mp4 is on the bench".into(), "Open Sub20 to trim and compress it.".into()))
+        );
+        assert_eq!(
+            bench_summary(&paths(&["a.mp4", "b.mp4", "c.mp4", "d.mp4", "e.mp4", "f.mp4", "g.mp4"])),
+            Some((
+                "7 clips are on the bench".into(),
+                "a.mp4, b.mp4 and 5 more. Open Sub20 to trim and compress them.".into()
+            ))
+        );
+        assert_eq!(bench_summary(&[]), None);
+    }
+
+    #[test]
+    fn a_pile_says_what_to_do_with_it() {
+        assert_eq!(
+            pile_summary(7),
+            ("7 clips arrived while Sub20 wasn't watching".into(), "Open Sub20 to compress or skip them.".into())
+        );
+    }
+
+    #[test]
+    fn a_click_reads_as_the_window_expects() {
+        let json = |clicked: Clicked| serde_json::to_value(clicked).unwrap();
+        assert_eq!(json(Clicked::Pile), serde_json::json!({ "kind": "pile" }));
+        assert_eq!(
+            json(Clicked::Bench { paths: vec![PathBuf::from("a.mp4")] }),
+            serde_json::json!({ "kind": "bench", "paths": ["a.mp4"] })
+        );
+        assert_eq!(json(Clicked::Results { paths: vec![] }), serde_json::json!({ "kind": "results", "paths": [] }));
     }
 }
