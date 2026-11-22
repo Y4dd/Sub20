@@ -15,8 +15,15 @@ What changed in each release. The format follows
 
 ### Added
 
+- **Keep watching when the window is closed** (Windows, under Settings →
+  Folder watch, off by default): closing the window leaves Sub20 in the
+  tray, still watching. Click the icon to open it again; its menu has
+  Pause watching and Quit.
+- **Pause watching**, from the tray or from History, until you resume it
+  or Sub20 starts again. Videos already compressing finish.
 - The videos on the bench that aren't finished are kept, with their trim,
   name and "leave out", and are there again the next time Sub20 opens.
+- Opening Sub20 while it is already running brings its window forward.
 
 ## [0.9.4] - 2026-11-15
 

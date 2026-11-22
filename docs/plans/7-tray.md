@@ -199,7 +199,9 @@ until after the owner's Arch sitting.
       7.12 that question is only for "Compress straight away"; with it off
       (the default), the notice says a clip is on the bench ("clip.mp4 is
       on the bench", or "7 clips are on the bench"), held during games like
-      the others, and clicking it opens the window.
+      the others, and clicking it opens the window. Since 7.5, resuming
+      from the tray with no window can hold a pile too, and needs the
+      same notice.
       *Done when:* tried on the mock and in a test copy started without a
       window.
 - [ ] **7.7 Updates with no window.** The shell checks at start when
@@ -234,6 +236,13 @@ until after the owner's Arch sitting.
       plan goes back to plan 6.
 - [ ] **7.11 Words.** `CLAUDE.md`, a section in `docs/testing.md`, the
       README, the changelog, and any site guide that describes the watch.
+      Started 22 November 2026, for the release with 7.2 to 7.5: the
+      README's feature line, `docs/testing.md` §4 (bench, compress, tray,
+      pause, Quit), the changelog, and the NVIDIA guide's watch section
+      (read against the app, `checked` moved). Left: 7.6 to 7.9's words
+      as they land. The home page's watch card ("picks up each new clip
+      as it lands") is still true; its screenshot shows a compressed clip
+      in History, the compressing mode.
 
 ## Needs the owner
 

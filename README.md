@@ -61,8 +61,10 @@ account, no upload and no ads.
   quality, MP4 or MKV, fixed bitrate, sound only, saved profiles.
 - **HDR in ordinary colour.** HDR clips from phones and games are converted,
   so they don't come out grey.
-- **Watch a folder** and compress whatever appears in it. The NVIDIA app's
-  and Xbox Game Bar's clip folders are offered in one click when found.
+- **Watch a folder**: each new clip joins the list, ready to trim, or is
+  compressed as it lands if you choose. The NVIDIA app's and Xbox Game
+  Bar's clip folders are offered in one click when found. On Windows it
+  can keep watching from the tray after the window is closed.
 - **History** of what was compressed and what it shrank to.
 
 ## Install

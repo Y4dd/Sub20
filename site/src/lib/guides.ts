@@ -18,7 +18,7 @@ export const GUIDES = [
     slug: "nvidia-instant-replay",
     title: "Send an NVIDIA Instant Replay clip on Discord",
     summary: "Where the NVIDIA app saves clips, and how to send one with your microphone in it.",
-    checked: "2026-11-15",
+    checked: "2026-11-22",
   },
   {
     slug: "iphone-video",

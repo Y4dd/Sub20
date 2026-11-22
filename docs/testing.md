@@ -104,13 +104,24 @@ what the sheet says.
    or **Watch Xbox Game Bar clips** (each appears when its folder exists).
    *Expected:* the title bar says **Watching**.
 2. Save a clip with the NVIDIA app or Game Bar while Sub20 is open.
+   *Expected:* it joins the list by itself, ready to trim, and the video
+   you had selected stays selected.
+3. Switch on **Compress new videos straight away**, then save another clip.
    *Expected:* it is compressed by itself; **History** (in the title bar) lists it with **Open** and **Copy**, and a notice says it is
    ready. Click the notice while it is on screen: Sub20 comes forward with
    the clip finished, ready to copy.
-3. Save two clips while a game fills the screen, both full screen and
-   borderless if you can, then leave the game.
+4. Still with that on, save two clips while a game fills the screen, both
+   full screen and borderless if you can, then leave the game.
    *Expected:* no notice during the game; one notice afterwards saying how
    many are ready.
+5. Switch on **Keep watching when the window is closed**, then close the
+   window. *Expected:* Sub20's icon stays in the tray. Save a clip, then
+   click the icon. *Expected:* the window comes back with the clip in it.
+6. Right-click the tray icon and choose **Pause watching**, then save a
+   clip. *Expected:* the title bar says **Watch paused** and the clip
+   doesn't arrive. **Resume watching** brings it in.
+7. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
+   and the icon goes.
 
 ## 5. Opening videos from the system
 

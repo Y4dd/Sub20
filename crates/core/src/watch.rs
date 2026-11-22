@@ -201,8 +201,12 @@ impl Watcher {
     }
 
     /// Stops looking at the folder for this session. Clips already being
-    /// compressed finish.
+    /// compressed finish. Only a running watch pauses: one with a problem
+    /// shows the problem, and would come back paused once it was fixed.
     pub fn pause(&self) {
+        if !self.status().running {
+            return;
+        }
         self.paused.store(true, Ordering::SeqCst);
         self.reload();
     }
@@ -748,6 +752,20 @@ mod tests {
         watcher.reload();
         assert!(!watcher.status().paused);
         settings.update(|s| s.watch.enabled = true).unwrap();
+        watcher.reload();
+        let status = watcher.status();
+        assert!(status.running && !status.paused, "{status:?}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_watch_with_a_problem_does_not_pause() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        // The folder doesn't exist yet: the watch shows that problem.
+        let watcher = launch(dir.path(), &inbox);
+        watcher.pause();
+        assert!(!watcher.status().paused);
+        std::fs::create_dir_all(&inbox).unwrap();
         watcher.reload();
         let status = watcher.status();
         assert!(status.running && !status.paused, "{status:?}");
