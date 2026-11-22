@@ -284,10 +284,19 @@
         </div>
       {/if}
       {#if backend.can.tray}
-        <Toggle checked={s.watch.keepWatching} onchange={(on) => app.saveSettings((n) => (n.watch.keepWatching = on))}>
+        <Toggle checked={s.watch.keepWatching} onchange={(on) => app.saveSettings((n) => {
+          n.watch.keepWatching = on;
+          if (!on) n.watch.startAtSignIn = false;
+        })}>
           Keep watching when the window is closed
           <small class="muted">Sub20 stays in the tray. Quit it from there.</small>
         </Toggle>
+        {#if s.watch.keepWatching}
+          <Toggle checked={s.watch.startAtSignIn} onchange={(on) => app.saveSettings((n) => (n.watch.startAtSignIn = on))}>
+            Start in the tray when I sign in
+            <small class="muted">Sub20 starts watching with no window when you sign in to Windows.</small>
+          </Toggle>
+        {/if}
       {/if}
       <!-- On the bench, notices come only from the tray (plan 7's 7.6). -->
       {#if s.watch.compress || (backend.can.tray && s.watch.keepWatching)}

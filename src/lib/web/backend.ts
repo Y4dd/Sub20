@@ -46,6 +46,7 @@ const SETTINGS: Settings = {
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
     existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: false, compress: false, keepWatching: false,
+    startAtSignIn: false,
   },
 };
 

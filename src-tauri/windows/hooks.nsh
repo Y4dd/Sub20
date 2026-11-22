@@ -52,6 +52,10 @@
   ${If} $UpdateMode <> 1
     !insertmacro SUB20_EACH_TYPE SUB20_UNREGISTER
     DeleteRegKey SHCTX "Software\Classes\Sub20.Video"
+    ; The start at sign-in (sign_in.rs), named after the identifier in
+    ; tauri.conf.json; a shell test keeps the two in step.
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "io.github.y4dd.sub20"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "io.github.y4dd.sub20"
     System::Call "shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)"
   ${EndIf}
 !macroend

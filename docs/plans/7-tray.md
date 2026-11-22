@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day; 7.9 built the same day, its uninstall waiting on a release.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -200,10 +200,10 @@ until after the owner's Arch sitting.
       window closed to the tray, and both notices showed and opened the
       window on their clip and on the question. A debug test copy shows
       no notice at all unless its exe sits in a folder ending in
-      `	argetdebug` (`sub20-targetdebug` doesn't): the notification
+      `\target\debug` (`sub20-target\debug` doesn't): the notification
       plugin otherwise sends them under the identifier, which Windows
       drops because only an installer registers it; copied to
-      `%LOCALAPPDATA%sub20-test	argetdebug`, they show as from
+      `%LOCALAPPDATA%\sub20-test\target\debug`, they show as from
       Windows PowerShell. The core hands the shell
       `Arrival::Pile` once per pile, beside `Arrival::Bench` (tests: a
       pile at launch and on resume is said once, five or fewer say
@@ -287,7 +287,35 @@ until after the owner's Arch sitting.
       `crates/core`.
       *Done when:* an e2e test reads the priority of a running FFmpeg
       back, on both CI systems.
-- [ ] **7.9 Start at sign-in.** `WatchSettings::start_at_sign_in`, which
+- [ ] **7.9 Start at sign-in.** Built 22 November 2026. Settings shows
+      "Start in the tray when I sign in" under Keep watching, which takes
+      it along when switched off (and `tidy()` does the same, tested).
+      `sign_in.rs` writes the Run value with `windows-sys`'s registry
+      calls, named after the identifier, so the test copy's is
+      `io.github.y4dd.sub20.test`; its tests use a scratch key of their
+      own, never Run. Removing it also removes Task Manager's Startup
+      note (`StartupApproved\Run`), so a value the user disabled there
+      isn't still disabled after the setting goes off and on. Nothing is
+      written from `tauri dev`. Decided while building:
+      `--tray` never opens a window by itself; `how_to_start` returns
+      Window, Tray or Exit and is tested as a table, and a start at
+      sign-in that is no longer wanted, or has no icon, exits. The
+      updater relaunches with the old start's arguments, so the record
+      7.7 writes now says `window` when the window was open, and that
+      start opens the window despite `--tray`; like 7.7, it can only be
+      proved by an update between two releases that carry it. Checked in
+      the debug test copy: with the setting on, `sub20.exe --tray` wrote
+      the value and started with no WebView2 process (its only window
+      handle is the single-instance plugin's hidden one); a second
+      `--tray` launch changed nothing; with the setting off, `--tray`
+      removed the value and the process was gone within 6 seconds. The
+      value written by the toggle goes through the same function at
+      `save_settings`. The uninstall hook can't run here (bundling
+      downloads NSIS); a shell test checks it names the identifier.
+      Known limit: the update check at a sign-in start runs once, often
+      before the network is up, and then the tray offers no update
+      until the window opens.
+      Originally: `WatchSettings::start_at_sign_in`, which
       `tidy()` clears unless `keep_watching` is on. A Run value under
       HKCU, `"…\sub20.exe" --tray`, written or removed when the setting is
       saved and checked again at startup, so `settings.json` stays its one
@@ -311,8 +339,9 @@ until after the owner's Arch sitting.
       pause, Quit), the changelog, and the NVIDIA guide's watch section
       (read against the app, `checked` moved). 7.6's: `CLAUDE.md`,
       §4 steps 5 and 7, the changelog's Unreleased. The NVIDIA guide
-      waits for the release that ships the bench notice. Left: 7.7 to
-      7.9's words as they land. The home page's watch card ("picks up each new clip
+      waits for the release that ships the bench notice. 7.7 to 7.9's:
+      `CLAUDE.md`, §4 steps 8 and 9, the changelog. Left: the README
+      and site, once 7.10 decides whether the option stays. The home page's watch card ("picks up each new clip
       as it lands") is still true; its screenshot shows a compressed clip
       in History, the compressing mode.
 

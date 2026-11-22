@@ -76,6 +76,10 @@ pub struct WatchSettings {
     /// Closing the window leaves the watch running from the tray (Windows;
     /// plan 7). Off by default, so closing quits as it always did.
     pub keep_watching: bool,
+    /// Start Sub20 in the tray at sign-in, through a Run value under HKCU
+    /// that the shell writes and removes to match (Windows; plan 7's 7.9).
+    /// Only with `keep_watching` on, which `tidy()` enforces.
+    pub start_at_sign_in: bool,
 }
 
 impl Default for WatchSettings {
@@ -94,6 +98,7 @@ impl Default for WatchSettings {
             notify: true,
             compress: false,
             keep_watching: false,
+            start_at_sign_in: false,
         }
     }
 }
@@ -236,6 +241,11 @@ impl Settings {
         // Replacing files in the folder being watched would feed the watch.
         if self.watch.output_mode == OutputMode::Replace {
             self.watch.output_mode = OutputMode::SameFolder;
+        }
+        // A start at sign-in with nothing to keep watching would be a
+        // process with no window and no icon.
+        if !self.watch.keep_watching {
+            self.watch.start_at_sign_in = false;
         }
         if let Some(name) = &self.watch.profile {
             if !self.profiles.iter().any(|p| &p.name == name) {
@@ -418,6 +428,25 @@ mod tests {
         let text = std::fs::read_to_string(&path).unwrap();
         assert!(text.contains("\"keepWatching\": true"), "{text}");
         assert!(SettingsStore::open(path).get().watch.keep_watching);
+    }
+
+    #[test]
+    fn start_at_sign_in_is_off_in_old_files_and_needs_keep_watching() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, r#"{"watch":{"enabled":true,"keepWatching":true}}"#).unwrap();
+        let store = SettingsStore::open(path.clone());
+        assert!(!store.get().watch.start_at_sign_in, "off until the user switches it on");
+
+        store.update(|s| s.watch.start_at_sign_in = true).unwrap();
+        assert!(std::fs::read_to_string(&path).unwrap().contains("\"startAtSignIn\": true"));
+        assert!(SettingsStore::open(path.clone()).get().watch.start_at_sign_in);
+
+        // Switching keep watching off takes the start at sign-in with it.
+        store.update(|s| s.watch.keep_watching = false).unwrap();
+        assert!(!store.get().watch.start_at_sign_in);
+        std::fs::write(&path, r#"{"watch":{"keepWatching":false,"startAtSignIn":true}}"#).unwrap();
+        assert!(!SettingsStore::open(path).get().watch.start_at_sign_in, "a hand-edited file is tidied");
     }
 
     #[test]

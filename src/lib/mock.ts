@@ -34,7 +34,7 @@ let settings: Settings = {
   watch: {
     enabled: false, folder: null, profile: null, outputMode: "sameFolder", outputFolder: null, originals: "keep",
     existing: "newOnly", recursive: false, stableSeconds: 5, pollSeconds: 5, notify: true, compress: false,
-    keepWatching: false,
+    keepWatching: false, startAtSignIn: false,
   },
 };
 

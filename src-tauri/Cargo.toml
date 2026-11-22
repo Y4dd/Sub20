@@ -38,8 +38,9 @@ rustls = { version = "0.23", default-features = false, features = ["ring"] }
 # The tray, Windows only (plan 7): on Linux it needs libayatana-appindicator,
 # and GNOME shows no tray.
 tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
-# Whether the user is in a game before showing a notification (notify.rs).
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+# Whether the user is in a game before showing a notification (notify.rs),
+# and the Run value that starts Sub20 at sign-in (sign_in.rs).
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_System_Registry", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 
 [dev-dependencies]
 tempfile = "3"

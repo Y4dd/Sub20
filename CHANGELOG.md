@@ -22,6 +22,10 @@ What changed in each release. The format follows
 - Videos the folder watch compresses run at a lower priority, so a game
   or anything else you are doing comes first. Videos you compress
   yourself run as before.
+- **Start in the tray when I sign in** (Windows, under Settings → Folder
+  watch, with Keep watching on): Sub20 starts watching when you sign in,
+  with no window. Uninstalling Sub20 removes it from the programs Windows
+  starts.
 
 ## [0.9.5] - 2026-11-22
 

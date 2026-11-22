@@ -6,6 +6,8 @@
 mod media;
 mod notify;
 #[cfg(windows)]
+mod sign_in;
+#[cfg(windows)]
 mod tray;
 
 use std::collections::HashSet;
@@ -66,8 +68,9 @@ struct AppState {
     bench_file: PathBuf,
     /// An update is downloading or installing, from the window or the tray.
     installing: AtomicBool,
-    /// Written just before an update installs from the tray, so the new
-    /// version comes back in the tray (`back_in_tray`).
+    /// Written just before an update installs, so the new version comes
+    /// back the way this one was: in the tray or with the window
+    /// (`back_from_update`).
     tray_record: PathBuf,
 }
 
@@ -426,6 +429,7 @@ async fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Set
     }
     state.engine.settings_changed();
     follow_tray(&app, &saved);
+    follow_sign_in(&app, &saved);
     Ok(saved)
 }
 
@@ -751,6 +755,29 @@ fn follow_tray(app: &AppHandle, settings: &Settings) {
     let _ = (app, settings);
 }
 
+/// The argument a start at sign-in carries (`sign_in`).
+const TRAY_ARG: &str = "--tray";
+
+/// Sub20 is to start in the tray at sign-in: the setting, with the watch
+/// it keeps going (Windows; plan 7's 7.9).
+fn starts_at_sign_in(settings: &Settings) -> bool {
+    cfg!(windows) && settings.watch.enabled && settings.watch.keep_watching && settings.watch.start_at_sign_in
+}
+
+/// Writes or removes the Run value to match the settings. Never from
+/// `tauri dev` or a plain debug build, which share the installed app's
+/// identifier and settings and would point the value at a build folder.
+fn follow_sign_in(app: &AppHandle, settings: &Settings) {
+    #[cfg(windows)]
+    if !tauri::is_dev() {
+        if let Err(e) = sign_in::follow(&app.config().identifier, starts_at_sign_in(settings)) {
+            log::warn!("couldn't change the start at sign-in: {e}");
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (app, settings);
+}
+
 /// A watch notice was clicked: the window comes forward, built again if it
 /// was closed, and opens what it names (see `notify::listen`).
 pub(crate) fn notice_clicked(app: &AppHandle, clicked: notify::Clicked) {
@@ -923,16 +950,16 @@ async fn find_update(app: &AppHandle) -> CommandResult<Option<UpdateInfo>> {
         .updater_builder()
         .target(update_target())
         .timeout(Duration::from_secs(20))
-        // The last moment before the installer takes over: with no window,
-        // the new version is to come back in the tray.
+        // The last moment before the installer takes over: the new version
+        // is to come back the way this one is, in the tray or with the
+        // window. The updater starts it with this one's arguments, so a
+        // copy started at sign-in (`--tray`) whose window was opened would
+        // otherwise come back without it.
         .on_before_exit(move || {
             if let Some(state) = recorder.try_state::<AppState>() {
-                if window_gone(&recorder) {
-                    let _ = std::fs::write(&state.tray_record, env!("CARGO_PKG_VERSION"));
-                } else {
-                    // One left by an install from the tray that never ran.
-                    let _ = std::fs::remove_file(&state.tray_record);
-                }
+                let version = env!("CARGO_PKG_VERSION");
+                let record = if window_gone(&recorder) { version.to_string() } else { format!("{version} window") };
+                let _ = std::fs::write(&state.tray_record, record);
             }
         })
         .build()
@@ -1022,23 +1049,59 @@ pub(crate) async fn update_from_tray(app: AppHandle) {
     }
 }
 
-/// Reads and removes the record an update from the tray leaves
-/// (`find_update`): true when this start is the new version it installed,
-/// which is to come back in the tray. Removed on every read, so a start by
-/// hand later opens the window as usual.
-fn back_in_tray(record: &Path) -> bool {
-    let recorded = std::fs::read_to_string(record).ok();
-    if recorded.is_some() {
-        let _ = std::fs::remove_file(record);
-    }
-    recorded.is_some_and(|version| updated_since(&version, env!("CARGO_PKG_VERSION")))
+/// How the version an update installed is to come back.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Comeback {
+    Tray,
+    Window,
 }
 
-/// The version that wrote the record isn't this one, so an update ran
-/// between them; the same version means the install never happened.
-fn updated_since(recorded: &str, running: &str) -> bool {
-    let recorded = recorded.trim();
-    !recorded.is_empty() && recorded != running
+/// Reads and removes the record an update leaves (`find_update`): how this
+/// start is to look when it is the new version that update installed.
+/// Removed on every read, so a start by hand later is as usual.
+fn back_from_update(record: &Path) -> Option<Comeback> {
+    let recorded = std::fs::read_to_string(record).ok()?;
+    let _ = std::fs::remove_file(record);
+    comeback(&recorded, env!("CARGO_PKG_VERSION"))
+}
+
+/// The record names the version that wrote it, then "window" when its
+/// window was open (versions before 0.9.6 removed the record instead).
+/// The same version as this one means the install never happened.
+fn comeback(recorded: &str, running: &str) -> Option<Comeback> {
+    let mut words = recorded.split_whitespace();
+    match words.next() {
+        Some(version) if version != running => {}
+        _ => return None,
+    }
+    Some(if words.next() == Some("window") { Comeback::Window } else { Comeback::Tray })
+}
+
+/// How a start looks.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Start {
+    Window,
+    Tray,
+    /// A start at sign-in that is no longer wanted, or has no tray icon to
+    /// go to: nothing to show, so nothing stays.
+    Exit,
+}
+
+/// Videos handed over always open the window, and so does a start after
+/// an update that was installed with the window open. An update from the
+/// tray comes back in the tray when the icon is there. A start at sign-in
+/// (`--tray`) goes to the tray when the setting still wants it and the
+/// icon is up, and otherwise exits: it never opens a window by itself.
+fn how_to_start(tray_arg: bool, comeback: Option<Comeback>, signs_in: bool, in_tray: bool, opened: bool) -> Start {
+    match comeback {
+        _ if opened => Start::Window,
+        Some(Comeback::Window) => Start::Window,
+        Some(Comeback::Tray) if in_tray => Start::Tray,
+        Some(Comeback::Tray) => Start::Window,
+        None if !tray_arg => Start::Window,
+        None if signs_in && in_tray => Start::Tray,
+        None => Start::Exit,
+    }
 }
 
 /// Asks before quitting while videos are compressing or waiting. Returns
@@ -1162,6 +1225,10 @@ pub fn run() {
         // files from Explorer) hands its videos over and quits before
         // anything else starts.
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            // A start at sign-in while Sub20 already runs shows nothing.
+            if argv.iter().any(|arg| arg == TRAY_ARG) {
+                return;
+            }
             hand_over(app, opened_paths(argv.into_iter().skip(1), Path::new(&cwd)));
         }))
         .plugin(tauri_plugin_notification::init())
@@ -1243,7 +1310,12 @@ pub fn run() {
             // Files handed over by "Open with" or dropped on the app icon wait
             // for the window, which is built below once the state exists.
             let cwd = std::env::current_dir().unwrap_or_default();
-            OPENED.lock().unwrap_or_else(|e| e.into_inner()).extend(opened_paths(std::env::args_os().skip(1), &cwd));
+            let args: Vec<_> = std::env::args_os().skip(1).collect();
+            let tray_arg = cfg!(windows) && args.iter().any(|arg| arg == TRAY_ARG);
+            OPENED
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .extend(opened_paths(args.into_iter().filter(|arg| arg != TRAY_ARG), &cwd));
 
             let media = if cfg!(target_os = "linux") {
                 tauri::async_runtime::block_on(media::MediaServer::start())
@@ -1274,18 +1346,26 @@ pub fn run() {
             });
             let settings = app.state::<AppState>().engine.settings().get();
             follow_tray(app.handle(), &settings);
+            follow_sign_in(app.handle(), &settings);
             // The window isn't made from the config at startup (`create:
             // false`), so it is built the same way here as when it comes
-            // back after closing. An update installed from the tray comes
-            // back in the tray, as long as the icon is there and no videos
-            // were handed over with the restart.
-            let windowless = back_in_tray(&tray_record)
-                && cfg!(windows)
-                && stays_in_tray(app.handle())
-                && OPENED.lock().unwrap_or_else(|e| e.into_inner()).is_empty();
-            if !windowless {
-                show_window(app.handle());
+            // back after closing.
+            let start = how_to_start(
+                tray_arg,
+                back_from_update(&tray_record),
+                starts_at_sign_in(&settings),
+                stays_in_tray(app.handle()),
+                !OPENED.lock().unwrap_or_else(|e| e.into_inner()).is_empty(),
+            );
+            match start {
+                Start::Window => show_window(app.handle()),
+                Start::Tray => {}
+                Start::Exit => {
+                    app.handle().exit(0);
+                    return Ok(());
+                }
             }
+            let windowless = start == Start::Tray;
 
             // Test the encoders and start the folder watch in the background,
             // once the window is on its way: a pile found by the first scan
@@ -1391,20 +1471,70 @@ mod tests {
     }
 
     #[test]
-    fn only_the_new_version_comes_back_in_the_tray() {
-        assert!(updated_since("0.9.6", "0.9.7"));
-        assert!(updated_since("0.9.6\n", "0.9.7"));
-        // The install never happened: open the window as usual.
-        assert!(!updated_since("0.9.7", "0.9.7"));
-        assert!(!updated_since("", "0.9.7"));
+    fn only_the_new_version_comes_back_as_the_old_one_was() {
+        assert_eq!(comeback("0.9.6", "0.9.7"), Some(Comeback::Tray));
+        assert_eq!(comeback("0.9.6\n", "0.9.7"), Some(Comeback::Tray));
+        assert_eq!(comeback("0.9.6 window", "0.9.7"), Some(Comeback::Window));
+        // The install never happened: start as usual.
+        assert_eq!(comeback("0.9.7", "0.9.7"), None);
+        assert_eq!(comeback("0.9.7 window", "0.9.7"), None);
+        assert_eq!(comeback("", "0.9.7"), None);
 
         let dir = tempfile::tempdir().unwrap();
         let record = dir.path().join("restart-in-tray");
-        assert!(!back_in_tray(&record), "no record, the window opens");
+        assert_eq!(back_from_update(&record), None, "no record, start as usual");
         std::fs::write(&record, "0.0.1").unwrap();
-        assert!(back_in_tray(&record));
+        assert_eq!(back_from_update(&record), Some(Comeback::Tray));
         assert!(!record.exists(), "read once");
-        assert!(!back_in_tray(&record), "a later start opens the window");
+        assert_eq!(back_from_update(&record), None, "a later start is as usual");
+    }
+
+    #[test]
+    fn a_start_at_sign_in_never_opens_the_window_by_itself() {
+        use Start::*;
+        // (--tray, after an update, setting wants it, icon up, videos handed over)
+        let cases = [
+            ((false, None, false, false, false), Window),
+            ((false, None, true, true, false), Window),
+            // Signed in: the tray, or nothing at all.
+            ((true, None, true, true, false), Tray),
+            ((true, None, false, true, false), Exit),
+            ((true, None, true, false, false), Exit),
+            ((true, None, false, false, false), Exit),
+            // An update from the tray comes back there; without the icon,
+            // the window, since the user just chose to update.
+            ((false, Some(Comeback::Tray), false, true, false), Tray),
+            ((false, Some(Comeback::Tray), false, false, false), Window),
+            // The updater passes --tray on: a copy started at sign-in whose
+            // window was open comes back with it, setting or not.
+            ((true, Some(Comeback::Window), true, true, false), Window),
+            ((true, Some(Comeback::Window), false, false, false), Window),
+            ((true, Some(Comeback::Tray), false, true, false), Tray),
+            // Videos always open the window.
+            ((true, None, true, true, true), Window),
+            ((false, Some(Comeback::Tray), true, true, true), Window),
+        ];
+        for ((tray_arg, comeback, signs_in, in_tray, opened), expected) in cases {
+            assert_eq!(
+                how_to_start(tray_arg, comeback, signs_in, in_tray, opened),
+                expected,
+                "{tray_arg} {comeback:?} {signs_in} {in_tray} {opened}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_uninstaller_removes_the_value_this_identifier_writes() {
+        let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        let id = config["identifier"].as_str().unwrap();
+        let hooks = include_str!("../windows/hooks.nsh");
+        for key in [
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run",
+        ] {
+            let line = format!(r#"DeleteRegValue HKCU "{key}" "{id}""#);
+            assert!(hooks.contains(&line), "hooks.nsh lacks: {line}");
+        }
     }
 
     #[test]

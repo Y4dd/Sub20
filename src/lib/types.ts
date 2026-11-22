@@ -136,6 +136,8 @@ export interface WatchSettings {
   compress: boolean;
   /** Closing the window leaves the watch running from the tray (`can.tray`). */
   keepWatching: boolean;
+  /** Start in the tray at sign-in (`can.tray`); only with `keepWatching`, which the shell's `tidy()` enforces. */
+  startAtSignIn: boolean;
 }
 
 export interface Settings {

@@ -131,8 +131,12 @@ what the sheet says.
    icon. *Expected:* **Update to x.y.z** is in the menu. Choose it.
    *Expected:* the installer runs, and Sub20 comes back in the tray with
    no window, as the new version (its About line in Settings says so).
-9. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
-   and the icon goes.
+9. Switch on **Start in the tray when I sign in**, then sign out of
+   Windows and back in. *Expected:* Sub20's icon is in the tray with no
+   window. Click the icon. *Expected:* the window opens and its title bar
+   says **Watching**.
+10. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
+    and the icon goes.
 
 ## 5. Opening videos from the system
 
