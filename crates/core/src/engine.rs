@@ -504,7 +504,7 @@ impl Engine {
                     from: index as f64 / passes.len() as f64 * 100.0,
                     to: (index + 1) as f64 / passes.len() as f64 * 100.0,
                 };
-                match self.run_ffmpeg(id, &tools, args, &scratch, &plan, span, &mut cancel).await {
+                match self.run_ffmpeg(id, &tools, args, &scratch, &plan, span, spec.origin, &mut cancel).await {
                     Ok(()) => {}
                     Err(Error::Canceled) => return Err(Error::Canceled),
                     Err(e) => {
@@ -644,9 +644,14 @@ impl Engine {
         cwd: &Path,
         plan: &Plan,
         span: Span,
+        origin: Origin,
         cancel: &mut watch::Receiver<bool>,
     ) -> Result<()> {
         let mut cmd = tools.ffmpeg();
+        // The watch's clips give way to whatever the user is doing.
+        if origin == Origin::Watch {
+            crate::ffmpeg::lower_priority(&mut cmd);
+        }
         cmd.args(&args).current_dir(cwd).stdout(Stdio::piped()).stderr(Stdio::piped());
         let mut child = cmd.spawn().map_err(|e| Error::io("could not start FFmpeg", e))?;
         let stdout = child.stdout.take().expect("piped stdout");

@@ -16,12 +16,17 @@ uuid = { version = "1", features = ["v4"], optional = true }
 trash = { version = "5", optional = true }
 sha2 = { version = "0.10", optional = true }
 
+# Watched encodes run at a lower priority (`ffmpeg::lower_priority`). Already
+# in the build through tokio.
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2", optional = true }
+
 [features]
 # Everything that runs FFmpeg, queues jobs and touches the system. Without it
 # the crate is the planner and its types, which also build for WebAssembly
 # (`crates/plan-wasm`, for Sub20 Lite).
 default = ["engine"]
-engine = ["dep:tokio", "dep:uuid", "dep:trash", "dep:sha2"]
+engine = ["dep:tokio", "dep:uuid", "dep:trash", "dep:sha2", "dep:libc"]
 
 [dev-dependencies]
 tempfile = "3"

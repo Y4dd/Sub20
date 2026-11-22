@@ -311,6 +311,82 @@ async fn cancel_stops_the_encode_and_cleans_up() {
     assert!(b.engine.history().list().is_empty());
 }
 
+/// The priority of every running FFmpeg whose command line names `marker`
+/// (a launcher and the FFmpeg it starts both count): Windows's base
+/// priority (8 normal, 6 below normal), or Linux's nice value.
+async fn priorities(marker: &str) -> Vec<i32> {
+    #[cfg(windows)]
+    {
+        let mut cmd = tokio::process::Command::new("powershell");
+        cmd.args(["-NoProfile", "-NonInteractive", "-Command"]).arg(
+            "Get-CimInstance Win32_Process -Filter \"Name='ffmpeg.exe'\" | \
+             ForEach-Object { \"$($_.Priority)`t$($_.CommandLine)\" }",
+        );
+        let out = cmd.output().await.expect("powershell runs");
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .filter(|line| line.contains(marker))
+            .filter_map(|line| line.split('\t').next()?.trim().parse().ok())
+            .collect()
+    }
+    #[cfg(not(windows))]
+    {
+        let mut found = Vec::new();
+        for entry in std::fs::read_dir("/proc").into_iter().flatten().flatten() {
+            let cmdline = std::fs::read(entry.path().join("cmdline")).unwrap_or_default();
+            if !String::from_utf8_lossy(&cmdline).contains(marker) {
+                continue;
+            }
+            // Field 19 of `stat`, counted after the name in parentheses.
+            let stat = std::fs::read_to_string(entry.path().join("stat")).unwrap_or_default();
+            let after = stat.rsplit_once(')').map(|(_, rest)| rest).unwrap_or_default();
+            if let Some(nice) = after.split_whitespace().nth(16).and_then(|n| n.parse().ok()) {
+                found.push(nice);
+            }
+        }
+        found
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_watched_clip_is_encoded_below_normal_priority() {
+    let Some(b) = bench().await else { return };
+    let watched = b.root.join("watched-priority.mp4");
+    make_source(&b.tools, &watched, 30, "1920x1080").await;
+    let manual = b.root.join("manual-priority.mp4");
+    std::fs::copy(&watched, &manual).unwrap();
+    b.engine.settings().update(|s| s.parallel_jobs = 2).unwrap();
+    // Slow on purpose, on the CPU, so both are still running when looked at.
+    let options = EncodeOptions {
+        target_mb: 20.0,
+        effort: Effort::P7,
+        auto_resolution: false,
+        encoder: Some("libx264".into()),
+        ..Default::default()
+    };
+    let (watch_id, watch_done) =
+        b.engine.submit_and_wait(JobSpec { origin: Origin::Watch, ..spec(&watched, options.clone()) });
+    let (manual_id, manual_done) = b.engine.submit_and_wait(spec(&manual, options));
+
+    let (normal, lowered) = if cfg!(windows) { (8, 6) } else { (0, 10) };
+    let (mut seen_watched, mut seen_manual) = (Vec::new(), Vec::new());
+    for _ in 0..200 {
+        seen_watched = priorities("watched-priority").await;
+        seen_manual = priorities("manual-priority").await;
+        if !seen_watched.is_empty() && !seen_manual.is_empty() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    b.engine.cancel(&watch_id);
+    b.engine.cancel(&manual_id);
+    let _ = (watch_done.await, manual_done.await);
+
+    assert!(!seen_watched.is_empty() && !seen_manual.is_empty(), "both encodes were seen running");
+    assert!(seen_watched.iter().all(|p| *p == lowered), "watched: {seen_watched:?}, wanted {lowered}");
+    assert!(seen_manual.iter().all(|p| *p == normal), "manual: {seen_manual:?}, wanted {normal}");
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn jobs_run_in_the_order_they_were_submitted() {
     let Some(b) = bench().await else { return };

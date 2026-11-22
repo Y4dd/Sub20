@@ -19,6 +19,9 @@ What changed in each release. The format follows
   compressing, and Sub20 comes back in the tray afterwards. This works
   from the next update on, since the version doing the installing has to
   know how.
+- Videos the folder watch compresses run at a lower priority, so a game
+  or anything else you are doing comes first. Videos you compress
+  yourself run as before.
 
 ## [0.9.5] - 2026-11-22
 

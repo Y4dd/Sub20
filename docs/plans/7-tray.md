@@ -266,7 +266,17 @@ until after the owner's Arch sitting.
       recorded FFmpeg failing after an updater restart.
       *Done when:* a test copy updated from the tray comes back in the
       tray.
-- [ ] **7.8 Watched encodes at lower priority.** A job's origin reaches the
+- [ ] **7.8 Watched encodes at lower priority.** Built 22 November 2026:
+      `run_ffmpeg` takes the job's origin and `ffmpeg::lower_priority`
+      sets below normal on Windows (a creation flag, no new dependency)
+      and nice 10 on Linux (`libc::nice` before exec; `libc` was already
+      in the build through tokio). `a_watched_clip_is_encoded_below_normal_priority`
+      runs a watched and a manual encode side by side and reads each
+      FFmpeg's priority back: on Windows 6 and 8, for Scoop's launcher
+      and the FFmpeg it started alike; with the rule swapped it failed.
+      The core is clippy-clean for Linux (`--target x86_64-unknown-linux-gnu`),
+      but the test has run on Windows only: ticked once CI's Ubuntu run
+      passes it. A job's origin reaches the
       spawn of FFmpeg (`ffmpeg::quiet`). Watched jobs run at
       `BELOW_NORMAL_PRIORITY_CLASS` on Windows, which a launcher's child
       inherits, and nice 10 on Linux. Engine logic, so it lives in

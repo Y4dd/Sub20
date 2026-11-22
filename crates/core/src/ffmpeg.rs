@@ -159,14 +159,43 @@ async fn end_tree(pid: Option<u32>) {
 #[cfg(not(windows))]
 async fn end_tree(_pid: Option<u32>) {}
 
+/// Do not flash a console for every FFmpeg call.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+/// A priority class given at creation, inherited by what the process starts.
+#[cfg(windows)]
+const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x0000_4000;
+
+/// How far down a watched encode runs on Linux: the scheduler gives a
+/// normal process (nice 0) about nine times its share.
+#[cfg(unix)]
+pub const WATCHED_NICE: i32 = 10;
+
+/// Runs FFmpeg below normal priority, so a watched clip compressing while a
+/// game runs gives way to it (plan 7's 7.8). On Windows it is the priority
+/// class, given at creation, which a launcher's child (Chocolatey's shims)
+/// inherits; on Linux, nice [`WATCHED_NICE`], set in the child before FFmpeg
+/// starts, so every thread FFmpeg makes has it. A failure to lower it is
+/// ignored: the encode runs as before.
+pub(crate) fn lower_priority(cmd: &mut Command) {
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS);
+    #[cfg(unix)]
+    // SAFETY: `nice` is a plain system call, safe between fork and exec; it
+    // touches no memory of the parent's and its result is ignored.
+    unsafe {
+        cmd.pre_exec(|| {
+            libc::nice(WATCHED_NICE);
+            Ok(())
+        });
+    }
+}
+
 pub(crate) fn quiet(program: impl AsRef<OsStr>) -> Command {
     let mut cmd = Command::new(program);
     cmd.stdin(Stdio::null()).kill_on_drop(true);
     #[cfg(windows)]
-    {
-        // CREATE_NO_WINDOW: do not flash a console for every FFmpeg call.
-        cmd.creation_flags(0x0800_0000);
-    }
+    cmd.creation_flags(CREATE_NO_WINDOW);
     cmd
 }
 

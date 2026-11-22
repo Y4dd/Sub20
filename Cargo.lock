@@ -3946,6 +3946,7 @@ dependencies = [
 name = "sub20-core"
 version = "0.9.5"
 dependencies = [
+ "libc",
  "log",
  "serde",
  "serde_json",
