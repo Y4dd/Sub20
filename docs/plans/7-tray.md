@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -266,7 +266,8 @@ until after the owner's Arch sitting.
       recorded FFmpeg failing after an updater restart.
       *Done when:* a test copy updated from the tray comes back in the
       tray.
-- [ ] **7.8 Watched encodes at lower priority.** Built 22 November 2026:
+- [x] **7.8 Watched encodes at lower priority.** Done 22 November 2026
+      (CI run 45003859376 passed the test on Windows and Ubuntu):
       `run_ffmpeg` takes the job's origin and `ffmpeg::lower_priority`
       sets below normal on Windows (a creation flag, no new dependency)
       and nice 10 on Linux (`libc::nice` before exec; `libc` was already
@@ -275,8 +276,11 @@ until after the owner's Arch sitting.
       FFmpeg's priority back: on Windows 6 and 8, for Scoop's launcher
       and the FFmpeg it started alike; with the rule swapped it failed.
       The core is clippy-clean for Linux (`--target x86_64-unknown-linux-gnu`),
-      but the test has run on Windows only: ticked once CI's Ubuntu run
-      passes it. A job's origin reaches the
+      CI's first run failed it twice over, both in the test: GitHub's
+      Windows runner starts tests below normal, and Windows passes that on
+      to processes started with no class, so the manual encode read 6 too
+      (the test now puts itself at normal first); on Linux it counted
+      FFprobe reading the source (now only processes named FFmpeg). A job's origin reaches the
       spawn of FFmpeg (`ffmpeg::quiet`). Watched jobs run at
       `BELOW_NORMAL_PRIORITY_CLASS` on Windows, which a launcher's child
       inherits, and nice 10 on Linux. Engine logic, so it lives in
