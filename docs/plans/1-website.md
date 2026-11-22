@@ -440,6 +440,58 @@ invented.
       *Done when:* the owner has decided `#features`' rhythm and a
       picture for `#download` and `#faq` (as in 1.14 and 1.15), and the
       gate passes.
+- [ ] **1.17 The home page after the fourth critique** (21 November 2026,
+      28/36 with no P0 or P1;
+      `.impeccable/critique/2026-11-21T22-05-33Z__site-src-pages-index-astro.md`).
+      The owner chose to do the payoff first, to show the clip arriving
+      in a chat, and to do everything. Three branches from `c8d5888`,
+      merged locally:
+  1. The payoff (`site-r4-payoff`):
+     - **The story.** It is written once, in `PayoffStory.astro`. Its
+       third step is no longer the cropped Copy button, which read as a
+       dead control, with a faded chip slice beside it. It is now the clip
+       arriving in a chat, drawn in the site's own palette: a "You"
+       initial, then an attachment with the chip's thumbnail from
+       `done.webp`, its name and 19.4 MB. It is `role="img"`, with no
+       Discord colours or marks.
+     - **Lite's story.** On `data-lite`, `#lite` tells it in place of the
+       phone screenshot, ending "Tap Share, then pick Discord"
+       (`pointer: coarse`) or "Download it, then drop it in Discord" (a
+       Mac). `#download` is then the heading, its line and the file list.
+     - **The file list.** From 1024px "Other systems and downloads" sits
+       32px under the warning at 1440 (it was 182px). Opened, it runs the
+       full width under both columns, checked in Edge only.
+     - **Install steps.** "Read the install steps" has a 29px target.
+     - **Renamed classes.** `.downloads__frame`, `__story` and `__crop`
+       are now `.payoff`, `.payoff__story` and `.payoff__crop`.
+  2. The questions (`site-r4-faq`):
+     - The FAQ asks about Windows's warning third and ends on "Are my
+       videos uploaded anywhere?", with the wording unchanged.
+     - `#faq` is in reading order in the DOM (heading, answers, guides)
+       and is laid out in two columns from 1024px. On a phone the answers
+       come first, at two screens (1712px), as before.
+  3. The hero's note and the close (`site-r4-small`):
+     - The note sits 9px under the hero's button, so the focus ring
+       clears it.
+     - "Install steps" has a 25px target.
+     - Under 640px the close's big button centres its words with their
+       arrow or mark.
+     - On `data-lite` the hero's "Download for Windows or Linux" is a
+       text link (`.hero__other`), not a secondary button.
+      Not done, because they were judged wrong:
+      - The critique asked for an "In the desktop app" tag on the GPU
+        card, but Lite encodes on the GPU too, with a CPU fallback.
+      - It said the Mac's route is missing from `#lite`, but its second
+        bullet already names Chrome or Edge.
+      Checks on 21 November 2026 (`BASE=/` build):
+      - **copy-lint:** 0 FAIL, 0 WARN on the home page.
+      - **consistency.mjs --quick:** 14 FAIL (15 after round 3). They are
+        `#features`' rhythm moving every later section off the screen
+        grid, the three waived findings, `no-visual` on `#download` at
+        1440 (its story covers 11%) and `text-only` on `#faq`.
+      - **Not run:** the gate and `check.mjs`.
+      *Done when:* the owner has decided `#features`' rhythm and a
+      picture for `#download` and `#faq`, and the gate passes.
 
 ## Needs the owner
 
