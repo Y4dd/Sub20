@@ -127,7 +127,11 @@ what the sheet says.
    videos into the folder). Then choose **Resume watching**. *Expected:* a
    notice says 6 clips arrived while Sub20 wasn't watching. Click it: the
    window opens and asks whether to compress or skip them.
-8. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
+8. When an update is out, with the window closed: right-click the tray
+   icon. *Expected:* **Update to x.y.z** is in the menu. Choose it.
+   *Expected:* the installer runs, and Sub20 comes back in the tray with
+   no window, as the new version (its About line in Settings says so).
+9. Right-click the tray icon and choose **Quit**. *Expected:* Sub20 closes
    and the icon goes.
 
 ## 5. Opening videos from the system

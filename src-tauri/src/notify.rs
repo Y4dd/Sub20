@@ -159,6 +159,19 @@ impl Notices {
     }
 }
 
+/// An update started from the tray didn't install. Said at once, busy or
+/// not: the user just asked for it. A click opens the window, whose
+/// Settings can try again. Windows only, like the tray.
+#[cfg(windows)]
+pub fn update_failed(app: &AppHandle, error: &str) {
+    show(
+        app,
+        "The update didn't install".into(),
+        format!("{error}. Try again from the tray, or download it from the Releases page."),
+        Clicked::Bench { paths: Vec::new() },
+    );
+}
+
 fn show(app: &AppHandle, title: String, body: String, clicked: Clicked) {
     if let Err(e) = app.notification().builder().title(title).body(body).extra(CLICKED, clicked).show() {
         log::warn!("could not show a notification: {e}");

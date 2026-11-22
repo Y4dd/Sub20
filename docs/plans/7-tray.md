@@ -236,7 +236,25 @@ until after the owner's Arch sitting.
       same notice.
       *Done when:* tried on the mock and in a test copy started without a
       window.
-- [ ] **7.7 Updates with no window.** The shell checks at start when
+- [ ] **7.7 Updates with no window.** Built 22 November 2026. The tray
+      offers Update to x.y.z once an update is found (by the window at its
+      start, or by the shell when it starts without one); it asks first
+      while videos compress, allows one install at a time, keeps the
+      update for a retry, and says a failure with a notice. The new
+      version comes back in the tray through a record, `restart-in-tray`,
+      written by the updater's `on_before_exit` while there is no window
+      and read once at start (`back_in_tray`, tested), since the updater
+      relaunches with the old start's arguments and Sub20 can't add
+      `--tray` to them. Checked in a debug test copy that called itself
+      0.9.4: with a record from 0.0.1 it started with no window (7 MB, no
+      WebView2), deleted the record, and checked for updates itself.
+      **Can't be proved in a test copy:** the installer is the real
+      release's and installs over the real Sub20, and the old version has
+      to write the record, so the first real proof is the first update
+      from a release with 7.7 to the next ("Needs the owner": an update
+      from the tray). Since this start also has no window, 7.6's
+      cold-start pile notice can happen now, not only after 7.9.
+      Originally: The shell checks at start when
       `check_updates` is on, since today only the window checks, and the
       tray offers "Update to x.y.z". It never installs by itself: 3.6
       recorded FFmpeg failing after an updater restart.

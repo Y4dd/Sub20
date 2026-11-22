@@ -14,6 +14,11 @@ What changed in each release. The format follows
   or skip them. Click it to open Sub20 on them. Like the other notices, it
   waits until you leave a game, and Settings → Folder watch can switch it
   off.
+- When an update is out, the tray menu offers **Update to** the new
+  version. It installs only when you choose it, asks first if videos are
+  compressing, and Sub20 comes back in the tray afterwards. This works
+  from the next update on, since the version doing the installing has to
+  know how.
 
 ## [0.9.5] - 2026-11-22
 

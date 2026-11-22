@@ -64,6 +64,11 @@ struct AppState {
     watched: Arc<Mutex<WatchedJobs>>,
     /// The bench as it was left (`sub20_core::bench`).
     bench_file: PathBuf,
+    /// An update is downloading or installing, from the window or the tray.
+    installing: AtomicBool,
+    /// Written just before an update installs from the tray, so the new
+    /// version comes back in the tray (`back_in_tray`).
+    tray_record: PathBuf,
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -540,7 +545,7 @@ pub(crate) fn set_paused(app: &AppHandle, watcher: &Watcher, paused: bool) {
         watcher.resume();
     }
     #[cfg(windows)]
-    tray::paused(app, watcher.status().paused);
+    tray::refresh(app);
     #[cfg(not(windows))]
     let _ = app;
 }
@@ -741,10 +746,7 @@ fn stays_in_tray(app: &AppHandle) -> bool {
 /// Puts the tray icon up or takes it down to match the settings.
 fn follow_tray(app: &AppHandle, settings: &Settings) {
     #[cfg(windows)]
-    {
-        let paused = app.try_state::<AppState>().is_some_and(|state| state.watcher.status().paused);
-        tray::follow(app, keeps_watching(settings), paused);
-    }
+    tray::follow(app, keeps_watching(settings));
     #[cfg(not(windows))]
     let _ = (app, settings);
 }
@@ -908,34 +910,123 @@ struct UpdateInfo {
 
 /// Asks the release feed for a newer version. `None` means up to date.
 #[tauri::command]
-async fn check_update(app: AppHandle, state: State<'_, AppState>) -> CommandResult<Option<UpdateInfo>> {
+async fn check_update(app: AppHandle) -> CommandResult<Option<UpdateInfo>> {
+    find_update(&app).await
+}
+
+/// Asks the release feed, keeps what it offers for `install`, and puts it in
+/// the tray's menu. The window asks at its start; the shell asks only when
+/// Sub20 starts without one (plan 7's 7.7).
+async fn find_update(app: &AppHandle) -> CommandResult<Option<UpdateInfo>> {
+    let recorder = app.clone();
     let update = app
         .updater_builder()
         .target(update_target())
         .timeout(Duration::from_secs(20))
+        // The last moment before the installer takes over: with no window,
+        // the new version is to come back in the tray.
+        .on_before_exit(move || {
+            if let Some(state) = recorder.try_state::<AppState>() {
+                if window_gone(&recorder) {
+                    let _ = std::fs::write(&state.tray_record, env!("CARGO_PKG_VERSION"));
+                }
+            }
+        })
         .build()
         .map_err(text)?
         .check()
         .await
         .map_err(text)?;
     let info = update.as_ref().map(|u| UpdateInfo { version: u.version.clone(), notes: u.body.clone() });
-    *state.update.lock().expect("update lock") = update;
+    if let Some(state) = app.try_state::<AppState>() {
+        *state.update.lock().expect("update lock") = update;
+    }
+    #[cfg(windows)]
+    tray::refresh(app);
     Ok(info)
 }
 
 /// Downloads and installs the update `check_update` found, then restarts.
 /// Running jobs are stopped first, as on quit.
 #[tauri::command]
-async fn install_update(app: AppHandle, state: State<'_, AppState>) -> CommandResult<()> {
-    let update = state.update.lock().expect("update lock").take().ok_or("No update has been found yet.")?;
+async fn install_update(app: AppHandle) -> CommandResult<()> {
+    install(&app).await
+}
+
+/// Installs the update found last, one install at a time. On Windows the
+/// installer takes over and the process exits inside; a failure is
+/// returned, and the update stays offered so it can be tried again.
+async fn install(app: &AppHandle) -> CommandResult<()> {
+    let state = app.state::<AppState>();
+    let update = state.update.lock().expect("update lock").clone().ok_or("No update has been found yet.")?;
+    if state.installing.swap(true, Ordering::SeqCst) {
+        return Err("The update is already installing.".into());
+    }
+    #[cfg(windows)]
+    tray::refresh(app);
     if state.engine.active() > 0 {
         state.engine.cancel_all();
         tokio::time::sleep(Duration::from_millis(600)).await;
     }
-    update.download_and_install(|_, _| {}, || {}).await.map_err(text)?;
+    if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+        state.installing.store(false, Ordering::SeqCst);
+        #[cfg(windows)]
+        tray::refresh(app);
+        return Err(text(e));
+    }
     // The jobs are already stopped; do not ask about them on the way out.
     state.quitting.store(true, Ordering::SeqCst);
     app.restart()
+}
+
+/// The tray's "Update to x.y.z": asks first while videos are compressing,
+/// since installing stops them, and says so with a notice if it fails, as
+/// there may be no window to say it in.
+#[cfg(windows)]
+pub(crate) async fn update_from_tray(app: AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else { return };
+    let running = state.engine.active();
+    if running > 0 {
+        let message = if running == 1 {
+            "A video is still compressing. Updating stops it and deletes the unfinished file.".to_string()
+        } else {
+            format!("{running} videos are still compressing. Updating stops them and deletes the unfinished files.")
+        };
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        app.dialog()
+            .message(message)
+            .title("Stop compressing and update?")
+            .kind(MessageDialogKind::Warning)
+            .buttons(MessageDialogButtons::OkCancelCustom("Stop and update".into(), "Keep compressing".into()))
+            .show(move |stop| {
+                let _ = tx.send(stop);
+            });
+        if !rx.await.unwrap_or(false) {
+            return;
+        }
+    }
+    if let Err(e) = install(&app).await {
+        notify::update_failed(&app, &e);
+    }
+}
+
+/// Reads and removes the record an update from the tray leaves
+/// (`find_update`): true when this start is the new version it installed,
+/// which is to come back in the tray. Removed on every read, so a start by
+/// hand later opens the window as usual.
+fn back_in_tray(record: &Path) -> bool {
+    let recorded = std::fs::read_to_string(record).ok();
+    if recorded.is_some() {
+        let _ = std::fs::remove_file(record);
+    }
+    recorded.is_some_and(|version| updated_since(&version, env!("CARGO_PKG_VERSION")))
+}
+
+/// The version that wrote the record isn't this one, so an update ran
+/// between them; the same version means the install never happened.
+fn updated_since(recorded: &str, running: &str) -> bool {
+    let recorded = recorded.trim();
+    !recorded.is_empty() && recorded != running
 }
 
 /// Asks before quitting while videos are compressing or waiting. Returns
@@ -1119,6 +1210,7 @@ pub fn run() {
             });
             let engine = Engine::new(&data_dir, &cache_dir.join("work"), bundled, sink);
             let bench_file = data_dir.join("bench.json");
+            let tray_record = data_dir.join("restart-in-tray");
             let (handing, bench_to, made) = (app.handle().clone(), bench_file.clone(), results.clone());
             let watcher = Arc::new(Watcher::new(
                 engine.clone(),
@@ -1165,18 +1257,34 @@ pub fn run() {
                 picked: Mutex::default(),
                 watched,
                 bench_file,
+                installing: AtomicBool::new(false),
+                tray_record: tray_record.clone(),
             });
-            follow_tray(app.handle(), &app.state::<AppState>().engine.settings().get());
+            let settings = app.state::<AppState>().engine.settings().get();
+            follow_tray(app.handle(), &settings);
             // The window isn't made from the config at startup (`create:
             // false`), so it is built the same way here as when it comes
-            // back after closing.
-            show_window(app.handle());
+            // back after closing. An update installed from the tray comes
+            // back in the tray, as long as the icon is there and no videos
+            // were handed over with the restart.
+            let windowless = back_in_tray(&tray_record)
+                && cfg!(windows)
+                && stays_in_tray(app.handle())
+                && OPENED.lock().unwrap_or_else(|e| e.into_inner()).is_empty();
+            if !windowless {
+                show_window(app.handle());
+            }
 
             // Test the encoders and start the folder watch in the background,
             // once the window is on its way: a pile found by the first scan
-            // is then the window's to ask about, not a notice's.
+            // is then the window's to ask about, not a notice's. With no
+            // window, the shell checks for updates itself.
+            let checker = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 warm_watcher.reload();
+                if windowless && settings.check_updates {
+                    let _ = find_update(&checker).await;
+                }
                 let _ = warm_engine.hardware(false).await;
             });
             Ok(())
@@ -1268,6 +1376,23 @@ mod tests {
         assert!(!has_bundled_ffmpeg(dir.path()));
         std::fs::write(dir.path().join(format!("sub20-ffmpeg{}", std::env::consts::EXE_SUFFIX)), b"x").unwrap();
         assert!(has_bundled_ffmpeg(dir.path()));
+    }
+
+    #[test]
+    fn only_the_new_version_comes_back_in_the_tray() {
+        assert!(updated_since("0.9.6", "0.9.7"));
+        assert!(updated_since("0.9.6\n", "0.9.7"));
+        // The install never happened: open the window as usual.
+        assert!(!updated_since("0.9.7", "0.9.7"));
+        assert!(!updated_since("", "0.9.7"));
+
+        let dir = tempfile::tempdir().unwrap();
+        let record = dir.path().join("restart-in-tray");
+        assert!(!back_in_tray(&record), "no record, the window opens");
+        std::fs::write(&record, "0.0.1").unwrap();
+        assert!(back_in_tray(&record));
+        assert!(!record.exists(), "read once");
+        assert!(!back_in_tray(&record), "a later start opens the window");
     }
 
     #[test]
