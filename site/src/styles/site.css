@@ -146,21 +146,21 @@
 .downloads__links { display: grid; justify-items: start; }
 .downloads__after { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: baseline; }
 .downloads__after a:not(.link) { color: var(--p-ink); }
-/* Beside it, what the download is for, one game clip from plan to Discord: the plan row's size and verdict,
-   the finished file, then Copy, as tall as they are (no --ratio). Each is a crop of a screenshot (--sw wide)
-   at --cx, --cy, --cw × --ch, in the source's pixels: the plan row from plan.webp (800 × 72), then from
-   done.webp (970 × 180) the file chip alone and Copy with the chip's end fading in beside it, so it reads
-   as a piece of the window, not a button on the page. The two from done.webp are drawn at one scale (their
-   widths are 82% × cw / 626), so their words come out at about the plan's size, as they are in the app.
-   The steps' words are body size, and the finished size in them is ink. */
-.frame.downloads__frame { background: #15171c; --ratio: 0px; padding: var(--s-6); justify-content: flex-start; }
-.frame.downloads__frame > .downloads__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
-.downloads__story > li { display: grid; gap: var(--s-3); }
-.downloads__story p { margin: 0; font-size: var(--t-body); color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); text-wrap: balance; }
-.downloads__crop { position: relative; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; pointer-events: none; user-select: none; }
-.downloads__crop--plan { --sw: 800; --cx: 0; --cy: 0; --cw: 800; --ch: 72; }
-.downloads__crop--done { --sw: 970; --cx: 20; --cy: 12; --cw: 598; --ch: 110; width: 78%; }
-.downloads__crop img { position: absolute; max-width: none; height: auto; width: calc(var(--sw) / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
+/* What it is for, one game clip from plan to Discord (PayoffStory.astro): beside the download (the desktop
+   app's) and in #lite (Lite's, where the desktop app doesn't run), as tall as the three steps (no --ratio). The
+   first two are crops of a screenshot (--sw wide) at --cx, --cy, --cw × --ch, in the source's pixels: the plan
+   row from plan.webp (800 × 72), then the file chip alone from done.webp (970 × 180), drawn at about the plan's
+   scale (78% of the frame's column), so their words come out at about the size they are in the app. The third,
+   the clip arriving in a chat, is under "Round 4". The steps' words are body size, and the finished size in
+   them is ink. */
+.frame.payoff { background: #15171c; --ratio: 0px; padding: var(--s-6); justify-content: flex-start; align-self: start; }
+.frame.payoff > .payoff__story { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-6); width: 100%; max-width: 34rem; }
+.payoff__story > li { display: grid; gap: var(--s-3); }
+.payoff__story p { margin: 0; font-size: var(--t-body); color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); text-wrap: balance; }
+.payoff__crop { position: relative; width: 100%; aspect-ratio: var(--cw) / var(--ch); overflow: hidden; pointer-events: none; user-select: none; }
+.payoff__crop--plan { --sw: 800; --cx: 0; --cy: 0; --cw: 800; --ch: 72; }
+.payoff__crop--done { --sw: 970; --cx: 20; --cy: 12; --cw: 598; --ch: 110; width: 78%; }
+.payoff__crop img { position: absolute; max-width: none; height: auto; width: calc(var(--sw) / var(--cw) * 100%); left: calc(var(--cx) / var(--cw) * -100%); top: calc(var(--cy) / var(--ch) * -100%); }
 
 /* The five questions fit one screen at 1440x900 (723px of the 708 the kit's screen holds at the kit's 24px
    rows, so the section ran 15px long and the close started off its screen): 16px rows, as on a phone. */
@@ -195,21 +195,21 @@
   #lite .frame--split { --ratio: 120%; }
 }
 @media (max-width: 639px) {
-  /* a phone: no frame, so the three steps sit in the section's own column at its full width (the app's ground is
-     the page's), and the words stay readable: the plan from 1440p on, the file's name and size alone, on
-     the chip's own ground and corners, and Copy at the same scale as the name */
-  .frame.downloads__frame { padding: 0; border: 0; border-radius: 0; background: none; }
-  .downloads__crop--plan { --cx: 124; --cw: 676; }
-  .downloads__crop--done { --cx: 154; --cy: 25; --cw: 406; --ch: 86; width: 83%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
+  /* a phone: in #download no frame, so the three steps sit in the section's own column at its full width (the
+     app's ground is the page's), and the words stay readable: the plan from 1440p on, and the file's name and
+     size alone, on the chip's own ground and corners */
+  #download .frame.payoff { padding: 0; border: 0; border-radius: 0; background: none; }
+  .payoff__crop--plan { --cx: 124; --cw: 676; }
+  .payoff__crop--done { --cx: 154; --cy: 25; --cw: 406; --ch: 86; width: 83%; background: #1c2028; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent); }
 }
 /* Stacked (below 1024px), the three steps come last, so the way in (the button, or where the desktop app
    doesn't run, the line on getting it onto a computer) runs straight on to the other files. */
-@media (max-width: 1023px) { .downloads__frame { order: 1; } }
-/* From 1024 to 1279px the frame beside the words is narrow: the plan from 1440p on, and the chip and Copy
-   wider, so all three stay at about the app's own size. */
+@media (max-width: 1023px) { #download .payoff { order: 1; } }
+/* From 1024 to 1279px the frame beside the words is narrow: the plan from 1440p on, and the chip wider, so
+   both stay at about the app's own size. */
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .downloads__crop--plan { --cx: 124; --cw: 676; }
-  .downloads__crop--done { width: 90%; }
+  .payoff__crop--plan { --cx: 124; --cw: 676; }
+  .payoff__crop--done { width: 90%; }
 }
 
 /* Document pages (guides, download, compare, privacy, changelog): sections
@@ -447,14 +447,7 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* Round 3: phones, tablets and Macs. */
 
 /* Round 3: the payoff, before and after. */
-/* The third step, Copy: a picture of the app's button, never a control on the page (no pointer, no hover,
-   nothing to tab to), its left edge fading through the end of the file chip. The finished size is said
-   in the step's words, in ink, since the chip draws it small. */
-.downloads__crop--copy { --sw: 970; --cx: 420; --cy: 12; --cw: 505; --ch: 110; width: 66%; cursor: default;
-  -webkit-mask: linear-gradient(to right, transparent 4%, #000 42%); mask: linear-gradient(to right, transparent 4%, #000 42%); }
-.downloads__story strong { color: var(--p-ink); font-weight: 600; }
-@media (min-width: 1024px) and (max-width: 1279px) { .downloads__crop--copy { width: 76%; } }
-@media (max-width: 639px) { .downloads__crop--copy { width: 100%; } }
+.payoff__story strong { color: var(--p-ink); font-weight: 600; }
 
 /* Round 3: Windows's warning. */
 
@@ -495,6 +488,64 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 }
 
 /* Round 4: the payoff, on both paths, and the file list. */
+/* The third step: the clip arriving in a chat, the result of Copy (or Share, or Download), not the button
+   that does it. A picture, never a control (role="img" in PayoffStory, no pointer, nothing to select): a
+   plain message in the site's own palette and fonts, at the chip's scale, from "You" (an initial, no
+   picture), holding the clip as an attachment: the chip's thumbnail cropped from done.webp (104 × 68 of its
+   pixels, the same file step 2 loads), its name and its size. The frame is its ground and the attachment its
+   one box (at most two boxes one inside the other). No chat app's colours, marks or layout, no time, and
+   nothing over the thumbnail that looks like a player. On a phone the thumbnail is smaller, so the name
+   keeps room to break at its hyphens. */
+.payoff__chat { display: grid; grid-template-columns: 32px minmax(0, auto); gap: var(--s-3); align-items: start; justify-self: start; max-width: 100%;
+  pointer-events: none; user-select: none; }
+.payoff__avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; line-height: 1;
+  background: color-mix(in srgb, var(--p-ink) 18%, #15171c); color: var(--p-ink); font-size: var(--t-small); font-weight: 600; }
+.payoff__message { display: grid; gap: var(--s-2); min-width: 0; justify-items: start; }
+.payoff__who { color: var(--p-ink); font-size: var(--t-small); font-weight: 600; line-height: 1.3; }
+.payoff__file { display: grid; grid-template-columns: auto minmax(0, auto); column-gap: var(--s-3); align-items: center; max-width: 100%;
+  padding: var(--s-2) var(--s-4) var(--s-2) var(--s-2); border-radius: 10px; background: #1c1f26; }
+.payoff__crop--thumb { --sw: 970; --cx: 40; --cy: 34; --cw: 104; --ch: 68; width: 84px; grid-row: 1 / span 2; border-radius: 6px; }
+@media (max-width: 639px) { .payoff__crop--thumb { width: 64px; } }
+.payoff__name { align-self: end; color: var(--p-ink); font-size: var(--t-small); font-weight: 500; line-height: 1.35; }
+.payoff__size { align-self: start; color: color-mix(in srgb, var(--p-ink) 72%, #1c1f26); font-size: var(--t-small); line-height: 1.35; font-variant-numeric: tabular-nums; }
+/* Lite's hand-off, by the app's own rule: Share on a touch screen (a phone or a tablet), Download with a mouse
+   (where the desktop app doesn't run, a Mac). */
+.payoff__touch { display: none; }
+@media (pointer: coarse) { .payoff__touch { display: inline; } .payoff__mouse { display: none; } }
+
+/* Lite's story in #lite, where the desktop app doesn't run: in the phone's frame's place, as tall as the
+   steps. Stacked (below 1024px) the row is a flex column (the kit's .fill), where it runs the column's
+   width; on a phone it keeps a dark ground of its own, since #lite's ground is lighter than the crops'. */
+@media (max-width: 1023px) { #lite .frame.payoff { align-self: stretch; flex: none; } }
+@media (max-width: 639px) { #lite .frame.payoff { padding: var(--s-5) var(--s-4); } }
+/* Stacked, Lite's section there is as tall as it holds (the phone's frame filled a screen; the story doesn't). */
+@media (max-width: 1023px) { :root[data-lite] #lite { min-height: 0; } }
+
+/* The file list's place beside the story (from 1024px): the story spans two rows, so "Other systems and
+   downloads" sits under the left column's last line while it is closed (the rows' slack goes to the second
+   row, not the first), as far under it as the column's own lines are apart; opened, or open without
+   JavaScript, the list runs the full width under both. It stays a sibling in the grid, where the script
+   after it finds it. Where a browser can place the opened content on its own (::details-content), the
+   <details> gives its two parts to the grid, so the summary stays where it was clicked and the list starts
+   under the story (only where the script closed it: without JavaScript it is open with no summary);
+   elsewhere the opened <details> moves under the story whole. Stacked, the story's order: 1 stands. */
+@media (min-width: 1024px) {
+  #download > .wrap > .grid { grid-template-rows: auto 1fr; }
+  #download .downloads { grid-row: 1; }
+  #download .payoff { grid-row: 1 / span 2; }
+  #download .downloads__more { grid-column: 1 / span 5; grid-row: 2; align-self: start; margin-top: calc(var(--s-6) - var(--card-gap)); }
+  #download .downloads__more[open] { grid-column: 1 / -1; grid-row: 3; margin-top: 0; }
+  @supports selector(::details-content) {
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open] { display: contents; }
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open] > summary { grid-column: 1 / span 5; grid-row: 2; align-self: start; justify-self: start; margin-top: calc(var(--s-6) - var(--card-gap)); }
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open]::details-content { grid-column: 1 / -1; grid-row: 3; }
+  }
+}
+
+/* The download section's "Read the install steps" (in Windows's warning) is a line's height, 23px: its
+   target reaches 3px above and below it (24px is WCAG 2.2's least), and the line looks the same. */
+.downloads__warn .link { position: relative; }
+.downloads__warn .link::before { content: ""; position: absolute; inset: -3px 0; }
 
 /* Round 4: the questions. The heading, the answers and the guides are three blocks in that order (a phone
    reads the answers first). From 1024px they are two columns again, as before: the heading over the

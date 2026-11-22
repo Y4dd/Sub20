@@ -7,6 +7,7 @@ import { latestRelease, ROWS, cell, kindInText } from "../lib/release";
 import { GUIDES } from "../lib/guides";
 import GetSub20 from "../components/GetSub20.astro";
 import SmartScreenNote from "../components/SmartScreenNote.astro";
+import PayoffStory from "../components/PayoffStory.astro";
 
 const release = await latestRelease();
 // A size keeps its unit and "64-bit" its hyphen on one line.
@@ -149,31 +150,9 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
             <p>It runs on Windows 10 and 11 and {keep("64-bit")} Linux. To install it, open this page on that computer, or take its file below.</p>
           </div>
         </div>
-        {/* What the download is for, one game clip from plan to Discord: the plan row's size and verdict, the finished
-            file, 248 MB down to 19.4 MB, then Copy. Pictures, not controls: cropped (site.css) and never clickable;
-            the sizes are said in words at body size, since the crops draw them small. */}
-        <div class="frame span-6 start-7 downloads__frame">
-          <ol class="downloads__story" role="list">
-            <li>
-              <p>Before it starts, Sub20 says how it will look</p>
-              <div class="downloads__crop downloads__crop--plan">
-                <Shot name="plan" alt="Sub20's plan for a 41 s game clip: 1440p, H.264 at 3.9 Mbps, Should look good" sizes="800px" />
-              </div>
-            </li>
-            <li>
-              <p>When it's done, the clip is <strong>19.4&nbsp;MB</strong>, down from 248&nbsp;MB</p>
-              <div class="downloads__crop downloads__crop--done">
-                <Shot name="done" alt="The finished file: clutch-1v4-ranked-20mb.mp4, 19.4 MB, down from 248 MB" sizes="720px" />
-              </div>
-            </li>
-            <li>
-              <p>Copy it, then paste it in Discord</p>
-              <div class="downloads__crop downloads__crop--copy">
-                <Shot name="done" alt="Sub20's Copy button beside the finished file, with its shortcut, Ctrl+C" sizes="720px" />
-              </div>
-            </li>
-          </ol>
-        </div>
+        {/* What the download is for, one game clip from plan to Discord (PayoffStory, Lite's own in #lite). Not
+            where the desktop app doesn't run: there this section is the way to a computer's files, and #lite tells the story. */}
+        <PayoffStory path="app" class="span-6 start-7 if-app" />
         {/* Every file. Open as written, so it is the whole list without JavaScript or on a system the page
             can't tell. The script under it closes it where a button above already offers the right file, and where
             the desktop app doesn't run (data-lite), since Lite comes first there; a link to #download opens it again. */}
@@ -221,15 +200,21 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
           </ul>
           <a class="link" href={u("app/")}>Open Sub20 Lite</a>
         </div>
-        <div class="frame frame--split frame--fill span-6 start-7 lite__frame">
+        {/* On a computer, Lite on a phone. Where the desktop app doesn't run (data-lite) this is the visitor's own way
+            in, so the frame tells Lite's story instead: the clip from plan to Discord, handed on with Share or Download
+            (the hero shows the window there already). */}
+        <div class="frame frame--split frame--fill span-6 start-7 lite__frame if-app">
           <Shot class="lite__phone" name="phone" alt="Sub20 Lite on a phone: the clip strip, the preview, the trim bar and Compress 3 videos at 20 MB" sizes="(min-width: 1024px) 304px, (min-width: 640px) 335px, 155px" />
         </div>
+        <PayoffStory path="lite" class="span-6 start-7 if-lite" />
       </div>
     </div>
     {/* Where the desktop app doesn't run (data-lite), Lite is the way in, so this section moves up before #download:
         in the DOM, not with CSS order, so focus and a screen reader follow what is seen. Without JavaScript, and on
-        Windows or Linux, it stays where it is written. It runs before system.js, a module that waits for the parse. */}
-    <script is:inline>(()=>{const s=document.currentScript.parentElement,d=document.getElementById("download");if("lite"in document.documentElement.dataset&&d)d.before(s)})()</script>
+        Windows or Linux, it stays where it is written. It runs before system.js, a module that waits for the parse.
+        There the phone's frame, hidden (Lite's story takes its place), goes too: system.js fetches every lazy image
+        once the page has loaded, hidden ones included. */}
+    <script is:inline>(()=>{const s=document.currentScript.parentElement,d=document.getElementById("download");if(!("lite"in document.documentElement.dataset))return;s.querySelector(".lite__frame")?.remove();if(d)d.before(s)})()</script>
   </section>
 
   <section class="section" id="faq" aria-labelledby="faq-h" style="--hm: 2">
