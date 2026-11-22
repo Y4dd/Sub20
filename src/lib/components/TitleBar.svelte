@@ -11,6 +11,7 @@
   const watchLine = $derived.by(() => {
     if (!app.settings?.watch.enabled) return null;
     if (app.watch?.problem) return { text: "Watch stopped", warn: true };
+    if (app.watch?.paused) return { text: "Watch paused", warn: false };
     if (!app.watching) return null;
     const running = app.watched.find((job) => job.status === "running");
     if (running) return { text: `Watching, compressing ${Math.floor(running.percent)}%`, warn: false };
@@ -40,8 +41,9 @@
       type="button"
       class="watching"
       class:warn={watchLine.warn}
+      class:paused={!watchLine.warn && app.watch?.paused}
       onclick={() => (app.sheet = watchLine.warn ? "settings" : "history")}
-      title={watchLine.warn ? app.watch?.problem : `Watching ${app.watch?.folder ?? "a folder"}. Opens History.`}
+      title={watchLine.warn ? app.watch?.problem : app.watch?.paused ? "Paused until you resume it in History. Opens History." : `Watching ${app.watch?.folder ?? "a folder"}. Opens History.`}
     >
       <i aria-hidden="true"></i>{watchLine.text}
     </button>
@@ -134,6 +136,12 @@
 
   .watching.warn {
     color: var(--bad);
+  }
+
+  /* Not looking: a ring, not the live dot. */
+  .watching.paused i {
+    background: none;
+    box-shadow: inset 0 0 0 1.5px var(--muted);
   }
 
   .watching.warn i {

@@ -30,6 +30,7 @@
     const w = app.watch;
     if (!w) return "Starting…";
     if (w.problem) return w.problem;
+    if (w.paused) return "Paused until you resume it or Sub20 starts again.";
     if (!w.running) return "Not running.";
     const parts = [];
     if (w.inProgress) parts.push(`${w.inProgress} compressing or waiting`);
@@ -60,7 +61,14 @@
       <p class="where" title={app.watch?.folder ?? app.settings.watch.folder ?? ""}>
         {app.watch?.folder ?? app.settings.watch.folder ?? "No folder chosen"}
       </p>
-      <p class="muted" class:bad={!!app.watch?.problem}>{watchLine()}</p>
+      <p class="muted" class:bad={!!app.watch?.problem}>
+        {watchLine()}
+        {#if app.watch?.paused}
+          <button type="button" class="link" onclick={() => app.pauseWatch(false)}>Resume</button>
+        {:else if app.watch?.running}
+          <button type="button" class="link" onclick={() => app.pauseWatch(true)}>Pause</button>
+        {/if}
+      </p>
       {#if app.watched.length}
         <ul class="watched">
           {#each app.watched as job (job.id)}

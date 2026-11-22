@@ -316,6 +316,15 @@ class App {
     }
   }
 
+  /** Pauses the watch until resumed or Sub20 starts again, or resumes it. */
+  async pauseWatch(paused: boolean) {
+    try {
+      this.watch = await backend.watchPause(paused);
+    } catch (error) {
+      this.notify(String(error));
+    }
+  }
+
   /** Puts a watched clip on the bench, finished, so the stage can preview,
    *  copy, rename and trim it like any other. */
   async openWatched(job: WatchedJob) {

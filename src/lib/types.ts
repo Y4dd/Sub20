@@ -197,6 +197,8 @@ export interface WatchStatus {
   problem: string | null;
   /** Clips that arrived while Sub20 was closed, held for a question; 0 when none. */
   waiting: number;
+  /** Paused for this session: set up, but not looking at the folder. */
+  paused: boolean;
 }
 
 /** A recording app's clip folder, offered as a one-click watch. */
@@ -410,6 +412,8 @@ export interface Backend {
   watchStatus(): Promise<WatchStatus>;
   /** Compress the clips that arrived while Sub20 was closed, or skip them. */
   watchDecide(compress: boolean): Promise<WatchStatus>;
+  /** Pause the watch until resumed or Sub20 starts again, or resume it. */
+  watchPause(paused: boolean): Promise<WatchStatus>;
   /** Recording apps' clip folders found on this machine (Windows only). */
   clipFolders(): Promise<ClipFolder[]>;
   reveal(path: string): Promise<void>;

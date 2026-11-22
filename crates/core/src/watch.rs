@@ -146,6 +146,8 @@ pub struct WatchStatus {
     /// Clips that arrived while Sub20 was closed, held until the user says
     /// whether to compress them ([`Watcher::decide`]). Zero when none are held.
     pub waiting: u32,
+    /// Paused for this session ([`Watcher::pause`]): set up, but not looking.
+    pub paused: bool,
 }
 
 /// More clips than this arriving while Sub20 was closed are held for a
@@ -171,6 +173,8 @@ pub struct Watcher {
     /// No scan has run since Sub20 started, so what is new arrived while it
     /// was closed.
     launched: AtomicBool,
+    /// Paused until [`Watcher::resume`] or the next start; never saved.
+    paused: AtomicBool,
 }
 
 impl Watcher {
@@ -192,6 +196,24 @@ impl Watcher {
             }),
             stop: Mutex::new(None),
             launched: AtomicBool::new(true),
+            paused: AtomicBool::new(false),
+        }
+    }
+
+    /// Stops looking at the folder for this session. Clips already being
+    /// compressed finish.
+    pub fn pause(&self) {
+        self.paused.store(true, Ordering::SeqCst);
+        self.reload();
+    }
+
+    /// Looks at the folder again. What arrived during the pause is treated
+    /// like what arrived while Sub20 was closed: more than [`PILE`] clips to
+    /// compress are held for the question.
+    pub fn resume(&self) {
+        if self.paused.swap(false, Ordering::SeqCst) {
+            self.launched.store(true, Ordering::SeqCst);
+            self.reload();
         }
     }
 
@@ -206,7 +228,13 @@ impl Watcher {
             let _ = stop.send(true);
         }
         let config = self.shared.engine.settings().get().watch;
-        let ask = self.launched.swap(false, Ordering::SeqCst);
+        // Switching the watch off ends a pause; switching it on again watches.
+        if !config.enabled {
+            self.paused.store(false, Ordering::SeqCst);
+        }
+        let paused = self.paused.load(Ordering::SeqCst);
+        // A pause keeps the question for the first scan after it.
+        let ask = !paused && self.launched.swap(false, Ordering::SeqCst);
         let mut status = self.shared.status.lock().expect("status lock");
         // A question about a pile stays open while the folder stays the same.
         let mut held = self.shared.held.lock().expect("held lock");
@@ -220,6 +248,8 @@ impl Watcher {
             failed: status.failed,
             benched: status.benched,
             waiting,
+            // Jobs outlive a reload, and a paused watch runs no scan to count them.
+            in_progress: self.shared.in_flight.lock().expect("flight lock").len() as u32,
             ..WatchStatus::default()
         };
         if !config.enabled {
@@ -233,8 +263,12 @@ impl Watcher {
             status.problem = Some("Choose where the results go.".into());
             return;
         }
-        status.running = true;
         status.folder = Some(folder.clone());
+        if paused {
+            status.paused = true;
+            return;
+        }
+        status.running = true;
         drop(status);
 
         // A different folder starts from a clean slate.
@@ -669,6 +703,54 @@ mod tests {
         let again = launch(dir.path(), &inbox);
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert_eq!(again.status().waiting, 0);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_paused_watch_looks_again_on_resume_and_asks_about_a_pile() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        std::fs::create_dir_all(&inbox).unwrap();
+        let watcher = launch(dir.path(), &inbox);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+
+        watcher.pause();
+        let status = watcher.status();
+        assert!(status.paused && !status.running, "{status:?}");
+        // A settings save during the pause doesn't start it again.
+        watcher.reload();
+        assert!(watcher.status().paused);
+
+        // Seven clips arrive and settle while paused: nothing looks at them.
+        for n in 1..=7 {
+            std::fs::write(inbox.join(format!("clip{n}.mp4")), b"not really a video").unwrap();
+        }
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        let status = watcher.status();
+        assert_eq!((status.waiting, status.in_progress, status.failed), (0, 0, 0), "{status:?}");
+
+        // On resume they are a pile, held for the question.
+        watcher.resume();
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let status = watcher.status();
+        assert!(status.running && !status.paused, "{status:?}");
+        assert_eq!(status.waiting, 7, "{status:?}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_pause_ends_when_the_watch_is_switched_off() {
+        let dir = tempfile::tempdir().unwrap();
+        let inbox = dir.path().join("inbox");
+        std::fs::create_dir_all(&inbox).unwrap();
+        let watcher = launch(dir.path(), &inbox);
+        watcher.pause();
+        let settings = watcher.shared.engine.settings();
+        settings.update(|s| s.watch.enabled = false).unwrap();
+        watcher.reload();
+        assert!(!watcher.status().paused);
+        settings.update(|s| s.watch.enabled = true).unwrap();
+        watcher.reload();
+        let status = watcher.status();
+        assert!(status.running && !status.paused, "{status:?}");
     }
 
     #[test]

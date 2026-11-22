@@ -508,6 +508,35 @@ async fn watch_decide(state: State<'_, AppState>, compress: bool) -> CommandResu
     Ok(state.watcher.status())
 }
 
+/// Pauses the watch for this session, or watches again.
+#[tauri::command]
+async fn watch_pause(app: AppHandle, state: State<'_, AppState>, paused: bool) -> CommandResult<WatchStatus> {
+    set_paused(&app, &state.watcher, paused);
+    Ok(state.watcher.status())
+}
+
+/// Pauses or resumes the watch, and the tray's menu follows. Needs the
+/// runtime, like `Watcher::reload`.
+pub(crate) fn set_paused(app: &AppHandle, watcher: &Watcher, paused: bool) {
+    if paused {
+        watcher.pause();
+    } else {
+        watcher.resume();
+    }
+    #[cfg(windows)]
+    tray::paused(app, watcher.status().paused);
+    #[cfg(not(windows))]
+    let _ = app;
+}
+
+/// The tray's "Pause watching" or "Resume watching".
+#[cfg(windows)]
+pub(crate) fn toggle_pause(app: &AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else { return };
+    let paused = !state.watcher.status().paused;
+    set_paused(app, &state.watcher, paused);
+}
+
 /// Recording apps' clip folders found on this machine, for the watch shortcuts.
 #[tauri::command]
 fn clip_folders(app: AppHandle) -> Vec<watch::ClipFolder> {
@@ -690,7 +719,10 @@ fn stays_in_tray(app: &AppHandle) -> bool {
 /// Puts the tray icon up or takes it down to match the settings.
 fn follow_tray(app: &AppHandle, settings: &Settings) {
     #[cfg(windows)]
-    tray::follow(app, keeps_watching(settings));
+    {
+        let paused = app.try_state::<AppState>().is_some_and(|state| state.watcher.status().paused);
+        tray::follow(app, keeps_watching(settings), paused);
+    }
     #[cfg(not(windows))]
     let _ = (app, settings);
 }
@@ -1138,6 +1170,7 @@ pub fn run() {
             history_clear,
             watch_status,
             watch_decide,
+            watch_pause,
             clip_folders,
             reveal,
             open_file,

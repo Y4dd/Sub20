@@ -55,7 +55,7 @@ const noticeHandlers = new Set<(results: string[]) => void>();
 /** Who hears clips the watch put on the bench. */
 const benchedHandlers = new Set<(paths: string[]) => void>();
 let noticeClicked = false;
-const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" ? 12 : 0 };
+const watching = { inProgress: 0, done: 0, failed: 0, benched: 0, waiting: WATCH === "pile" ? 12 : 0, paused: false };
 if (WATCH !== null) {
   const compress = WATCH === "compress" || WATCH === "pile" || WATCH === "notice";
   settings.watch = { ...settings.watch, enabled: true, folder: inFolder(VIDEOS, "NVIDIA"), recursive: true, compress };
@@ -292,7 +292,7 @@ function simulate(id: string, job: CompressRequest, origin: "manual" | "watch" =
 function findClips() {
   let next = DEMOS.findIndex((demo) => demo.name.startsWith("clutch"));
   const find = () => {
-    if (settings.watch.enabled && settings.watch.folder && !watching.waiting) {
+    if (settings.watch.enabled && settings.watch.folder && !watching.waiting && !watching.paused) {
       const demo = DEMOS[next++ % DEMOS.length];
       const path = inFolder(settings.watch.folder, demo.name);
       added.set(path, demo);
@@ -449,7 +449,7 @@ export const mockBackend: Backend = {
     history = [];
   },
   watchStatus: async () => ({
-    running: settings.watch.enabled && !!settings.watch.folder, folder: settings.watch.folder,
+    running: settings.watch.enabled && !!settings.watch.folder && !watching.paused, folder: settings.watch.folder,
     lastScan: Date.now() / 1000, ...watching,
     problem: settings.watch.enabled && !settings.watch.folder ? "Choose a folder that exists." : null,
   }),
@@ -465,6 +465,10 @@ export const mockBackend: Backend = {
         window.setTimeout(() => simulate(id, { path, trim: null, options: settings.lastOptions ?? DEFAULT_OPTIONS, outputName: null }, "watch"), i * 900);
       }
     }
+    return mockBackend.watchStatus();
+  },
+  watchPause: async (paused) => {
+    watching.paused = paused;
     return mockBackend.watchStatus();
   },
   clipFolders: async () => [

@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -177,7 +177,16 @@ until after the owner's Arch sitting.
       adding without duplicates), and in a test copy a trimmed clip and a
       clip benched from the tray are on the bench after quitting and
       starting again.
-- [ ] **7.5 Pause watching, in the core.** `Watcher::pause` and `resume`,
+- [x] **7.5 Pause watching, in the core.** Done 22 November 2026:
+      `a_paused_watch_looks_again_on_resume_and_asks_about_a_pile` (seven
+      clips settle during a pause and nothing is sent; on resume they are
+      held as a pile; a settings reload keeps the pause) and
+      `a_pause_ends_when_the_watch_is_switched_off`. On the mock in both
+      schemes: History's Pause link, "Watch paused" in the title bar with a
+      ring for its dot, Resume back to "Watching". The tray's Pause
+      watching / Resume watching item (`watch_pause`, `set_paused`) is
+      built and clippy-clean, not tried by hand yet. Running jobs finish.
+      `Watcher::pause` and `resume`,
       for this session only, and `WatchStatus::paused` with its mirror.
       Clips that arrived during a pause follow the pile rule
       (`watch::PILE`) on resume.

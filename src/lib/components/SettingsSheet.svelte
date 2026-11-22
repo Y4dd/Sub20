@@ -296,6 +296,8 @@
         <p class="note" class:bad={!!watch.problem}>
           {#if watch.problem}
             {watch.problem}
+          {:else if watch.paused}
+            Paused until you resume it in History or Sub20 starts again.
           {:else if watch.running && !s.watch.compress}
             Watching. {watch.benched} put on the bench since the app opened.
           {:else if watch.running}

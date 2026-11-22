@@ -272,7 +272,7 @@ async function report(): Promise<Report> {
 }
 
 const idle: WatchStatus = {
-  running: false, folder: null, lastScan: 0, inProgress: 0, done: 0, failed: 0, benched: 0, problem: null, waiting: 0,
+  running: false, folder: null, lastScan: 0, inProgress: 0, done: 0, failed: 0, benched: 0, problem: null, waiting: 0, paused: false,
 };
 const desktopOnly = () => Promise.reject(new Error("That needs the Sub20 desktop app."));
 
@@ -392,6 +392,7 @@ export const webBackend: Backend = {
   },
   watchStatus: async () => idle,
   watchDecide: async () => idle,
+  watchPause: async () => idle,
   clipFolders: async () => [],
   reveal: desktopOnly,
   openFile: async (path) => {
