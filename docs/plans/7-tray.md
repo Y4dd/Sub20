@@ -247,10 +247,11 @@ until after the owner's Arch sitting.
       relaunches with the old start's arguments and Sub20 can't add
       `--tray` to them. Checked in a debug test copy that called itself
       0.9.4: with a record from 0.0.1 it started with no window (7 MB, no
-      WebView2) and deleted the record; whether its own check put Update
-      to 0.9.5 in the tray menu waits on the owner looking (don't choose
-      it: that copy asks for the without-FFmpeg feed and would install the
-      real release over the owner's Sub20). A record left by an installer
+      WebView2) and deleted the record, and its own check put Update to
+      0.9.5 in the tray menu (the owner saw it, 22 November 2026). Not
+      chosen: that copy asks for the without-FFmpeg feed and would install
+      the real release over the owner's Sub20; the test copies were rebuilt
+      at their real version afterwards. A record left by an installer
       that never started is deleted on the error path and by the next
       install with a window.
       **Can't be proved in a test copy:** the installer is the real
