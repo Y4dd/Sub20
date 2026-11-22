@@ -27,13 +27,15 @@ const software = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   sameAs: [GITHUB],
 };
-// The questions, written once: the page shows them, and FAQPage tells search engines the same words.
+// The questions, written once: the page shows them, and FAQPage tells search engines the same words, in this order.
+// Windows's warning sits third, so the section ends on reassurance (nothing uploaded) and not on the warning the close's
+// Windows button repeats right after it. Keep each question's words as they are; the warning's are the owner's.
 const FAQ = [
   { q: "How do I make a video small enough for Discord?", html: "Add it to Sub20, drag the yellow handles to keep the part worth sending, pick the size and press Compress. Sub20 works out the bitrate from the size and the length you kept, and encodes the clip again if it lands even a byte over." },
   { q: "What is Discord's file size limit?", html: "20 MB on a free account, 50 MB with Nitro Basic, 500 MB in a boosted server and 1 GB with Nitro. Sub20's size picker names each one." },
-  { q: "Are my videos uploaded anywhere?", html: "No, and there is no account. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself." },
-  { q: "Will my clip play for everyone on Discord?", html: "Yes, unless you choose otherwise. Sub20 saves H.264 video, the kind that plays in Discord on every computer and phone. Options also offers HEVC and AV1, which keep more detail at the same size but may not play everywhere: HEVC on some computers, AV1 on phones." },
   { q: "Why does Windows warn me about the installer?", html: `Because Sub20 is not code-signed yet. Click More info, then Run anyway; <a href="${u("download/")}">the install steps</a> show where.` },
+  { q: "Will my clip play for everyone on Discord?", html: "Yes, unless you choose otherwise. Sub20 saves H.264 video, the kind that plays in Discord on every computer and phone. Options also offers HEVC and AV1, which keep more detail at the same size but may not play everywhere: HEVC on some computers, AV1 on phones." },
+  { q: "Are my videos uploaded anywhere?", html: "No, and there is no account. Sub20 works on your computer, and Lite inside your browser. The update check is the only request Sub20 makes by itself." },
 ];
 const faqPage = {
   "@context": "https://schema.org",
@@ -232,18 +234,23 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
 
   <section class="section" id="faq" aria-labelledby="faq-h" style="--hm: 2">
     <div class="wrap">
-      <div class="grid">
-        <div class="span-5 stack-4">
+      {/* Three blocks in reading order, heading, answers, guides, so a phone (stacked) reads the answers before the
+          guides, and focus and a screen reader follow it. From 1024px site.css places them in two columns again:
+          the heading over the guides on the left, the answers on the right. */}
+      <div class="grid faq__grid">
+        <div class="faq__head span-5">
           <h2 id="faq-h">Questions about Discord clips</h2>
+        </div>
+        <div class="faq span-6 start-7">
+          {FAQ.map((q) => <div class="faq__item"><h3>{q.q}</h3><p set:html={q.html} /></div>)}
+        </div>
+        <div class="faq__more span-5 stack-4">
           <p class="muted">The guides go further, step by step.</p>
           {/* Each guide with its one-line summary (GUIDES), so the column beside the five answers says what each holds. */}
           <ul class="faq__guides" role="list">
             {GUIDES.map((g) => <li><a class="link" href={u(`guides/${g.slug}/`)}>{g.title}</a><span>{g.summary}</span></li>)}
             <li><a class="link" href={`${GITHUB}/issues/new/choose`}>Open an issue</a><span>Something else, or something broken? Ask on GitHub.</span></li>
           </ul>
-        </div>
-        <div class="faq span-6 start-7">
-          {FAQ.map((q) => <div class="faq__item"><h3>{q.q}</h3><p set:html={q.html} /></div>)}
         </div>
       </div>
     </div>
