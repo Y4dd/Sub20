@@ -286,21 +286,22 @@
    the questions, the opened download list, or the whole list without JavaScript are taller than that,
    and ran under the next section (the last question under the close, the close's button crushed). So
    from 1280px too a section is at least a screen and grows with what it holds: the kit's own rule for
-   640-1279px. Where the content fits (1440x900) nothing moves. */
+   640-1279px, its screens (--h, two for the features) at least. Where the content fits (1440x900) nothing moves. */
 @media (min-width: 1280px) {
-  main > :is(section, .section):not(.hero, .section--hero), footer.closing { height: auto; min-height: 100vh; min-height: 100svh; }
+  main > :is(section, .section):not(.hero, .section--hero), footer.closing { height: auto; min-height: calc(var(--h, 1) * 100vh); min-height: calc(var(--h, 1) * 100svh); }
   :where(main > :is(section, .section):not(.hero, .section--hero), footer.closing) { display: flex; flex-direction: column; }
   main > :is(section, .section):not(.hero, .section--hero) > :is(.wrap, .container), footer.closing > .wrap { flex: 1 0 auto; height: auto; min-height: 0; }
 }
 .closing__cta > .btn--xl { flex: none; }
 
 /* The feature shots, and the room between sections. */
-/* The features are as tall as their cards, not two whole screens, so the heading follows the hero
-   closely and the second row of cards follows the first. A link to #features still stops with the
-   heading clear of the fixed header. */
-#features { height: auto; min-height: 0; padding-top: var(--s-7); scroll-margin-top: calc(var(--nav) + var(--s-6) - var(--s-7)); }
-#features > .wrap { height: auto; grid-template-rows: auto auto; }
-@media (min-width: 640px) { #features > .wrap { row-gap: var(--s-8); } }
+/* The features are the kit's two screens (.g2, owner, November 2026, after a critique round asked for
+   one or two): the heading and the first two cards on the first, the formats rail and the last two
+   on the second, each starting --padt under its screen's top, so every later section starts on the
+   screen grid. From 1024px the kit stretches each screen's card row to its foot; what that adds goes
+   to the shots' row (their panels grow, the shot centred in them), not the words', which would open a
+   gap between a card's words and its shot. */
+@media (min-width: 1024px) { #features .grid { grid-template-rows: auto 1fr; } }
 /* a tablet: one card a row, so the shots stay big enough to read, with room between the cards */
 @media (min-width: 640px) and (max-width: 1023px) { #features .grid { row-gap: var(--s-7); } #features .grid > .card { grid-column: 1 / -1; } }
 
@@ -458,7 +459,7 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
    Only where #download comes next in the page: where Lite comes first (on phones, tablets and Macs a
    script moves it up), the cards keep their 72px above its ground. There the download section is
    followed by the questions on the same ground, so it ends where its own words end, the same way. */
-#features:has(+ #download), #download:has(+ #faq) { padding-bottom: 0; }
+#download:has(+ #faq) { padding-bottom: 0; }
 
 /* Lite's "Open Sub20 Lite" is as wide as its words; across the column its underline read as a rule. */
 .lite__text > .link { justify-self: start; }

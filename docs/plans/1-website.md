@@ -489,9 +489,26 @@ invented.
         `#features`' rhythm moving every later section off the screen
         grid, the three waived findings, `no-visual` on `#download` at
         1440 (its story covers 11%) and `text-only` on `#faq`.
-      - **Not run:** the gate and `check.mjs`.
-      *Done when:* the owner has decided `#features`' rhythm and a
-      picture for `#download` and `#faq`, and the gate passes.
+      - **check.mjs** at five sizes: the same rhythm findings only.
+      - **Safari:** not checked. Playwright's WebKit download stalled.
+      Pushed and published on 21 November 2026 (Pages run 44975210153).
+      **The owner's decisions after it:**
+      - `#features` is the kit's two screens (`.g2`). The site's override
+        to its cards' height is gone, and the extra height goes to the
+        shots' row.
+      - The 1280px rule keeps a section at least its `--h` screens.
+      - `no-visual` on `#download` and `text-only` on `#faq` are waived,
+        so five waivers are used, the limit.
+      **consistency.mjs --quick after them:** 12 FAIL.
+      - 7 come from `#download` at 0.73 screens (657px at 1440x900):
+        its height, Lite's, the questions' and the close's starts, and
+        three `one-section`.
+      - The rest are the five waived findings.
+      - A trial at a full screen left 315px of empty ground under the
+        story at 1440, and on a phone a screen holding three lines, so
+        it isn't in.
+      *Done when:* the owner has decided `#download`'s height, and the
+      gate passes.
 
 ## Needs the owner
 
