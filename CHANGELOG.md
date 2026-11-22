@@ -6,6 +6,8 @@ What changed in each release. The format follows
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-11-22
+
 ### Changed
 
 - The folder watch puts new videos on the bench, ready to trim, instead
@@ -200,7 +202,8 @@ The first version, before any public release.
 - Folder watch, history, saved profiles, the FFmpeg log for each job.
 - A title bar drawn by the app on Windows.
 
-[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/Y4dd/Sub20/compare/v0.9.5...HEAD
+[0.9.5]: https://github.com/Y4dd/Sub20/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/Y4dd/Sub20/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/Y4dd/Sub20/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/Y4dd/Sub20/compare/v0.9.1...v0.9.2
