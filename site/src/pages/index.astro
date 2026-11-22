@@ -209,8 +209,10 @@ const formats = ["MP4", "MOV", "MKV", "WebM", "AVI", "M4V", "WMV", "FLV", "MPEG"
     </div>
     {/* Where the desktop app doesn't run (data-lite), Lite is the way in, so this section moves up before #download:
         in the DOM, not with CSS order, so focus and a screen reader follow what is seen. Without JavaScript, and on
-        Windows or Linux, it stays where it is written. It runs before system.js, a module that waits for the parse. */}
-    <script is:inline>(()=>{const s=document.currentScript.parentElement,d=document.getElementById("download");if("lite"in document.documentElement.dataset&&d)d.before(s)})()</script>
+        Windows or Linux, it stays where it is written. It runs before system.js, a module that waits for the parse.
+        There the phone's frame, hidden (Lite's story takes its place), goes too: system.js fetches every lazy image
+        once the page has loaded, hidden ones included. */}
+    <script is:inline>(()=>{const s=document.currentScript.parentElement,d=document.getElementById("download");if(!("lite"in document.documentElement.dataset))return;s.querySelector(".lite__frame")?.remove();if(d)d.before(s)})()</script>
   </section>
 
   <section class="section" id="faq" aria-labelledby="faq-h" style="--hm: 2">

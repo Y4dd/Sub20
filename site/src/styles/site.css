@@ -525,8 +525,8 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
    JavaScript, the list runs the full width under both. It stays a sibling in the grid, where the script
    after it finds it. Where a browser can place the opened content on its own (::details-content), the
    <details> gives its two parts to the grid, so the summary stays where it was clicked and the list starts
-   under the story; elsewhere the opened <details> moves under the story whole. Stacked, the story's
-   order: 1 stands. */
+   under the story (only where the script closed it: without JavaScript it is open with no summary);
+   elsewhere the opened <details> moves under the story whole. Stacked, the story's order: 1 stands. */
 @media (min-width: 1024px) {
   #download > .wrap > .grid { grid-template-rows: auto 1fr; }
   #download .downloads { grid-row: 1; }
@@ -534,9 +534,9 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
   #download .downloads__more { grid-column: 1 / span 5; grid-row: 2; align-self: start; margin-top: calc(var(--s-6) - var(--card-gap)); }
   #download .downloads__more[open] { grid-column: 1 / -1; grid-row: 3; margin-top: 0; }
   @supports selector(::details-content) {
-    #download .downloads__more[open] { display: contents; }
-    #download .downloads__more[open] > summary { grid-column: 1 / span 5; grid-row: 2; align-self: start; justify-self: start; margin-top: calc(var(--s-6) - var(--card-gap)); }
-    #download .downloads__more[open]::details-content { grid-column: 1 / -1; grid-row: 3; }
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open] { display: contents; }
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open] > summary { grid-column: 1 / span 5; grid-row: 2; align-self: start; justify-self: start; margin-top: calc(var(--s-6) - var(--card-gap)); }
+    :root:is([data-lite], [data-os="windows"], [data-os="linux"]) #download .downloads__more[open]::details-content { grid-column: 1 / -1; grid-row: 3; }
   }
 }
 
