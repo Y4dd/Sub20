@@ -213,6 +213,10 @@ until after the owner's Arch sitting.
       `?watch=pile-notice` shows the banner, the toggle's bench words).
       A start with no window waits for 7.9's `--tray`; until then the
       tray's resume is the way to hold a pile with no window.
+      Known limits: a pile the window asked about and left unanswered
+      when it closed to the tray gets no notice (the title bar asks again
+      when it opens); a results notice clicked with no window now opens
+      once the saved bench is back, a moment later than before.
       When more than `PILE` clips are
       held and there is no window to ask, a notice says so ("7 clips
       arrived while Sub20 was closed. Open Sub20 to compress or skip
