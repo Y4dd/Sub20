@@ -243,7 +243,7 @@ until after the owner's Arch sitting.
       update for a retry, and says a failure with a notice. The new
       version comes back in the tray through a record, `restart-in-tray`,
       written by the updater's `on_before_exit` while there is no window
-      and read once at start (`back_in_tray`, tested), since the updater
+      and read once at start (`back_in_tray`, now `back_from_update`, tested), since the updater
       relaunches with the old start's arguments and Sub20 can't add
       `--tray` to them. Checked in a debug test copy that called itself
       0.9.4: with a record from 0.0.1 it started with no window (7 MB, no
@@ -252,8 +252,9 @@ until after the owner's Arch sitting.
       chosen: that copy asks for the without-FFmpeg feed and would install
       the real release over the owner's Sub20; the test copies were rebuilt
       at their real version afterwards. A record left by an installer
-      that never started is deleted on the error path and by the next
-      install with a window.
+      that never started is deleted on the error path; since 7.9 the next
+      install with a window writes it again with `window`, and a record
+      naming the version that is running is ignored and deleted.
       **Can't be proved in a test copy:** the installer is the real
       release's and installs over the real Sub20, and the old version has
       to write the record, so the first real proof is the first update
@@ -311,7 +312,9 @@ until after the owner's Arch sitting.
       removed the value and the process was gone within 6 seconds. The
       value written by the toggle goes through the same function at
       `save_settings`. The uninstall hook can't run here (bundling
-      downloads NSIS); a shell test checks it names the identifier.
+      downloads NSIS), and no CI job bundles: the hook is first compiled
+      by `release.yml` (a dry run on `main` before tagging). A shell test
+      checks it names the identifier.
       Known limit: the update check at a sign-in start runs once, often
       before the network is up, and then the tray offers no update
       until the window opens.
@@ -359,7 +362,13 @@ until after the owner's Arch sitting.
       watch runs, the pile notice shows.
 - [ ] **An update from the tray** on the owner's machine.
 - [ ] **Task Manager's Startup toggle:** what turning Sub20 off there does
-      to the setting.
+      to the setting. As built (7.9): nothing; the setting stays on and
+      Task Manager's choice holds, until the setting is switched off,
+      which clears it.
+- [ ] **Uninstall** an install from a release with 7.9, with start at
+      sign-in on: no Sub20 value is left under
+      `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. The
+      changelog already says so.
 
 ## Exit criteria
 
