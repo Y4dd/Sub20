@@ -310,8 +310,12 @@ until after the owner's Arch sitting.
       handle is the single-instance plugin's hidden one); a second
       `--tray` launch changed nothing; with the setting off, `--tray`
       removed the value and the process was gone within 6 seconds. The
-      value written by the toggle goes through the same function at
-      `save_settings`. The uninstall hook can't run here (bundling
+      owner then flipped the toggle in the copy's window: on wrote the
+      value, off removed it; a plain start opened the window, and a
+      second plain launch only brought it forward. The copy ran from
+      Claude's side, where the Claude app's package may virtualize HKCU,
+      so whether Windows sees the value at sign-in is the owner's
+      sign-out check with a release. The uninstall hook can't run here (bundling
       downloads NSIS), and no CI job bundles: the hook is first compiled
       by `release.yml` (a dry run on `main` before tagging). A shell test
       checks it names the identifier.
