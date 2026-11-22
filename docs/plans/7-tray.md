@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 built the same day, waiting on a test-copy try.
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -195,9 +195,16 @@ until after the owner's Arch sitting.
       (`watch::PILE`) on resume.
       *Done when:* tests in `watch.rs`, and the title bar says the watch
       is paused.
-- [ ] **7.6 The pile with no window.** Built 22 November 2026, not yet
-      tried in a test copy (the owner's step: `docs/testing.md` §4,
-      steps 5 and 7, in the debug test copy). The core hands the shell
+- [x] **7.6 The pile with no window.** Done 22 November 2026: the owner
+      ran `docs/testing.md` §4 steps 5 and 7 in a debug test copy with the
+      window closed to the tray, and both notices showed and opened the
+      window on their clip and on the question. A debug test copy shows
+      no notice at all unless its exe sits in a folder ending in
+      `	argetdebug` (`sub20-targetdebug` doesn't): the notification
+      plugin otherwise sends them under the identifier, which Windows
+      drops because only an installer registers it; copied to
+      `%LOCALAPPDATA%sub20-test	argetdebug`, they show as from
+      Windows PowerShell. The core hands the shell
       `Arrival::Pile` once per pile, beside `Arrival::Bench` (tests: a
       pile at launch and on resume is said once, five or fewer say
       nothing). With no window (`window_gone`), `Notices::benched` and
