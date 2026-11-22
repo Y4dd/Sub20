@@ -185,7 +185,10 @@ until after the owner's Arch sitting.
       schemes: History's Pause link, "Watch paused" in the title bar with a
       ring for its dot, Resume back to "Watching". The tray's Pause
       watching / Resume watching item (`watch_pause`, `set_paused`) is
-      built and clippy-clean, not tried by hand yet. Running jobs finish.
+      in the debug test copy; the owner saw it in the tray menu the same
+      day. Running jobs finish. (A test copy that is still running takes a
+      new launch of another build with the same identifier: quit the old
+      one first, or a stale window comes up.)
       `Watcher::pause` and `resume`,
       for this session only, and `WatchStatus::paused` with its mirror.
       Clips that arrived during a pause follow the pile rule
