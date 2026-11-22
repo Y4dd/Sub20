@@ -1,0 +1,54 @@
+---
+// What Sub20 is for, one game clip from plan to Discord in three steps: the plan row's size and verdict
+// (plan.webp), the finished file, 248 MB down to 19.4 MB (done.webp), then the clip arriving in a chat.
+// The same story on both paths, written once: the desktop app's in #download (`path="app"`, hidden where
+// the desktop app doesn't run) and Lite's in #lite (`path="lite"`, shown only there). Only the third
+// step's words differ: the desktop copies with Ctrl+C; Lite shares on a touch screen and downloads with a
+// mouse, by the app's own rule (`pointer: coarse`). Every picture is a picture, never a control: crops of
+// the screenshots (site.css), and the chat drawn in the site's own palette and fonts, not any chat app's.
+// Both copies ask for the same files (one name and `sizes` each), so the hidden one costs nothing, and
+// they carry no ids. The sizes are said in words at body size, since the crops draw them small.
+import Shot from "./Shot.astro";
+
+interface Props {
+  /** "app": the desktop app's hand-off (Copy). "lite": Sub20 Lite's (Share on a touch screen, else Download). */
+  path: "app" | "lite";
+  class?: string;
+}
+const { path, class: classes } = Astro.props;
+---
+
+<div class:list={["frame payoff", classes]}>
+  <ol class="payoff__story" role="list">
+    <li>
+      <p>Before it starts, Sub20 says how it will look</p>
+      <div class="payoff__crop payoff__crop--plan">
+        <Shot name="plan" alt="Sub20's plan for a 41 s game clip: 1440p, H.264 at 3.9 Mbps, Should look good" sizes="800px" />
+      </div>
+    </li>
+    <li>
+      <p>When it's done, the clip is <strong>19.4&nbsp;MB</strong>, down from 248&nbsp;MB</p>
+      <div class="payoff__crop payoff__crop--done">
+        <Shot name="done" alt="The finished file: clutch-1v4-ranked-20mb.mp4, 19.4 MB, down from 248 MB" sizes="720px" />
+      </div>
+    </li>
+    <li>
+      {path === "app" ? (
+        <p>Copy it with Ctrl+C, then paste it in Discord</p>
+      ) : (
+        <p><span class="payoff__touch">Tap Share, then pick Discord</span><span class="payoff__mouse">Download it, then drop it in Discord</span></p>
+      )}
+      <div class="payoff__chat" role="img" aria-label="A chat message from You with the clip attached: clutch-1v4-ranked-20mb.mp4, 19.4 MB">
+        <span class="payoff__avatar">Y</span>
+        <div class="payoff__message">
+          <span class="payoff__who">You</span>
+          <div class="payoff__file">
+            <div class="payoff__crop payoff__crop--thumb"><Shot name="done" alt="" sizes="720px" /></div>
+            <span class="payoff__name">clutch-1v4-ranked-20mb.mp4</span>
+            <span class="payoff__size">19.4&nbsp;MB</span>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ol>
+</div>
