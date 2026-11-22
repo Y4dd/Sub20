@@ -312,8 +312,8 @@ async fn cancel_stops_the_encode_and_cleans_up() {
 }
 
 /// The priority of every running FFmpeg whose command line names `marker`
-/// (a launcher and the FFmpeg it starts both count): Windows's base
-/// priority (8 normal, 6 below normal), or Linux's nice value.
+/// (a launcher and the FFmpeg it starts both count, FFprobe doesn't):
+/// Windows's base priority (8 normal, 6 below normal), or Linux's nice value.
 async fn priorities(marker: &str) -> Vec<i32> {
     #[cfg(windows)]
     {
@@ -337,14 +337,46 @@ async fn priorities(marker: &str) -> Vec<i32> {
             if !String::from_utf8_lossy(&cmdline).contains(marker) {
                 continue;
             }
-            // Field 19 of `stat`, counted after the name in parentheses.
             let stat = std::fs::read_to_string(entry.path().join("stat")).unwrap_or_default();
-            let after = stat.rsplit_once(')').map(|(_, rest)| rest).unwrap_or_default();
-            if let Some(nice) = after.split_whitespace().nth(16).and_then(|n| n.parse().ok()) {
-                found.push(nice);
+            if let Some((name, nice)) = name_and_nice(&stat) {
+                if name.starts_with("ffmpeg") {
+                    found.push(nice);
+                }
             }
         }
         found
+    }
+}
+
+/// The name and nice value in a Linux `/proc/…/stat` line: the name is in
+/// parentheses, and nice is field 19, counted after them.
+#[cfg(not(windows))]
+fn name_and_nice(stat: &str) -> Option<(&str, i32)> {
+    let (head, after) = stat.rsplit_once(')')?;
+    let name = head.split_once('(')?.1;
+    Some((name, after.split_whitespace().nth(16)?.parse().ok()?))
+}
+
+/// What a process started with no priority of its own gets: this test's own
+/// priority. Windows passes a below-normal one on (GitHub's runner starts
+/// tests below normal), so on Windows the test first puts itself at normal,
+/// as Sub20 runs, or both encodes would read 6 and prove nothing.
+async fn own_priority() -> i32 {
+    #[cfg(windows)]
+    {
+        let mut cmd = tokio::process::Command::new("powershell");
+        cmd.args(["-NoProfile", "-NonInteractive", "-Command"]).arg(format!(
+            "(Get-Process -Id {pid}).PriorityClass = 'Normal'; \
+             (Get-CimInstance Win32_Process -Filter \"ProcessId={pid}\").Priority",
+            pid = std::process::id()
+        ));
+        let out = cmd.output().await.expect("powershell runs");
+        String::from_utf8_lossy(&out.stdout).trim().parse().expect("a priority")
+    }
+    #[cfg(not(windows))]
+    {
+        let stat = std::fs::read_to_string("/proc/self/stat").expect("own stat");
+        name_and_nice(&stat).expect("own nice").1
     }
 }
 
@@ -364,11 +396,17 @@ async fn a_watched_clip_is_encoded_below_normal_priority() {
         encoder: Some("libx264".into()),
         ..Default::default()
     };
+    // A manual encode runs as this test does; a watched one at below normal
+    // on Windows, and 10 nicer (at most 19) on Linux. Read before the
+    // encodes start, since on Windows it also sets this test's priority.
+    let normal = own_priority().await;
+    let lowered = if cfg!(windows) { 6 } else { (normal + 10).min(19) };
+    assert_ne!(normal, lowered, "this test runs at the lowest priority already, so it can't tell");
+
     let (watch_id, watch_done) =
         b.engine.submit_and_wait(JobSpec { origin: Origin::Watch, ..spec(&watched, options.clone()) });
     let (manual_id, manual_done) = b.engine.submit_and_wait(spec(&manual, options));
 
-    let (normal, lowered) = if cfg!(windows) { (8, 6) } else { (0, 10) };
     let (mut seen_watched, mut seen_manual) = (Vec::new(), Vec::new());
     for _ in 0..200 {
         seen_watched = priorities("watched-priority").await;
