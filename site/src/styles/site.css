@@ -410,11 +410,12 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
   .btn--xl.get.dl { min-height: 64px; line-height: 1.15; }
 }
 /* What Windows will say, under the button that downloads the installer (SmartScreenNote's short form): the
-   next step, at the label size. In the hero it sits 6px under the button and reaches 8px into the window
-   frame's top padding (the frame's mask is transparent there), so it costs the window 15px of height, not
-   28 (z-index: the masked frame is a layer over it, and would take the link's clicks). */
+   next step, at the label size. In the hero it sits 9px under the button, so the button's focus ring (2px
+   out, 2px thick) keeps 5px clear of the line and about 8px of its letters, and reaches 11px into the
+   window frame's top padding (the frame's mask is transparent there), so it costs the window 15px of
+   height, not 28 (z-index: the masked frame is a layer over it, and would take the link's clicks). */
 .get-note { font-size: var(--t-label); line-height: 1.35; }
-.hero__note { position: relative; z-index: 1; margin: -10px 0 -8px; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
+.hero__note { position: relative; z-index: 1; margin: -7px 0 -11px; color: color-mix(in srgb, var(--p-ink) 76%, var(--p-bg)); }
 .hero__note b, .close__note b { color: var(--p-ink); font-weight: 500; }
 .get-note .link { display: inline; white-space: nowrap; }
 .get-note .link::after { margin-left: 0.3em; }
@@ -497,3 +498,20 @@ a:focus-visible .dl-mark { transform: translateY(2px); }
 /* Round 4: the questions. */
 
 /* Round 4: the hero's note and the close. */
+/* The short note's "Install steps" is a 19px line of text: an invisible layer 3px over and under it makes
+   the target 25px tall (WCAG 2.2's 24) without moving its words or its underline, which the kit draws at
+   the foot of its padding box. */
+.get-note .link { position: relative; }
+.get-note .link::before { content: ""; position: absolute; inset: -3px 0; }
+/* The close's big button on a phone (under 640px it is 48px tall at 18px): its words and their arrow or
+   download mark sit together in the middle, not with the mark alone at the far edge as on a wide screen. */
+@media (max-width: 639px) { .closing__cta > .btn--xl.btn--wide { justify-content: center; } }
+/* Where the desktop app doesn't run (data-lite), the hero's way to it is a text link beside, or on a phone
+   under, "Open Sub20 Lite": it leads to the section that says to open the page on a computer, so it
+   doesn't take a button's weight. */
+.hero .btn-row > .hero__other { position: relative; z-index: 1; align-self: center; margin-inline: var(--s-3); }
+/* On a phone the kit makes a .link 44px tall, which left its underline 10px under the words: the link
+   keeps its own height there, 8px further under the button, and a layer 10px over and under it is the
+   44px target (z-index: the hero window's masked frame is a layer over it, as over the note). */
+.hero__other::before { content: ""; position: absolute; inset: -10px 0; }
+@media (max-width: 639px) { .hero .btn-row > .hero__other { min-height: 0; margin-top: var(--s-2); } }
