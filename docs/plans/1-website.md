@@ -253,7 +253,7 @@ invented.
       copy-lint 0 FAIL and 0 WARN on the new guide, the guides page and
       `file-too-large`. Left: it goes live with the next Pages run, and
       indexing waits on the owner (below).
-- [ ] **1.14 The home page after the critique** (20 and 21 November 2026;
+- [x] **1.14 The home page after the critique** (20 and 21 November 2026;
       the critique is `.impeccable/critique/2026-11-21T02-56-26Z__site-src-pages-index-astro.md`).
       Five fixes, merged at `3b02c9c`: links that say where they go and a
       download mark; the trim bracket round the headline and the close,
@@ -299,7 +299,7 @@ invented.
       both.
       *Done when:* the owner has decided the rhythm and the pictures, and
       the gate passes again.
-- [ ] **1.15 The home page after the second critique** (21 November 2026,
+- [x] **1.15 The home page after the second critique** (21 November 2026,
       30/40; `.impeccable/critique/2026-11-21T09-33-39Z__site-src-pages-index-astro.md`).
       Five fixes on branches of their own, merged at `2af7284`:
   1. The download section is as tall as it holds where its list starts
@@ -364,7 +364,7 @@ invented.
       no longer fires, so its waiver went.
       *Done when:* the owner has decided `#features`' rhythm (as in 1.14)
       and a picture for `#download` and `#faq`, and the gate passes.
-- [ ] **1.16 The home page after the third critique** (21 November 2026,
+- [x] **1.16 The home page after the third critique** (21 November 2026,
       27/36; `.impeccable/critique/2026-11-21T20-30-46Z__site-src-pages-index-astro.md`).
       Four branches of their own, merged at `bb8dd66`, then a polish pass:
   1. Phones, tablets and Macs (`data-lite`, `site-r3-lite`): an inline
@@ -440,7 +440,7 @@ invented.
       *Done when:* the owner has decided `#features`' rhythm and a
       picture for `#download` and `#faq` (as in 1.14 and 1.15), and the
       gate passes.
-- [ ] **1.17 The home page after the fourth critique** (21 November 2026,
+- [x] **1.17 The home page after the fourth critique** (21 November 2026,
       28/36 with no P0 or P1;
       `.impeccable/critique/2026-11-21T22-05-33Z__site-src-pages-index-astro.md`).
       The owner chose to do the payoff first, to show the clip arriving
@@ -509,6 +509,13 @@ invented.
         it isn't in.
       *Done when:* the owner has decided `#download`'s height, and the
       gate passes.
+      Done 21 November 2026. The owner left `#download` as tall as it
+      holds and set the gate aside. The remaining failures are the screen
+      grid below `#download` and the five waived findings, a rule only
+      the checker notices. Further critique rounds are stopped too: the
+      page changes next on real visitors' and testers' feedback. That
+      closes 1.14 to 1.16 as well, whose open items were these same
+      decisions.
 
 ## Needs the owner
 
