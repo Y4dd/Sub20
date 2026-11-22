@@ -64,7 +64,10 @@ account, no upload and no ads.
 - **Watch a folder**: each new clip joins the list, ready to trim, or is
   compressed as it lands if you choose. The NVIDIA app's and Xbox Game
   Bar's clip folders are offered in one click when found. On Windows it
-  can keep watching from the tray after the window is closed.
+  can keep watching from the tray after the window is closed, start there
+  when you sign in, and tell you when a clip is added or compressed, never
+  during a game. Clips it compresses run at a lower priority than what you
+  are doing.
 - **History** of what was compressed and what it shrank to.
 
 ## Install

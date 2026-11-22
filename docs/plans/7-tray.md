@@ -19,7 +19,7 @@ it. If 7.1's measurement or 7.10's gate fails, the option stays hidden,
 the plan goes back to plan 6, and 1.0 launches without it. The launch
 does not wait on this plan.
 
-**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day; 7.9 built the same day, its uninstall waiting on a release; 7.10 passed the same day (10 MB, under 0.25% of a core).
+**Status.** Started 20 November 2026: 7.1 passed (8 MB with no window); 7.2 to 7.4, 7.12 and 7.13 done the same day; 7.5 on 22 November 2026; 7.6 the same day; 7.7 built, its real proof waiting on two releases that carry it; 7.8 the same day; 7.9 built the same day, its uninstall waiting on a release; 7.10 passed the same day (10 MB, under 0.25% of a core); 7.11 the same day. Left: the owner's checks, which need a release.
 
 **Needs first:** nothing. **Runs beside:** plans 3 and 4. **Unblocks:**
 nothing; plan 5 includes it only if it is finished.
@@ -344,7 +344,15 @@ until after the owner's Arch sitting.
       *Done when:* under 100 MB private and under 0.5% of one core, with
       the numbers in the record. If not, the option stays hidden and the
       plan goes back to plan 6.
-- [ ] **7.11 Words.** `CLAUDE.md`, a section in `docs/testing.md`, the
+- [x] **7.11 Words.** Done 22 November 2026: the README's watch line
+      (start at sign-in, notices, lower priority) and the NVIDIA guide's
+      watch section (the bench notice, start at sign-in, lower priority,
+      notices held during games), read against the app; the site builds.
+      Both describe the next release: the README goes live with plan 7's
+      push, the guide when that release publishes the site, so don't run
+      `pages.yml` by hand before it. The home page's watch card is
+      unchanged and still true.
+      Originally: `CLAUDE.md`, a section in `docs/testing.md`, the
       README, the changelog, and any site guide that describes the watch.
       Started 22 November 2026, for the release with 7.2 to 7.5: the
       README's feature line, `docs/testing.md` §4 (bench, compress, tray,
